@@ -88,7 +88,7 @@ const SKILLS: Skill[] = [
   },
   { 
     category: 'Backend', 
-    items: ['Python', 'Django', 'Java', 'Spring Boot', 'API REST'],
+    items: ['Python', 'Django', 'Java', 'Spring Boot', 'Spring Security', 'API REST'],
     icon: ServerCog,
     level: 85
   },
@@ -168,9 +168,9 @@ const SERVICES: Service[] = [
 ];
 
 const CERTIFICATIONS: Certification[] = [
-  { title: 'Cisco Networking Academy – Networking Basics', year: '2023', level: 'Advanced' },
-  { title: 'Introduction to Cybersecurity', year: '2025', level: 'Intermediate' },
-  { title: 'English for IT 2', year: '2025', level: 'Professional' },
+  { title: 'Cisco Networking Academy – Networking Basics', year: '2023', code: 'NET-101', level: 'Advanced' },
+  { title: 'Introduction to Cybersecurity', year: '2025', code: 'CYB-201', level: 'Intermediate' },
+  { title: 'English for IT 2', year: '2025', code: 'ENG-302', level: 'Professional' },
 ];
 
 const TIMELINE: TimelineItem[] = [
