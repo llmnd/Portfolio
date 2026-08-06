@@ -16,7 +16,7 @@ const stats = [
 const stack = ['React', 'Next.js', 'Django', 'PostgreSQL', 'Docker'];
 
 const skills = [
-  { category: 'Frontend', items: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'] },
+  { category: 'Frontend', items: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Flutter'] },
   { category: 'Backend', items: ['Python', 'Django', 'Java', 'Spring Boot', 'API REST'] },
   { category: 'Données', items: ['PostgreSQL', 'MySQL', 'Prisma'] },
   { category: 'Outils', items: ['Git', 'Docker', 'Linux', 'Vercel'] },
@@ -25,11 +25,11 @@ const skills = [
 const projects = [
   {
     index: '01',
-    title: 'SaaS Analytics Dashboard',
-    description: 'Plateforme d’analyse temps réel pour applications B2B, tableau de bord visuel et API sécurisée.',
-    tech: ['Next.js', 'TypeScript', 'Prisma'],
-    demo: '#',
-    icon: Layers,
+    title: 'Mbaymi',
+    description: 'Application mobile d’agriculture et d’élevage construite avec Flutter, gestion des cultures et des troupeaux.',
+    tech: ['Flutter', 'Dart', 'Firebase'],
+    demo: 'https://mbaymi.vercel.app',
+    icon: Smartphone,
   },
   {
     index: '02',
@@ -63,8 +63,9 @@ const certifications = [
 ];
 
 const timeline = [
-  { year: '2024', title: 'Bitik.vercel.app', details: 'Marketplace responsive, parcours utilisateur optimisé et gestion produits.' },
-  { year: '2023', title: 'Fisafigroupe.com', details: 'Refonte du site vitrine pour une présence web élégante et responsive.' },
+  { year: '2025', title: 'Mbaymi', details: 'Application mobile d’agriculture et d’élevage créée avec Flutter, pilotage des cultures et des troupeaux.' },
+  { year: '2025', title: 'Bitik.vercel.app', details: 'Marketplace responsive, parcours utilisateur optimisé et gestion produits.' },
+  { year: '2026', title: 'Fisafigroupe.com', details: 'Refonte du site vitrine pour une présence web élégante et responsive.' },
 ];
 
 export default function Home() {
