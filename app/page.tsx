@@ -8,12 +8,12 @@ import {
 import NeuralExhibit from './NeuralExhibit';
 
 const stats = [
-  { value: '2+', label: 'Années d’expérience' },
-  { value: '8', label: 'Projets livrés' },
+  { value: '3+', label: 'Années d’expérience' },
+  { value: '7', label: 'Projets livrés' },
   { value: '10+', label: 'Technos maîtrisées' },
 ];
 
-const stack = ['React', 'Next.js', 'Django', 'PostgreSQL', 'Docker'];
+const stack = ['React', 'Next.js', 'Django', 'PostgreSQL', 'Docker', 'Tailwind CSS', 'Flutter', 'Git', 'Linux', 'Vercel'];
 
 const skills = [
   { category: 'Frontend', items: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Flutter'] },
