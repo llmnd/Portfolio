@@ -2,10 +2,11 @@
 
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, ArrowUpRight, Braces, Database, Download, Github, Layers,
+  ArrowRight, ArrowUpRight, Database, Download, Github, Layers,
   Linkedin, Mail, ServerCog, Smartphone, Wrench,
 } from 'lucide-react';
 import NeuralExhibit from './NeuralExhibit';
+import HeroExhibit from './HeroExhibit';
 
 const stats = [
   { value: '3+', label: 'Années d’expérience' },
@@ -45,7 +46,7 @@ const projects = [
     description: 'Site d’entreprise épuré, responsive, axé image de marque et référencement.',
     tech: ['Next.js', 'SEO'],
     demo: 'https://fisafigroupe.com',
-    icon: Braces,
+    icon: Layers,
   },
 ];
 
@@ -124,9 +125,7 @@ export default function Home() {
               transition={{ duration: 0.8, ease: 'easeOut', delay: 0.15 }}
               className="mx-auto w-full max-w-xs"
             >
-              <div className="frame relative flex aspect-[4/5] items-center justify-center">
-                <Braces className="h-16 w-16 text-[var(--accent)]" strokeWidth={1} />
-              </div>
+              <HeroExhibit />
               <div className="cap mt-3 flex items-center justify-between">
                 <span>Fig. 01</span>
                 <span>Dakar, SN</span>
