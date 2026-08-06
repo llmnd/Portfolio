@@ -12,7 +12,7 @@ const ACCENT = 'var(--accent)';
 const LINE = 'var(--line)';
 
 /* ------------------------------------------------------------------ */
-/* Neural network geometry                                             */
+/* Network geometry — unchanged                                        */
 /* ------------------------------------------------------------------ */
 const LAYERS = [4, 6, 5, 1];
 const VB_W = 760;
@@ -28,7 +28,6 @@ function layerNodes(count: number, x: number): Node[] {
 
 const NODES: Node[][] = LAYERS.map((n, i) => layerNodes(n, X_POS[i]));
 
-/* the single illuminated path: one node per layer */
 const ACTIVE_IDX = [1, 3, 2, 0];
 const ACTIVE_PATH = ACTIVE_IDX.map((idx, layer) => NODES[layer][idx]);
 
@@ -95,13 +94,13 @@ function Network({ hovered }: { hovered: boolean }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* House illustrations                                                 */
+/* Illustrations — recontextualized: brief sketch → deployed product   */
 /* ------------------------------------------------------------------ */
-function SketchHouse({ draw }: { draw: boolean }) {
+function SketchWireframe({ draw }: { draw: boolean }) {
   const path =
-    'M20 100 L20 55 L60 20 L100 55 L100 100 Z M20 55 L100 55 M45 100 L45 75 L58 75 L58 100 M68 65 L82 65 L82 78 L68 78 Z';
+    'M10 15 L130 15 L130 90 L10 90 Z M10 30 L130 30 M20 22 L40 22 M50 22 L68 22 M20 40 L60 40 L60 65 L20 65 Z M70 40 L120 40 L120 55 L70 55 Z M70 62 L118 62 M70 68 L104 68 M20 75 L46 75 L46 85 L20 85 Z';
   return (
-    <svg viewBox="0 0 120 110" style={{ width: '100%', height: 'auto' }} aria-hidden="true">
+    <svg viewBox="0 0 140 100" style={{ width: '100%', height: 'auto' }} aria-hidden="true">
       <path
         d={path}
         fill="none"
@@ -120,10 +119,10 @@ function SketchHouse({ draw }: { draw: boolean }) {
   );
 }
 
-function RenderedHouse({ reveal }: { reveal: boolean }) {
+function RenderedProduct({ reveal }: { reveal: boolean }) {
   return (
     <svg
-      viewBox="0 0 120 110"
+      viewBox="0 0 140 100"
       style={{
         width: '100%',
         height: 'auto',
@@ -133,13 +132,15 @@ function RenderedHouse({ reveal }: { reveal: boolean }) {
       }}
       aria-hidden="true"
     >
-      <path d="M18 100 L18 54 L60 18 L102 54 L102 100 Z" fill="none" stroke={INK} strokeWidth="1" />
-      <line x1="18" y1="54" x2="102" y2="54" stroke={INK} strokeWidth="1" />
-      <line x1="60" y1="18" x2="60" y2="8" stroke={INK} strokeWidth="0.75" />
-      <rect x="44" y="72" width="15" height="28" fill="none" stroke={ACCENT} strokeWidth="1" />
-      <rect x="70" y="64" width="14" height="13" fill="none" stroke={INK} strokeWidth="0.75" />
-      <line x1="77" y1="64" x2="77" y2="77" stroke={INK} strokeWidth="0.5" />
-      <line x1="70" y1="70.5" x2="84" y2="70.5" stroke={INK} strokeWidth="0.5" />
+      <rect x="8" y="10" width="124" height="82" fill="none" stroke={INK} strokeWidth="1" />
+      <line x1="8" y1="26" x2="132" y2="26" stroke={INK} strokeWidth="1" />
+      <circle cx="16" cy="18" r="1.4" fill="none" stroke={INK} strokeWidth="0.75" />
+      <circle cx="22" cy="18" r="1.4" fill="none" stroke={INK} strokeWidth="0.75" />
+      <circle cx="28" cy="18" r="1.4" fill="none" stroke={INK} strokeWidth="0.75" />
+      <rect x="16" y="34" width="108" height="24" fill="none" stroke={INK} strokeWidth="0.75" />
+      <line x1="16" y1="66" x2="90" y2="66" stroke={INK} strokeWidth="0.5" />
+      <line x1="16" y1="72" x2="70" y2="72" stroke={INK} strokeWidth="0.5" />
+      <rect x="16" y="80" width="32" height="10" fill="none" stroke={ACCENT} strokeWidth="1" />
     </svg>
   );
 }
@@ -171,9 +172,9 @@ export default function NeuralExhibit() {
         }
       `}</style>
 
-      <p className="eyebrow">Comment ça fonctionne</p>
+      <p className="eyebrow">Mon process</p>
       <h2 className="font-display mt-4 text-3xl font-medium text-[var(--ink)] sm:text-4xl">
-        Du croquis à la reconnaissance.
+        De l&rsquo;idée au produit.
       </h2>
 
       <div
@@ -185,8 +186,8 @@ export default function NeuralExhibit() {
           marginTop: 'clamp(2.5rem, 6vw, 4rem)',
         }}
       >
-        <div className={`ne-fade${visible ? ' on' : ''}`} style={{ maxWidth: 180, margin: '0 auto' }}>
-          <SketchHouse draw={visible} />
+        <div className={`ne-fade${visible ? ' on' : ''}`} style={{ maxWidth: 200, margin: '0 auto' }}>
+          <SketchWireframe draw={visible} />
         </div>
 
         <div
@@ -198,8 +199,8 @@ export default function NeuralExhibit() {
           <Network hovered={hovered} />
         </div>
 
-        <div className={`ne-fade${visible ? ' on' : ''}`} style={{ maxWidth: 180, margin: '0 auto', transitionDelay: '0.3s' }}>
-          <RenderedHouse reveal={visible} />
+        <div className={`ne-fade${visible ? ' on' : ''}`} style={{ maxWidth: 200, margin: '0 auto', transitionDelay: '0.3s' }}>
+          <RenderedProduct reveal={visible} />
         </div>
       </div>
 
@@ -213,14 +214,14 @@ export default function NeuralExhibit() {
           borderTop: `1px solid ${LINE}`,
         }}
       >
-        <p className="cap" style={{ textAlign: 'center' }}>01 — vous dessinez</p>
+        <p className="cap" style={{ textAlign: 'center' }}>01 — vous décrivez</p>
         <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-          <p className="cap">02 — convolution</p>
-          <p className="cap">03 — classification</p>
+          <p className="cap">02 — architecture</p>
+          <p className="cap">03 — développement</p>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <p className="cap" style={{ marginBottom: '0.35rem' }}>la machine voit</p>
-          <p className="font-serif" style={{ fontSize: '1.9rem', color: ACCENT, lineHeight: 1 }}>house</p>
+          <p className="cap" style={{ marginBottom: '0.35rem' }}>le résultat</p>
+          <p className="font-serif" style={{ fontSize: '1.9rem', color: ACCENT, lineHeight: 1 }}>en ligne.</p>
         </div>
       </div>
     </div>
