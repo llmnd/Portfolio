@@ -168,9 +168,9 @@ const SERVICES: Service[] = [
 ];
 
 const CERTIFICATIONS: Certification[] = [
-  { title: 'Cisco Networking Academy – Networking Basics', year: '2023', code: 'NET-8821', level: 'Advanced' },
-  { title: 'Introduction to Cybersecurity', year: '2025', code: 'SEC-4091', level: 'Intermediate' },
-  { title: 'English for IT 2', year: '2025', code: 'LAN-0012', level: 'Professional' },
+  { title: 'Cisco Networking Academy – Networking Basics', year: '2023', level: 'Advanced' },
+  { title: 'Introduction to Cybersecurity', year: '2025', level: 'Intermediate' },
+  { title: 'English for IT 2', year: '2025', level: 'Professional' },
 ];
 
 const TIMELINE: TimelineItem[] = [
@@ -242,6 +242,30 @@ const useMobileDetection = () => {
   return isMobile;
 };
 
+// Hook pour contrôler le scroll
+const useScrollLock = (active: boolean) => {
+  useEffect(() => {
+    if (active) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+    return undefined;
+  }, [active]);
+};
+
 // ============================================
 // COMPONENTS
 // ============================================
@@ -280,6 +304,22 @@ const TechStackItem = ({ tech, index }: { tech: string; index: number }) => {
     return icons[name] || <CpuIcon className="h-3 w-3 text-[var(--accent)]" />;
   };
 
+  const getTechVersion = (name: string) => {
+    const versions: Record<string, string> = {
+      'React': 'v18.0.0',
+      'Next.js': 'v14.2.3',
+      'Django': 'v4.2.1',
+      'PostgreSQL': 'v15.1.2',
+      'Docker': 'v24.0.2',
+      'Tailwind CSS': 'v3.4.0',
+      'Flutter': 'v3.13.0',
+      'Git': 'v2.45.0',
+      'Linux': 'v6.5.0',
+      'Vercel': 'v26.0.0',
+    };
+    return versions[name] || 'v1.0.0';
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
@@ -303,7 +343,7 @@ const TechStackItem = ({ tech, index }: { tech: string; index: number }) => {
           {tech}
         </span>
         <span className="ml-auto text-[0.55rem] font-mono text-[var(--mute)] opacity-0 group-hover:opacity-100 transition-opacity">
-          v{Math.floor(Math.random() * 3) + 1}.{Math.floor(Math.random() * 9) + 1}.{Math.floor(Math.random() * 9) + 1}
+          {getTechVersion(tech)}
         </span>
       </div>
     </motion.div>
@@ -652,6 +692,9 @@ export default function Home() {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.98]);
   const isMobile = useMobileDetection();
   
+  // 🔥 Hook pour bloquer le scroll quand le menu est ouvert
+  useScrollLock(navOpen);
+  
   const handleHeroToggle = useCallback(() => {
     setShowHeroDetails(prev => !prev);
   }, []);
@@ -659,6 +702,26 @@ export default function Home() {
   const toggleNav = useCallback(() => {
     setNavOpen((prev) => !prev);
   }, []);
+
+  // Effet pour gérer le scroll sur mobile
+  useEffect(() => {
+    // Empêcher le scroll horizontal
+    const handleTouchMove = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.scrollable-container')) {
+        return;
+      }
+      // Si on est en mobile et que le menu est ouvert, on bloque tout scroll
+      if (navOpen && isMobile) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [navOpen, isMobile]);
 
   // Memoized sections for performance
   const heroContent = useMemo(() => (
@@ -825,7 +888,7 @@ export default function Home() {
   ), []);
 
   return (
-    <main className="bg-[var(--bg)] text-[var(--ink)] min-h-screen font-sans selection:bg-[var(--accent)] selection:text-black">
+    <main className="bg-[var(--bg)] text-[var(--ink)] min-h-screen font-sans selection:bg-[var(--accent)] selection:text-black overflow-x-hidden">
       {/* HEADER TECH */}
       <div className="border-b border-[var(--line)] bg-[var(--surface)]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container">
@@ -879,13 +942,18 @@ export default function Home() {
       <AnimatePresence>
         {navOpen && (
           <motion.div
-            className="fixed inset-0 z-40 md:hidden"
+            className="fixed inset-0 z-40 md:hidden overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setNavOpen(false);
+              }
+            }}
           >
             <div
-              className="absolute inset-0 bg-black/30"
+              className="absolute inset-0 bg-black/30 backdrop-blur-sm"
               onClick={() => setNavOpen(false)}
               aria-hidden="true"
             />
@@ -894,7 +962,9 @@ export default function Home() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-              className="absolute right-0 top-0 h-full w-full max-w-[26rem] bg-[var(--surface)] border-l border-[var(--line)] p-6 shadow-[0_0_60px_rgba(0,0,0,0.18)] backdrop-blur-xl"
+              className="absolute right-0 top-0 h-full w-full max-w-[26rem] bg-[var(--surface)] border-l border-[var(--line)] p-6 shadow-[0_0_60px_rgba(0,0,0,0.18)] backdrop-blur-xl overflow-y-auto scrollable-container"
+              style={{ maxHeight: '100vh' }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-8 flex items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -938,7 +1008,6 @@ export default function Home() {
               </div>
 
               <div className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-
                 <div className="mt-5 flex items-center justify-center gap-3 text-[var(--mute)]">
                   <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--bg)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]">
                     <Github className="h-4 w-4" />
@@ -956,12 +1025,11 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <section className="bg-[var(--surface)]/95 py-6">
-        <div className="container">
-          <div className="overflow-hidden bg-black/95">
+      <section className="bg-[var(--surface)]/95 py-6 overflow-hidden">
+        <div className="container overflow-hidden">
+          <div className="relative overflow-hidden bg-black/95 rounded-xl">
             <video
               src="https://res.cloudinary.com/dcs9vkwe0/video/upload/v1775477690/vzcc5hhwqnlvhi8exxn4.mp4"
-              controls
               autoPlay
               muted
               loop
@@ -976,8 +1044,8 @@ export default function Home() {
       {heroContent}
 
       {/* VISUAL & WORKSPACE */}
-      <section className="border-t border-[var(--line)] bg-[var(--surface)]/50 py-24">
-        <div className="container">
+      <section className="border-t border-[var(--line)] bg-[var(--surface)]/50 py-24 overflow-hidden">
+        <div className="container overflow-hidden">
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
               <p className="eyebrow flex items-center gap-2">
@@ -1008,7 +1076,7 @@ export default function Home() {
                 transition={{ duration: 0.3 }}
               >
                 <img
-                  src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026387/f3codb9okszfnxskuzvl.jpg"
+                  src="https://i.pinimg.com/736x/7d/16/9b/7d169bf456e84b6ac1edc9af7e5d61ef.jpg"
                   alt="Portrait"
                   className="h-64 w-full object-cover transition-all duration-500 hover:scale-105"
                   loading="lazy"
@@ -1043,109 +1111,162 @@ export default function Home() {
       {projectsContent}
 
       {/* NEURAL EXHIBIT */}
-      <section className="border-t border-[var(--line)] bg-[var(--surface)] py-12">
-        <div className="container">
+      <section className="border-t border-[var(--line)] bg-[var(--surface)] py-12 overflow-hidden">
+        <div className="container overflow-hidden">
           <NeuralExhibit />
         </div>
       </section>
 
       {/* ABOUT & SKILLS */}
-      <section id="about" className="border-t border-[var(--line)] py-24 bg-gradient-to-b from-[var(--bg)] to-[var(--surface)]/30">
-        <div className="container grid gap-16 lg:grid-cols-2">
-          {/* TIMELINE */}
-          <div>
-            <p className="eyebrow flex items-center gap-2">
-              <GitBranch className="h-3 w-3" /> PARCOURS &amp; EXPÉRIENCE
-            </p>
-            <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
-              Chronologie des systèmes
-            </h2>
-            <p className="mt-2 font-mono text-xs text-[var(--mute)]">
-              Évolution technique et projets majeurs
-            </p>
-            <div className="mt-8 space-y-8 border-l-2 border-[var(--accent)]/30 pl-6">
-              {TIMELINE.map((item, index) => (
-                <TimelineItemComponent key={item.title} item={item} index={index} />
-              ))}
-            </div>
-
-            {/* CERTIFICATIONS */}
-            <motion.div 
-              className="mt-12 frame p-6 bg-[var(--surface)] rounded-xl border border-[var(--line)]"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              viewport={{ once: true }}
-            >
-              <div className="flex items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10">
-                  <Award className="h-4 w-4" />
-                </div>
-                <span>CERTIFICATIONS_VALIDÉES</span>
-                <span className="ml-auto text-[0.55rem] text-[var(--mute)]">3 validées</span>
-              </div>
-              <div className="space-y-4 font-mono text-xs">
-                {CERTIFICATIONS.map((cert) => (
-                  <div key={cert.title} className="flex justify-between items-center border-b border-[var(--line)] pb-3 last:border-0 hover:bg-[var(--surface)]/50 p-2 rounded-lg transition-colors">
-                    <div>
-                      <p className="text-[var(--ink)] font-medium">{cert.title}</p>
-                      <p className="text-[var(--mute)] text-[0.65rem]">{cert.code}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[0.55rem] text-[var(--accent)] uppercase">
-                        <Star className="h-3 w-3" />
-                        {cert.level}
-                      </span>
-                      <span className="text-[var(--accent)] font-bold">{cert.year}</span>
-                    </div>
+      {/* ABOUT & SKILLS */}
+<section id="about" className="border-t border-[var(--line]) py-24 bg-gradient-to-b from-[var(--bg]) to-[var(--surface)]/30 overflow-hidden">
+  <div className="container overflow-hidden">
+    <div className="grid gap-16 lg:grid-cols-2">
+      {/* TIMELINE */}
+      <div className="min-w-0">
+        <p className="eyebrow flex items-center gap-2">
+          <GitBranch className="h-3 w-3 flex-shrink-0" /> PARCOURS &amp; EXPÉRIENCE
+        </p>
+        <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
+          Chronologie des systèmes
+        </h2>
+        <p className="mt-2 font-mono text-xs text-[var(--mute)]">
+          Évolution technique et projets majeurs
+        </p>
+        
+        {/* Timeline avec espacement corrigé */}
+        <div className="mt-8 space-y-8 border-l-2 border-[var(--accent)]/30 pl-4 sm:pl-6">
+          {TIMELINE.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <motion.div 
+                key={item.title}
+                className="relative"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                {/* Point de la timeline - repositionné */}
+                <div className="absolute -left-[17px] sm:-left-[25px] top-1.5">
+                  <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-[var(--accent)] animate-ping opacity-75" />
                   </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className="font-mono text-sm font-bold text-[var(--accent)] flex-shrink-0">
+                    {item.year}
+                  </span>
+                  <span className="text-xs text-[var(--mute)] flex-shrink-0">//</span>
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
+                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--accent)]" strokeWidth={1.5} />
+                  </div>
+                </div>
+                
+                <h3 className="font-display text-lg font-medium text-[var(--ink)] mt-2 break-words">
+                  {item.title}
+                </h3>
+                
+                <p className="mt-1 font-mono text-xs leading-6 text-[var(--mute)] break-words">
+                  {item.details}
+                </p>
+                
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {item.tech.map((t) => (
+                    <span key={t} className="tag text-[0.55rem] whitespace-nowrap">{t}</span>
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* CERTIFICATIONS - avec gestion du texte long */}
+        <motion.div 
+          className="mt-12 frame p-4 sm:p-6 bg-[var(--surface)] rounded-xl border border-[var(--line)]"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          viewport={{ once: true }}
+        >
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
+              <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+            <span className="text-xs sm:text-sm">CERTIFICATIONS VALIDÉES</span>
+            <span className="ml-auto text-[0.55rem] text-[var(--mute)] flex-shrink-0">3 validées</span>
+          </div>
+          
+          <div className="space-y-4 font-mono text-xs">
+            {CERTIFICATIONS.map((cert) => (
+              <div 
+                key={cert.title} 
+                className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--line)] pb-3 last:border-0 hover:bg-[var(--surface)]/50 p-2 rounded-lg transition-colors gap-2 sm:gap-0"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[var(--ink)] font-medium text-xs sm:text-sm break-words">
+                    {cert.title}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[0.5rem] sm:text-[0.55rem] text-[var(--accent)] uppercase whitespace-nowrap">
+                    <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    {cert.level}
+                  </span>
+                  <span className="text-[var(--accent)] font-bold text-xs sm:text-sm whitespace-nowrap">
+                    {cert.year}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* SKILLS MATRIX */}
+      <div className="min-w-0">
+        <p className="eyebrow flex items-center gap-2">
+          <Brain className="h-3 w-3 flex-shrink-0" /> CAPACITÉS TECHNIQUES
+        </p>
+        <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
+          Matrice de compétences
+        </h2>
+        <p className="mt-2 font-mono text-xs text-[var(--mute)]">
+          Niveaux de maîtrise par domaine technologique
+        </p>
+        <div className="mt-8 space-y-6">
+          {SKILLS.map((group, index) => (
+            <div key={group.category} className="card p-4 sm:p-5 bg-[var(--surface)] rounded-xl border border-[var(--line)] hover:border-[var(--accent)]/30 transition-colors">
+              <div className="flex items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
+                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
+                  <group.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+                <span className="font-bold text-xs sm:text-sm">{group.category}</span>
+                <span className="ml-auto text-[var(--mute)] text-[0.55rem] sm:text-[0.6rem] flex-shrink-0">
+                  {group.items.length} technologies
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4">
+                {group.items.map((item) => (
+                  <span key={item} className="tag text-[0.55rem] sm:text-xs whitespace-nowrap">{item}</span>
                 ))}
               </div>
-            </motion.div>
-          </div>
-
-          {/* SKILLS MATRIX */}
-          <div>
-            <p className="eyebrow flex items-center gap-2">
-              <Brain className="h-3 w-3" /> CAPACITÉS TECHNIQUES
-            </p>
-            <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
-              Matrice de compétences
-            </h2>
-            <p className="mt-2 font-mono text-xs text-[var(--mute)]">
-              Niveaux de maîtrise par domaine technologique
-            </p>
-            <div className="mt-8 space-y-6">
-              {SKILLS.map((group, index) => (
-                <div key={group.category} className="card p-5 bg-[var(--surface)] rounded-xl border border-[var(--line)] hover:border-[var(--accent)]/30 transition-colors">
-                  <div className="flex items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10">
-                      <group.icon className="h-4 w-4" />
-                    </div>
-                    <span className="font-bold">{group.category}</span>
-                    <span className="ml-auto text-[var(--mute)] text-[0.6rem]">
-                      {group.items.length} technologies
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {group.items.map((item) => (
-                      <span key={item} className="tag">{item}</span>
-                    ))}
-                  </div>
-                  <SkillBar skill={group} delay={index} />
-                </div>
-              ))}
+              <SkillBar skill={group} delay={index} />
             </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* SERVICES */}
       {servicesContent}
 
       {/* CONTACT FORM & DETAILS */}
-      <section id="contact" className="border-t border-[var(--line)] py-24 bg-gradient-to-b from-[var(--surface)]/30 to-[var(--bg)]">
-        <div className="container grid gap-16 lg:grid-cols-2">
+      <section id="contact" className="border-t border-[var(--line)] py-24 bg-gradient-to-b from-[var(--surface)]/30 to-[var(--bg)] overflow-hidden">
+        <div className="container overflow-hidden grid gap-16 lg:grid-cols-2">
           <div>
             <p className="eyebrow flex items-center gap-2">
               <Network className="h-3 w-3" /> NOEUD DE COMMUNICATION
