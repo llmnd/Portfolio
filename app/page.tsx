@@ -128,7 +128,7 @@ export default function Home() {
               </div>
               <div className="cap mt-3 flex items-center justify-between">
                 <span>Fig. 01</span>
-                <span>Dakar, SN — 14.69° N</span>
+                <span>Dakar, SN</span>
               </div>
             </motion.div>
           </div>
@@ -305,13 +305,13 @@ export default function Home() {
               startup. Réponse sous 24h avec une proposition claire.
             </p>
             <div className="mt-10 flex flex-col divide-y divide-[var(--line)] border-t border-[var(--line)]">
-              <a href="mailto:email@exemple.com" className="group flex items-center justify-between py-4">
+              <a href="mailto:papendiaye511@gmail.com" className="group flex items-center justify-between py-4">
                 <span className="flex items-center gap-3 text-sm text-[var(--ink)]">
-                  <Mail className="h-4 w-4 text-[var(--accent)]" strokeWidth={1.5} /> email@exemple.com
+                  <Mail className="h-4 w-4 text-[var(--accent)]" strokeWidth={1.5} /> papendiaye511@gmail.com
                 </span>
                 <ArrowUpRight className="h-4 w-4 text-[var(--mute)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" strokeWidth={1.5} />
               </a>
-              <a href="https://github.com/votreprofil" className="group flex items-center justify-between py-4">
+              <a href="https://github.com/llmnd" className="group flex items-center justify-between py-4">
                 <span className="flex items-center gap-3 text-sm text-[var(--ink)]">
                   <Github className="h-4 w-4 text-[var(--accent)]" strokeWidth={1.5} /> GitHub
                 </span>
