@@ -56,8 +56,13 @@ const services = [
   { title: 'Architecture backend', description: 'API sécurisées et scalables, pensées pour la maintenance long terme.', icon: Wrench },
 ];
 
+const certifications = [
+  { title: 'Cisco Networking Academy – Networking basics', year: '2023' },
+  { title: 'Introduction to Cybersecurity', year: '2025' },
+  { title: 'English for IT 2', year: '2025' },
+];
+
 const timeline = [
-  { year: '2025', title: 'Technicien Supérieur — ESP (UCAD)', details: 'Diplômé, parcours développement web, mobile et architectures modernes.' },
   { year: '2024', title: 'Bitik.vercel.app', details: 'Marketplace responsive, parcours utilisateur optimisé et gestion produits.' },
   { year: '2023', title: 'Fisafigroupe.com', details: 'Refonte du site vitrine pour une présence web élégante et responsive.' },
 ];
@@ -224,6 +229,18 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-10 rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] p-6">
+              <p className="eyebrow eyebrow-light">Certifications</p>
+              <div className="mt-6 space-y-3">
+                {certifications.map((cert) => (
+                  <div key={cert.title} className="grid gap-1">
+                    <p className="font-display text-base font-medium text-[var(--ink)]">{cert.title}</p>
+                    <p className="text-sm text-[var(--mute)]">{cert.year}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

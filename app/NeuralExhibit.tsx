@@ -163,7 +163,7 @@ export default function NeuralExhibit() {
   }, []);
 
   return (
-    <div ref={ref} style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0' }}>
+    <div ref={ref} className="py-16 md:py-20 lg:py-24">
       <style>{`
         .ne-fade { opacity:0; transform:translateY(14px); transition:opacity .9s ease, transform .9s ease; }
         .ne-fade.on { opacity:1; transform:translateY(0); }
@@ -172,56 +172,50 @@ export default function NeuralExhibit() {
         }
       `}</style>
 
-      <p className="eyebrow">Mon process</p>
-      <h2 className="font-display mt-4 text-3xl font-medium text-[var(--ink)] sm:text-4xl">
+      <p className="eyebrow text-center md:text-left">Mon process</p>
+      <h2 className="font-display mt-4 text-center text-3xl font-medium text-[var(--ink)] sm:text-4xl md:text-left">
         De l&rsquo;idée au produit.
       </h2>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '0.85fr 2fr 0.85fr',
-          alignItems: 'center',
-          gap: 'clamp(1.5rem, 4vw, 3rem)',
-          marginTop: 'clamp(2.5rem, 6vw, 4rem)',
-        }}
-      >
-        <div className={`ne-fade${visible ? ' on' : ''}`} style={{ maxWidth: 200, margin: '0 auto' }}>
+      {/* the three exhibits — one column on mobile, three on md+ */}
+      <div className="mt-10 grid grid-cols-1 items-center gap-8 md:mt-14 md:grid-cols-[0.85fr_2fr_0.85fr] md:gap-8 lg:gap-14">
+        <div className={`ne-fade${visible ? ' on' : ''} mx-auto w-full max-w-[190px]`}>
           <SketchWireframe draw={visible} />
         </div>
 
+        {/* connector, mobile only */}
+        <div className="mx-auto h-8 w-px bg-[var(--line)] md:hidden" aria-hidden="true" />
+
         <div
-          className={`ne-fade${visible ? ' on' : ''}`}
+          className={`ne-fade${visible ? ' on' : ''} cursor-pointer touch-manipulation`}
           style={{ transitionDelay: '0.15s' }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
+          onClick={() => setHovered((h) => !h)}
         >
           <Network hovered={hovered} />
         </div>
 
-        <div className={`ne-fade${visible ? ' on' : ''}`} style={{ maxWidth: 200, margin: '0 auto', transitionDelay: '0.3s' }}>
+        <div className="mx-auto h-8 w-px bg-[var(--line)] md:hidden" aria-hidden="true" />
+
+        <div
+          className={`ne-fade${visible ? ' on' : ''} mx-auto w-full max-w-[190px]`}
+          style={{ transitionDelay: '0.3s' }}
+        >
           <RenderedProduct reveal={visible} />
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '0.85fr 2fr 0.85fr',
-          gap: 'clamp(1.5rem, 4vw, 3rem)',
-          marginTop: '1.75rem',
-          paddingTop: '1.25rem',
-          borderTop: `1px solid ${LINE}`,
-        }}
-      >
-        <p className="cap" style={{ textAlign: 'center' }}>01 — vous décrivez</p>
-        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+      {/* captions — stacked on mobile, aligned under each exhibit on md+ */}
+      <div className="mt-8 grid grid-cols-1 gap-6 border-t border-[var(--line)] pt-5 text-center md:mt-7 md:grid-cols-[0.85fr_2fr_0.85fr] md:gap-8 lg:gap-14">
+        <p className="cap">01 — vous décrivez</p>
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
           <p className="cap">02 — architecture</p>
           <p className="cap">03 — développement</p>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <p className="cap" style={{ marginBottom: '0.35rem' }}>le résultat</p>
-          <p className="font-serif" style={{ fontSize: '1.9rem', color: ACCENT, lineHeight: 1 }}>en ligne.</p>
+        <div>
+          <p className="cap mb-1">le résultat</p>
+          <p className="font-serif text-[1.9rem] leading-none text-[var(--accent)]">en ligne.</p>
         </div>
       </div>
     </div>
