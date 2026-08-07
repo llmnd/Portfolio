@@ -737,7 +737,7 @@ const TimelineItemComponent = ({ item, index }: { item: TimelineItem; index: num
 // ============================================
 
 export default function Home() {
-  const [showHeroDetails, setShowHeroDetails] = useState(false);
+  const [showHeroDetails, setShowHeroDetails] = useState(true);
   const [navOpen, setNavOpen] = useState(false);
   const { scrollYProgress } = useScroll();
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.98]);
@@ -803,16 +803,6 @@ export default function Home() {
             </h1>
 
             <div className="mt-6 max-w-lg font-mono text-sm leading-7 text-[var(--mute)]">
-              <button
-                type="button"
-                className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-xs font-medium transition hover:border-[var(--accent)] hover:text-[var(--accent)] md:hidden"
-                onClick={handleHeroToggle}
-                aria-expanded={showHeroDetails}
-              >
-                {showHeroDetails ? 'Masquer les détails' : 'Afficher les détails'}
-                <Terminal className="h-3 w-3" />
-              </button>
-
               <AnimatePresence mode="wait">
                 {(showHeroDetails || !isMobile) && (
                   <motion.p
@@ -822,8 +812,7 @@ export default function Home() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                     className="bg-[var(--surface)]/50 p-4 rounded-xl border border-[var(--line)]"
-                  >Ingénierie logicielle axée sur la performance, l&apos;élégance architecturale et la robustesse. 
-                    Déploiement d&apos;interfaces modernes et d&apos;infrastructures backend scalables.
+                  >
                     <span className="block mt-2 text-[var(--accent)]">_ build systems, not just code.</span>
                     <span className="block mt-1 text-[0.6rem] text-[var(--mute)]">// Spécialisé en architecture cloud et applications haute performance</span>
                   </motion.p>
@@ -834,7 +823,7 @@ export default function Home() {
             <div className="mt-10 flex flex-wrap gap-4">
               <motion.a 
                 href="#work" 
-                className="btn-solid group"
+                className="btn-solid group !bg-white !text-black"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
