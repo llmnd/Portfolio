@@ -1064,7 +1064,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* HERO 3D BACKGROUND WITH VIDEO */}
-      <section className="relative overflow-hidden bg-[var(--bg)] min-h-screen">
+      <section className="relative overflow-hidden bg-[var(--bg)] min-h-[75vh] md:min-h-[80vh]">
         <HeroBackground3D />
         <div className="relative z-10">
           {heroContent}
