@@ -566,7 +566,7 @@ export default function ThreeExperience({ techs, onTechClick }: ThreeExperienceP
         </div>
       )}
 
-      <div className="absolute top-5 left-5 z-20 flex items-center gap-2.5 border border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[0.7rem] font-mono tracking-widest text-slate-300 shadow-xl pointer-events-none">
+      <div className="absolute top-5 left-5 z-20 flex items-center gap-2.5 border border-slate-800/70 bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[0.7rem] font-mono tracking-widest text-slate-300 shadow-xl pointer-events-none">
         <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" />
         SYSTEM ONLINE
       </div>
