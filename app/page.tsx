@@ -847,7 +847,7 @@ export default function Home() {
 
   // Memoized sections for performance
   const heroContent = useMemo(() => (
-    <div className="relative overflow-hidden pb-16 pt-14">
+    <div className="relative overflow-hidden pb-16 pt-8">
       <div className="container relative z-10">
         <div className="grid gap-12 md:gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <motion.div
@@ -855,28 +855,14 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex flex-wrap items-center gap-2 border border-[var(--line)] bg-[var(--surface)]/80 px-4 py-2 font-mono text-xs text-[var(--accent)] mb-8 rounded-full">
+            <div className="inline-flex flex-wrap items-center gap-2 border border-[var(--line)] bg-[var(--surface)]/80 px-4 py-2 font-mono text-xs text-[var(--accent)] mb-8 rounded-full -mt-10">
               <Activity className="h-3.5 w-3.5 animate-pulse" />
               <span>SYSTEM | DAKAR, SN</span>
               <span className="h-1 w-1 bg-[var(--accent)] rounded-full" />
             </div>
 
-            <div className="mt-6 max-w-lg font-mono text-sm leading-7 text-[var(--mute)]">
-              <AnimatePresence mode="wait">
-                {(showHeroDetails || !isMobile) && (
-                  <motion.p
-                    key="hero-details"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-[var(--surface)]/50 p-4 rounded-xl border border-[var(--line)]"
-                  >
-                    <span className="block mt-2 text-[var(--accent)]">build systems</span>
-                   
-                  </motion.p>
-                )}
-              </AnimatePresence>
+            <div className="mt-12 max-w-lg font-mono text-sm leading-7 text-[var(--mute)]">
+              
             </div>
 
           </motion.div>
@@ -1078,7 +1064,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* HERO 3D BACKGROUND WITH VIDEO */}
-      <section className="relative overflow-hidden bg-[var(--bg)]">
+      <section className="relative overflow-hidden bg-[var(--bg)] min-h-screen">
         <HeroBackground3D />
         <div className="relative z-10">
           {heroContent}
