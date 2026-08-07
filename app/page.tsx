@@ -847,37 +847,7 @@ export default function Home() {
               </a>
             </div>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="relative mx-auto w-full max-w-sm mt-20 sm:mt-0 mb-8 sm:mb-0"
-          >
-            {/* Glow effect background */}
-            <div className="absolute -inset-4 bg-gradient-to-b from-cyan-500/20 via-purple-500/10 to-transparent blur-3xl rounded-2xl" />
-            
-            <div className="relative">
-              <div className="relative overflow-hidden rounded-2xl">
-                <img
-                  src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026387/f3codb9okszfnxskuzvl.jpg"
-                  alt="Portrait Lamine Ndiaye"
-                  className="h-72 w-full object-cover object-top transition-all duration-700 hover:scale-110"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-              </div>
-              
-              <div className="mt-6 flex flex-col gap-2 font-mono text-[0.68rem]">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
-                  <span className="text-[var(--mute)]">Status Online</span>
-                </div>
-                <div className="flex items-center gap-1 text-[var(--accent)]">
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          
         </div>
 
         <StatsDisplay />
