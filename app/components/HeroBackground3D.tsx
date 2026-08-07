@@ -17,8 +17,8 @@ out vec4 fragColor;
 uniform vec2 uResolution;
 uniform vec2 uMouse;
 uniform float uTime;
+uniform bool uIsMobile;
 
-#define MAX_STEPS 90
 #define SURF_DIST 0.001
 #define MAX_DIST 20.0
 
@@ -27,71 +27,54 @@ mat2 rot2D(float angle) {
   return mat2(c, -s, s, c);
 }
 
+// SDF Boîte arrondie
 float sdRoundedBox(vec3 p, vec3 b, float r) {
   vec3 q = abs(p) - b;
   return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
-// Scene Distance Field: Laptop réaliste
+// Scène 3D : Processeur / Puce électronique
 float map(vec3 p, out float matID, out vec3 localUv) {
-  // Animation et orientation avec inertie
-  p.xz *= rot2D(uTime * 0.15 + uMouse.x * 0.7);
-  p.xy *= rot2D(sin(uTime * 0.1) * 0.05 + uMouse.y * 0.35);
+  // Movement d'orientation et d'inertie
+  p.xz *= rot2D(uTime * 0.15 + uMouse.x * 0.8);
+  p.xy *= rot2D(sin(uTime * 0.1) * 0.08 + uMouse.y * 0.4);
 
-  // 1. Châssis principal (Base)
-  vec3 pBase = p - vec3(0.0, -0.4, 0.0);
-  float dBase = sdRoundedBox(pBase, vec3(1.25, 0.035, 0.85), 0.04);
+  // 1. Substrat Vert/Noir (PCB Substrate Base)
+  vec3 pPCB = p - vec3(0.0, -0.05, 0.0);
+  float dPCB = sdRoundedBox(pPCB, vec3(1.1, 0.04, 1.1), 0.03);
 
-  // Creux du clavier
-  vec3 pKeyRecess = pBase - vec3(0.0, 0.03, -0.12);
-  float dKeyRecess = sdRoundedBox(pKeyRecess, vec3(1.05, 0.02, 0.45), 0.02);
-  dBase = max(dBase, -dKeyRecess);
+  // Évidement d'encoche du Pin 1 (Repère d'angle du processeur)
+  vec3 pNotch = pPCB - vec3(-1.0, 0.02, -1.0);
+  float dNotch = sdRoundedBox(pNotch, vec3(0.12, 0.05, 0.12), 0.01);
+  dPCB = max(dPCB, -dNotch);
 
-  // Clavier sculpté (Grille de touches)
-  vec3 pKeys = pKeyRecess;
-  pKeys.xz = mod(pKeys.xz + vec2(0.08, 0.08), vec2(0.16, 0.15)) - vec2(0.08, 0.075);
-  float dKeys = sdRoundedBox(pKeys, vec3(0.068, 0.022, 0.058), 0.008);
-  // Limiter le clavier à la zone du renfoncement
-  dKeys = max(dKeys, sdRoundedBox(pKeyRecess, vec3(1.02, 0.03, 0.42), 0.01));
+  // 2. Dispersateur de chaleur métallique (IHS Metal Cap)
+  vec3 pIHS = p - vec3(0.0, 0.05, 0.0);
+  float dIHSBase = sdRoundedBox(pIHS, vec3(0.82, 0.05, 0.82), 0.02);
+  
+  // Rebord central surélevé de l'IHS
+  vec3 pIHSLip = pIHS - vec3(0.0, 0.025, 0.0);
+  float dIHSLip = sdRoundedBox(pIHSLip, vec3(0.7, 0.035, 0.7), 0.015);
+  float dIHS = min(dIHSBase, dIHSLip);
 
-  // Trackpad
-  vec3 pTrackpad = pBase - vec3(0.0, 0.035, 0.48);
-  float dTrackpad = sdRoundedBox(pTrackpad, vec3(0.38, 0.01, 0.22), 0.01);
+  // 3. Puce centrale de Silicium / Cœur (Die)
+  vec3 pDie = pIHS - vec3(0.0, 0.05, 0.0);
+  float dDie = sdRoundedBox(pDie, vec3(0.4, 0.02, 0.4), 0.005);
 
-  // Charnière centrale
-  vec3 pHinge = p - vec3(0.0, -0.365, -0.83);
-  float dHinge = sdRoundedBox(pHinge, vec3(0.4, 0.028, 0.028), 0.015);
+  // Matériaux
+  float dAcc = dPCB;
+  matID = 1.0; // Substrat PCB
+  localUv = pPCB.xyz;
 
-  float dChassis = min(min(dBase, dTrackpad), min(dKeys, dHinge));
-
-  // 2. Écran déplié à 115°
-  vec3 pScreen = p - vec3(0.0, -0.365, -0.83);
-  pScreen.yz *= rot2D(-2.0); // Angle 115°
-  pScreen.y -= 0.75;
-
-  float dScreenFrame = sdRoundedBox(pScreen, vec3(1.25, 0.78, 0.018), 0.03);
-
-  // Dalle d'écran en verre
-  vec3 pGlass = pScreen - vec3(0.0, 0.0, 0.012);
-  float dGlass = sdRoundedBox(pGlass, vec3(1.18, 0.72, 0.004), 0.005);
-
-  // Attribution des matériaux
-  float dAcc = dChassis;
-  matID = 1.0; // Métal aluminium
-  localUv = p.xyz;
-
-  if (dKeys < dAcc) {
-    dAcc = dKeys;
-    matID = 3.0; // Touches sombres du clavier
+  if (dIHS < dAcc) {
+    dAcc = dIHS;
+    matID = 2.0; // Métal Nickel/Aluminium
+    localUv = pIHS.xyz;
   }
-  if (dScreenFrame < dAcc) {
-    dAcc = dScreenFrame;
-    matID = 1.0;
-  }
-  if (dGlass < dAcc) {
-    dAcc = dGlass;
-    matID = 2.0; // Dalle d'écran IDE
-    localUv = pGlass.xyz;
+  if (dDie < dAcc) {
+    dAcc = dDie;
+    matID = 3.0; // Silicium émissif / Cœur du CPU
+    localUv = pDie.xyz;
   }
 
   return dAcc;
@@ -113,8 +96,8 @@ vec3 getNormal(vec3 p) {
 float getAO(vec3 p, vec3 n) {
   float occ = 0.0;
   float sca = 1.0;
-  for (int i = 0; i < 5; i++) {
-    float hr = 0.01 + 0.12 * float(i) / 4.0;
+  for (int i = 0; i < 4; i++) {
+    float hr = 0.01 + 0.12 * float(i) / 3.0;
     float d = mapDistOnly(p + n * hr);
     occ += (hr - d) * sca;
     sca *= 0.85;
@@ -122,66 +105,39 @@ float getAO(vec3 p, vec3 n) {
   return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
 
-// Générateur procédural d'interface IDE de code
-vec3 getIDETexture(vec2 uv) {
-  // Normaliser UV écran [-1, 1] vers [0, 1]
-  vec2 st = uv * vec2(0.42, 0.68) + 0.5;
+// Motif procédural de circuits imprimés & impulsions lumineuses
+vec3 getCircuitTexture(vec2 uv, float time) {
+  vec2 st = uv * 8.0;
+  vec2 id = floor(st);
+  vec2 f = fract(st);
 
-  // Arrière-plan du thème sombre de l'éditeur (#0d1117)
-  vec3 codeBg = vec3(0.05, 0.07, 0.1);
+  // Grille de pistes orthogonales
+  float grid = step(0.92, f.x) + step(0.92, f.y);
+  
+  // Impulsion du flux de données émissif
+  float pulse = sin(id.x * 2.1 + id.y * 3.4 + time * 3.0) * 0.5 + 0.5;
+  pulse = pow(pulse, 4.0);
 
-  // Barre supérieure d'outils
-  if (st.y > 0.92) {
-    vec3 topBar = vec3(0.09, 0.11, 0.15);
-    // Boutons de contrôle MacOS (Rouge, Jaune, Vert)
-    if (st.x < 0.08) {
-      if (length(st - vec2(0.02, 0.96)) < 0.008) return vec3(0.95, 0.35, 0.35);
-      if (length(st - vec2(0.04, 0.96)) < 0.008) return vec3(0.95, 0.75, 0.25);
-      if (length(st - vec2(0.06, 0.96)) < 0.008) return vec3(0.25, 0.85, 0.45);
-    }
-    return topBar;
-  }
+  vec3 baseCircuit = vec3(0.02, 0.12, 0.22);
+  vec3 glowColor = mix(vec3(0.0, 0.6, 1.0), vec3(0.2, 0.9, 0.6), pulse);
 
-  // Volet latéral de fichiers
-  if (st.x < 0.18) {
-    float sidebarLine = floor(st.y * 35.0);
-    float lineHash = fract(sin(sidebarLine * 12.9898) * 43758.5453);
-    if (lineHash > 0.4 && mod(st.y * 35.0, 1.0) < 0.6) {
-      return vec3(0.2, 0.28, 0.38);
-    }
-    return vec3(0.07, 0.09, 0.13);
-  }
-
-  // Zone d'édition du code (Lignes colorées procédurales)
-  float line = floor((1.0 - st.y) * 28.0);
-  float lineX = st.x - 0.2;
-  float lineNoise = fract(sin(line * 45.123) * 9123.456);
-  float indent = floor(fract(line * 0.31) * 3.0) * 0.06;
-
-  if (lineX > indent && lineX < indent + lineNoise * 0.45) {
-    if (mod((1.0 - st.y) * 28.0, 1.0) < 0.55) {
-      // Coloration syntaxique dynamique
-      if (lineNoise < 0.25) return vec3(0.95, 0.4, 0.6);  // Mots-clés (Rose/Rouge)
-      if (lineNoise < 0.5)  return vec3(0.3, 0.75, 0.95); // Fonctions (Cyan)
-      if (lineNoise < 0.75) return vec3(0.9, 0.8, 0.35); // Chaînes / Variables (Jaune)
-      return vec3(0.4, 0.85, 0.5);                       // Commentaires (Vert)
-    }
-  }
-
-  return codeBg;
+  return mix(baseCircuit, glowColor, grid * pulse * 0.85);
 }
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
 
-  vec3 ro = vec3(0.0, 0.1, -3.3);
+  float camDist = uIsMobile ? -3.8 : -2.8;
+  vec3 ro = vec3(0.0, 0.2, camDist);
   vec3 rd = normalize(vec3(uv, 1.1));
 
+  int maxSteps = uIsMobile ? 48 : 80;
   float dO = 0.0;
   float hitMat = 0.0;
   vec3 hitUv = vec3(0.0);
-  
-  for (int i = 0; i < MAX_STEPS; i++) {
+
+  for (int i = 0; i < 80; i++) {
+    if (i >= maxSteps) break;
     vec3 p = ro + rd * dO;
     float currentMat;
     vec3 currentUv;
@@ -206,25 +162,25 @@ void main() {
 
     float diff = max(0.0, dot(n, l));
     vec3 ref = reflect(rd, n);
-    float spec = pow(max(0.0, dot(ref, l)), 64.0);
-    float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.5);
+    float spec = pow(max(0.0, dot(ref, l)), 48.0);
+    float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.2);
     float ao = getAO(p, n);
 
     if (hitMat == 1.0) {
-      // Aluminium anodisé (Space Gray / Silver)
-      vec3 metalColor = vec3(0.1, 0.12, 0.16);
-      color = mix(metalColor, vec3(0.75, 0.85, 0.98), fresnel * 0.7);
-      color += spec * vec3(0.9, 0.95, 1.0) * 0.9;
+      // Substrat PCB Vert/Noir mat d'ingénierie
+      vec3 pcbColor = vec3(0.03, 0.07, 0.06);
+      color = pcbColor + spec * vec3(0.2) + fresnel * vec3(0.1, 0.3, 0.2);
       color *= (diff * 0.5 + 0.5) * ao;
     } else if (hitMat == 2.0) {
-      // Écran émissif avec code IDE
-      vec3 ideTexture = getIDETexture(hitUv.xy);
-      color = ideTexture + spec * vec3(1.0) * 0.4 + fresnel * vec3(0.2, 0.4, 0.8) * 0.5;
+      // IHS Aluminium / Nickel brillant brossé
+      vec3 metalColor = vec3(0.15, 0.18, 0.22);
+      color = mix(metalColor, vec3(0.8, 0.88, 0.98), fresnel * 0.7);
+      color += spec * vec3(0.9, 0.95, 1.0) * 0.85;
+      color *= (diff * 0.5 + 0.5) * ao;
     } else if (hitMat == 3.0) {
-      // Touches du clavier
-      vec3 keyColor = vec3(0.03, 0.04, 0.05);
-      color = keyColor + spec * vec3(0.3) * 0.5;
-      color *= (diff * 0.4 + 0.6) * ao;
+      // Cœur de processeur émissif avec micro-circuits
+      vec3 circuits = getCircuitTexture(hitUv.xz, uTime);
+      color = circuits + spec * vec3(1.0) * 0.5 + fresnel * vec3(0.1, 0.5, 0.9);
     }
   }
 
@@ -232,7 +188,7 @@ void main() {
   float radialDist = length(uv);
   color += vec3(0.1, 0.35, 0.7) * (0.05 / (radialDist + 0.4));
 
-  // Grain cinématique anti-banding
+  // Anti-banding grain
   float noise = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.012;
   color += noise;
 
@@ -297,32 +253,46 @@ export const HeroBackground3D = () => {
     const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
     const mouseLocation = gl.getUniformLocation(program, 'uMouse');
     const timeLocation = gl.getUniformLocation(program, 'uTime');
+    const isMobileLocation = gl.getUniformLocation(program, 'uIsMobile');
 
     let animationFrameId: number;
     let startTime = performance.now();
     let targetMouse = { x: 0, y: 0 };
     let currentMouse = { x: 0, y: 0 };
+    let isMobile = false;
+
+    const updateCoordinates = (clientX: number, clientY: number) => {
+      targetMouse.x = (clientX / window.innerWidth) * 2 - 1;
+      targetMouse.y = -(clientY / window.innerHeight) * 2 + 1;
+    };
 
     const handleMouseMove = (e: MouseEvent) => {
-      targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      updateCoordinates(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        updateCoordinates(e.touches[0].clientX, e.touches[0].clientY);
+      }
     };
 
     const handleResize = () => {
       if (!canvas) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      isMobile = window.innerWidth < 768;
+      const dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('resize', handleResize);
     handleResize();
 
     const render = (now: number) => {
-      currentMouse.x += (targetMouse.x - currentMouse.x) * 0.05;
-      currentMouse.y += (targetMouse.y - currentMouse.y) * 0.05;
+      currentMouse.x += (targetMouse.x - currentMouse.x) * 0.06;
+      currentMouse.y += (targetMouse.y - currentMouse.y) * 0.06;
 
       gl.useProgram(program);
       gl.bindVertexArray(vao);
@@ -330,6 +300,7 @@ export const HeroBackground3D = () => {
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
       gl.uniform2f(mouseLocation, currentMouse.x, currentMouse.y);
       gl.uniform1f(timeLocation, (now - startTime) * 0.001);
+      gl.uniform1i(isMobileLocation, isMobile ? 1 : 0);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       animationFrameId = requestAnimationFrame(render);
@@ -340,6 +311,7 @@ export const HeroBackground3D = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
       gl.deleteProgram(program);
       gl.deleteShader(vertShader);
@@ -348,17 +320,13 @@ export const HeroBackground3D = () => {
   }, []);
 
   return (
-    <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] pointer-events-none">
+    <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] touch-none">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full block" />
 
-      {/* Grille technique */}
-      <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:5rem_5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)]" />
-
-      {/* Ligne d'horizon */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-      {/* Fondu de fin */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent" />
+      {/* Grille technique vectorielle */}
+      <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem] md:bg-[size:5rem_5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent pointer-events-none" />
     </div>
   );
 };
