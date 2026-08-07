@@ -861,7 +861,7 @@ export default function Home() {
               <span className="h-1 w-1 bg-[var(--accent)] rounded-full" />
             </div>
 
-            <h1 className="font-display text-4xl font-semibold leading-[1.08] text-[var(--ink)] sm:text-6xl uppercase tracking-tight">
+            <h1 className="font-display text-1xl font-semibold leading-[1.08] text-[var(--ink)] sm:text-2xl uppercase tracking-tight">
               <span className="text-white/80">Développeur</span> <br />
               <span className="text-[var(--accent)] relative inline-block">
                 Full-Stack &amp; Systems
