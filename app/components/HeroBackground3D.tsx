@@ -18,6 +18,7 @@ uniform vec2 uResolution;
 uniform vec2 uMouse;
 uniform float uTime;
 uniform bool uIsMobile;
+uniform sampler2D uIdeTexture;
 
 #define SURF_DIST 0.001
 #define MAX_DIST 20.0
@@ -32,50 +33,29 @@ float sdRoundedBox(vec3 p, vec3 b, float r) {
   return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
-float map(vec3 p, out float matID, out vec3 localUv) {
-  p.xz *= rot2D(uTime * 0.1 + uMouse.x * 1.4);
-  p.xy *= rot2D(sin(uTime * 0.08) * 0.05 + uMouse.y * 0.8);
+float map(vec3 p, out float matID, out vec2 texCoord) {
+  // Rotations interactives de l'écran
+  p.yz *= rot2D(0.1); 
+  p.xz *= rot2D(uTime * 0.12 + uMouse.x * 1.4);
+  p.xy *= rot2D(sin(uTime * 0.08) * 0.04 + uMouse.y * 0.8);
 
-  // 1. Substrat PCB
-  vec3 pPCB = p - vec3(0.0, -0.05, 0.0);
-  float dPCB = sdRoundedBox(pPCB, vec3(1.1, 0.04, 1.1), 0.03);
+  // Écran plat simple (juste la dalle d'affichage)
+  vec3 pScreen = p - vec3(0.0, 0.0, 0.0);
+  float dDisplay = sdRoundedBox(pScreen, vec3(1.5, 0.88, 0.01), 0.02);
 
-  vec3 pNotch = pPCB - vec3(-1.0, 0.02, -1.0);
-  float dNotch = sdRoundedBox(pNotch, vec3(0.12, 0.05, 0.12), 0.01);
-  dPCB = max(dPCB, -dNotch);
+  matID = 2.0;
+  // Projection UV avec inversion Y pour WebGL
+  texCoord = vec2(
+    (pScreen.x / 1.5) * 0.5 + 0.5,
+    1.0 - ((pScreen.y / 0.88) * 0.5 + 0.5)
+  );
 
-  // 2. Heat Spreader (IHS)
-  vec3 pIHS = p - vec3(0.0, 0.05, 0.0);
-  float dIHSBase = sdRoundedBox(pIHS, vec3(0.82, 0.05, 0.82), 0.02);
-  vec3 pIHSLip = pIHS - vec3(0.0, 0.025, 0.0);
-  float dIHSLip = sdRoundedBox(pIHSLip, vec3(0.7, 0.035, 0.7), 0.015);
-  float dIHS = min(dIHSBase, dIHSLip);
-
-  // 3. Cœur / Silicon Die
-  vec3 pDie = pIHS - vec3(0.0, 0.05, 0.0);
-  float dDie = sdRoundedBox(pDie, vec3(0.4, 0.02, 0.4), 0.005);
-
-  float dAcc = dPCB;
-  matID = 1.0;
-  localUv = pPCB.xyz;
-
-  if (dIHS < dAcc) {
-    dAcc = dIHS;
-    matID = 2.0;
-    localUv = pIHS.xyz;
-  }
-  if (dDie < dAcc) {
-    dAcc = dDie;
-    matID = 3.0;
-    localUv = pDie.xyz;
-  }
-
-  return dAcc;
+  return dDisplay;
 }
 
 float mapDistOnly(vec3 p) {
   float dummyMat;
-  vec3 dummyUv;
+  vec2 dummyUv;
   return map(p, dummyMat, dummyUv);
 }
 
@@ -86,54 +66,26 @@ vec3 getNormal(vec3 p) {
   return normalize(n);
 }
 
-float getAO(vec3 p, vec3 n) {
-  float occ = 0.0;
-  float sca = 1.0;
-  for (int i = 0; i < 4; i++) {
-    float hr = 0.01 + 0.12 * float(i) / 3.0;
-    float d = mapDistOnly(p + n * hr);
-    occ += (hr - d) * sca;
-    sca *= 0.85;
-  }
-  return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
-}
-
-vec3 getCircuitTexture(vec2 uv, float time) {
-  vec2 st = uv * 8.0;
-  vec2 id = floor(st);
-  vec2 f = fract(st);
-
-  float grid = step(0.92, f.x) + step(0.92, f.y);
-  float pulse = pow(sin(id.x * 2.1 + id.y * 3.4 + time * 3.0) * 0.5 + 0.5, 4.0);
-
-  vec3 baseCircuit = vec3(0.02, 0.12, 0.22);
-  vec3 glowColor = mix(vec3(0.0, 0.6, 1.0), vec3(0.2, 0.9, 0.6), pulse);
-
-  return mix(baseCircuit, glowColor, grid * pulse * 0.85);
-}
-
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
 
-  float camDist = uIsMobile ? -3.8 : -2.8;
-  vec3 ro = vec3(0.0, 0.2, camDist);
-  vec3 rd = normalize(vec3(uv, 1.1));
+  float camDist = uIsMobile ? -4.2 : -3.2;
+  vec3 ro = vec3(0.0, 0.0, camDist);
+  vec3 rd = normalize(vec3(uv, 1.2));
 
-  int maxSteps = uIsMobile ? 48 : 80;
+  int maxSteps = uIsMobile ? 50 : 80;
   float dO = 0.0;
-  float hitMat = 0.0;
-  vec3 hitUv = vec3(0.0);
+  vec2 hitTexCoord = vec2(0.0);
 
   for (int i = 0; i < 80; i++) {
     if (i >= maxSteps) break;
     vec3 p = ro + rd * dO;
     float currentMat;
-    vec3 currentUv;
-    float dS = map(p, currentMat, currentUv);
+    vec2 currentTexCoord;
+    float dS = map(p, currentMat, currentTexCoord);
     dO += dS;
     if (dS < SURF_DIST) {
-      hitMat = currentMat;
-      hitUv = currentUv;
+      hitTexCoord = currentTexCoord;
       break;
     }
     if (dO > MAX_DIST) break;
@@ -144,32 +96,20 @@ void main() {
   if (dO < MAX_DIST) {
     vec3 p = ro + rd * dO;
     vec3 n = getNormal(p);
-    vec3 lightPos = vec3(2.5 * sin(uMouse.x * 2.0), 3.5, -2.0);
+    vec3 lightPos = vec3(2.5 * sin(uMouse.x * 2.0), 3.5, -2.5);
     vec3 l = normalize(lightPos - p);
 
-    float diff = max(0.0, dot(n, l));
     vec3 ref = reflect(rd, n);
-    float spec = pow(max(0.0, dot(ref, l)), 48.0);
-    float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.2);
-    float ao = getAO(p, n);
+    float spec = pow(max(0.0, dot(ref, l)), 32.0);
+    float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.0);
 
-    if (hitMat == 1.0) {
-      vec3 pcbColor = vec3(0.03, 0.07, 0.06);
-      color = pcbColor + spec * vec3(0.2) + fresnel * vec3(0.1, 0.3, 0.2);
-      color *= (diff * 0.5 + 0.5) * ao;
-    } else if (hitMat == 2.0) {
-      vec3 metalColor = vec3(0.15, 0.18, 0.22);
-      color = mix(metalColor, vec3(0.8, 0.88, 0.98), fresnel * 0.7);
-      color += spec * vec3(0.9, 0.95, 1.0) * 0.85;
-      color *= (diff * 0.5 + 0.5) * ao;
-    } else if (hitMat == 3.0) {
-      vec3 circuits = getCircuitTexture(hitUv.xz, uTime);
-      color = circuits + spec * vec3(1.0) * 0.5 + fresnel * vec3(0.1, 0.5, 0.9);
-    }
+    // Texture IDE avec simulation de code animé
+    vec4 ideSample = texture(uIdeTexture, hitTexCoord);
+    color = ideSample.rgb + spec * vec3(0.12) + fresnel * vec3(0.0, 0.3, 0.6) * 0.25;
   }
 
   float radialDist = length(uv);
-  color += vec3(0.1, 0.35, 0.7) * (0.05 / (radialDist + 0.4));
+  color += vec3(0.08, 0.3, 0.65) * (0.06 / (radialDist + 0.45));
 
   float noise = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.012;
   color += noise;
@@ -178,7 +118,31 @@ void main() {
 }
 `;
 
-export const HeroBackground3D = () => {
+// Extrait de code source pour la simulation de frappe
+const RAW_CODE = `import { useState, useEffect } from 'react';
+import { Canvas3D } from '@/components/engine';
+
+export const SimulatedIDE = () => {
+  const [status, setStatus] = useState('Compiling...');
+  const [fps, setFps] = useState(60);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStatus('System Ready');
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <Canvas3D 
+      fps={fps} 
+      status={status} 
+      renderLoop={true} 
+    />
+  );
+};`;
+
+export const FloatingScreenIDE = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const joystickRef = useRef<HTMLDivElement | null>(null);
 
@@ -200,6 +164,116 @@ export const HeroBackground3D = () => {
     });
 
     if (!gl) return;
+
+    // --- CANVAS 2D OFFSCREEN POUR SIMULER L'IDE ---
+    const ideCanvas = document.createElement('canvas');
+    ideCanvas.width = 1024;
+    ideCanvas.height = 512;
+    const ctx = ideCanvas.getContext('2d');
+
+    const drawIDE = (time: number) => {
+      if (!ctx) return;
+      const w = ideCanvas.width;
+      const h = ideCanvas.height;
+
+      // Fond IDE
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Barre de titre
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, w, 40);
+
+      // Boutons fenêtres
+      const dotColors = ['#ef4444', '#f59e0b', '#10b981'];
+      dotColors.forEach((color, i) => {
+        ctx.beginPath();
+        ctx.arc(20 + i * 20, 20, 6, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      });
+
+      // Onglet
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(90, 6, 170, 34);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(90, 6, 170, 3);
+      ctx.font = 'bold 13px monospace';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText('AppSimulation.tsx', 105, 27);
+
+      // Sidebar
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 40, 48, h - 40);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(16, 60, 16, 16);
+      ctx.fillRect(16, 90, 16, 16);
+      ctx.fillRect(16, 120, 16, 16);
+
+      // SIMULATION DE FRAPPE DE CODE (Caractère par caractère)
+      const charSpeed = 25; // Nombre de caractères par seconde
+      const charCount = Math.floor(time * charSpeed) % (RAW_CODE.length + 30);
+      const currentText = RAW_CODE.slice(0, Math.min(charCount, RAW_CODE.length));
+      const lines = currentText.split('\n');
+
+      const startX = 100;
+      const startY = 75;
+      const lineHeight = 28;
+      ctx.font = 'bold 15px monospace';
+
+      let lastX = startX;
+      let lastY = startY;
+
+      lines.forEach((lineText, idx) => {
+        const y = startY + idx * lineHeight;
+        lastY = y;
+
+        // Numéro de ligne
+        ctx.fillStyle = '#475569';
+        ctx.fillText(String(idx + 1).padStart(2, ' '), 60, y);
+
+        // Coloration rudimentaire du texte simulé
+        ctx.fillStyle = '#38bdf8';
+        if (lineText.includes('import') || lineText.includes('export') || lineText.includes('return')) {
+          ctx.fillStyle = '#f472b6';
+        } else if (lineText.includes('const') || lineText.includes('let')) {
+          ctx.fillStyle = '#a78bfa';
+        } else if (lineText.includes('<') || lineText.includes('/>')) {
+          ctx.fillStyle = '#facc15';
+        } else {
+          ctx.fillStyle = '#e2e8f0';
+        }
+
+        ctx.fillText(lineText, startX, y);
+        lastX = startX + ctx.measureText(lineText).width;
+      });
+
+      // Curseur clignotant au bout du texte en cours de frappe
+      const blink = Math.sin(time * 10) > 0;
+      if (blink) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(lastX + 4, lastY - 14, 9, 18);
+      }
+
+      // Barre de statut
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(0, h - 24, w, 24);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('● SIMULATION ACTIVE | Live Code Typing...', 12, h - 8);
+    };
+
+    drawIDE(0);
+
+    const ideTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ideTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ideCanvas);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
     const createShader = (gl: WebGL2RenderingContext, type: number, source: string) => {
       const shader = gl.createShader(type);
@@ -244,6 +318,7 @@ export const HeroBackground3D = () => {
     const mouseLocation = gl.getUniformLocation(program, 'uMouse');
     const timeLocation = gl.getUniformLocation(program, 'uTime');
     const isMobileLocation = gl.getUniformLocation(program, 'uIsMobile');
+    const ideTextureLocation = gl.getUniformLocation(program, 'uIdeTexture');
 
     let animationFrameId: number;
     let startTime = performance.now();
@@ -271,6 +346,16 @@ export const HeroBackground3D = () => {
     handleResize();
 
     const render = (now: number) => {
+      const elapsedTime = (now - startTime) * 0.001;
+
+      // Mise à jour de la simulation de frappe dans le Canvas 2D
+      drawIDE(elapsedTime);
+
+      // Injection dans la texture WebGL
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, ideTexture);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, ideCanvas);
+
       currentMouseRef.current.x += (targetMouseRef.current.x - currentMouseRef.current.x) * 0.08;
       currentMouseRef.current.y += (targetMouseRef.current.y - currentMouseRef.current.y) * 0.08;
 
@@ -279,8 +364,9 @@ export const HeroBackground3D = () => {
 
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
       gl.uniform2f(mouseLocation, currentMouseRef.current.x, currentMouseRef.current.y);
-      gl.uniform1f(timeLocation, (now - startTime) * 0.001);
+      gl.uniform1f(timeLocation, elapsedTime);
       gl.uniform1i(isMobileLocation, isMobileDevice ? 1 : 0);
+      gl.uniform1i(ideTextureLocation, 0);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       animationFrameId = requestAnimationFrame(render);
@@ -292,13 +378,14 @@ export const HeroBackground3D = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      gl.deleteTexture(ideTexture);
       gl.deleteProgram(program);
       gl.deleteShader(vertShader);
       gl.deleteShader(fragShader);
     };
   }, [isMobileDevice]);
 
-  // Logique du Joystick Tactile
+  // Joystick Tactile (Mobile)
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
     updateJoystick(e.touches[0]);
@@ -343,16 +430,14 @@ export const HeroBackground3D = () => {
     <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] select-none">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full block" />
 
-      {/* Grille technique UI */}
+      {/* Grille de fond */}
       <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem] md:bg-[size:5rem_5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent pointer-events-none" />
 
-      {/* Contrôleur Joystick Analogique (Placé à droite en mode mobile) */}
+      {/* Joystick Mobile */}
       {isMobileDevice && (
         <div className="absolute bottom-8 right-8 z-30 flex flex-col items-center gap-2">
           <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase opacity-70">
-            Rotate CPU
+            Rotate Screen
           </span>
           <div
             ref={joystickRef}
@@ -381,4 +466,4 @@ export const HeroBackground3D = () => {
   );
 };
 
-export default HeroBackground3D;
+export default FloatingScreenIDE;
