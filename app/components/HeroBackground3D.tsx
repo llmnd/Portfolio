@@ -501,12 +501,11 @@ export const AestheticArcadeGame = () => {
   const stopMoveRight = () => (gameState.current.moveRight = false);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#0a0705] select-none touch-none font-mono">
-      {/* 1. Couverture Minimaliste Flat 2D (Visible avant START) */}
+    <div className="relative w-full min-h-screen overflow-y-auto bg-[#0a0705] select-none touch-pan-y font-mono">
+      {/* 1. Couverture Minimaliste Flat 2D */}
       {!gameStarted && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0705]">
-          <div className="w-full max-w-sm rounded-2xl bg-[#140d07] border border-amber-900/40 p-6 shadow-2xl flex flex-col items-center text-center space-y-5">
-            {/* Image compacte et lisible */}
+        <div className="min-h-screen w-full z-50 flex items-center justify-center p-4 bg-[#0a0705]">
+          <div className="w-full max-w-sm rounded-2xl bg-[#140d07] border border-amber-900/40 p-6 shadow-2xl flex flex-col items-center text-center space-y-5 my-auto">
             <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-amber-800/30 bg-[#070503]">
               <img
                 src={COVER_IMAGE_URL}
@@ -515,7 +514,6 @@ export const AestheticArcadeGame = () => {
               />
             </div>
 
-            {/* Titre & Description lisible */}
             <div className="space-y-2">
               <p className="text-amber-100 text-sm font-medium leading-relaxed">
                 Après le succès de la mission de sabotage, vous êtes resté bloqué en ligne ennemie.
@@ -525,13 +523,11 @@ export const AestheticArcadeGame = () => {
               </p>
             </div>
 
-            {/* Objectifs discrets */}
             <div className="w-full py-2 px-3 rounded-lg bg-amber-950/30 border border-amber-800/20 text-xs text-amber-400/90 text-left space-y-1">
               <div>• Sortir de la base ennemie</div>
               <div>• Bonus : Éliminer tous les bugs</div>
             </div>
 
-            {/* Bouton START épuré */}
             <button
               onClick={resetGame}
               className="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-zinc-950 font-bold text-sm rounded-xl transition shadow-[0_0_20px_rgba(245,158,11,0.2)]"
@@ -542,21 +538,21 @@ export const AestheticArcadeGame = () => {
         </div>
       )}
 
-      {/* 2. Écran WebGL 3D (S'affiche au lancement du jeu) */}
+      {/* 2. Écran WebGL 3D */}
       {gameStarted && (
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+        <canvas ref={canvasRef} className="fixed inset-0 w-full h-full block" />
       )}
 
-      {/* Indication des contrôles sur PC */}
+      {/* Indication des contrôles PC */}
       {gameStarted && !isMobileDevice && showControlsHint && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/80 border border-amber-700/40 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-md animate-bounce">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/80 border border-amber-700/40 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-md animate-bounce">
           ⌨️ Touches <span className="text-white font-bold">[←] [→]</span> ou <span className="text-white font-bold">[Q] [D]</span>
         </div>
       )}
 
       {/* Écran Game Over */}
       {gameOver && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <button
             onClick={resetGame}
             className="px-6 py-3 bg-amber-500 text-zinc-950 text-sm font-bold rounded-xl hover:bg-amber-400 active:scale-95 transition shadow-[0_0_20px_rgba(245,158,11,0.4)]"
@@ -568,7 +564,7 @@ export const AestheticArcadeGame = () => {
 
       {/* Contrôles tactiles mobile */}
       {gameStarted && isMobileDevice && (
-        <div className="absolute bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
+        <div className="fixed bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
           <button
             onTouchStart={startMoveLeft}
             onTouchEnd={stopMoveLeft}
