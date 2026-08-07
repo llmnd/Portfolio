@@ -822,8 +822,7 @@ export default function Home() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                     className="bg-[var(--surface)]/50 p-4 rounded-xl border border-[var(--line)]"
-                  >
-                    <span className="text-[var(--accent)]">$</span> Ingénierie logicielle axée sur la performance, l&apos;élégance architecturale et la robustesse. 
+                  >Ingénierie logicielle axée sur la performance, l&apos;élégance architecturale et la robustesse. 
                     Déploiement d&apos;interfaces modernes et d&apos;infrastructures backend scalables.
                     <span className="block mt-2 text-[var(--accent)]">_ build systems, not just code.</span>
                     <span className="block mt-1 text-[0.6rem] text-[var(--mute)]">// Spécialisé en architecture cloud et applications haute performance</span>
@@ -853,27 +852,29 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="relative mx-auto w-full max-w-sm"
+            className="relative mx-auto w-full max-w-sm mt-20 sm:mt-0 mb-8 sm:mb-0"
           >
-            <div className="frame p-3 bg-[var(--surface)] relative">
-              <div className="relative overflow-hidden border border-[var(--line)] rounded-lg">
+            {/* Glow effect background */}
+            <div className="absolute -inset-4 bg-gradient-to-b from-cyan-500/20 via-purple-500/10 to-transparent blur-3xl rounded-2xl" />
+            
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-2xl">
                 <img
                   src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026387/f3codb9okszfnxskuzvl.jpg"
                   alt="Portrait Lamine Ndiaye"
-                  className="h-80 w-full object-cover transition-all duration-700 hover:scale-105"
+                  className="h-72 w-full object-cover object-top transition-all duration-700 hover:scale-110"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
               </div>
-              <div className="mt-3 flex flex-col gap-1 font-mono text-[0.68rem] text-[var(--mute)] sm:flex-row sm:items-center sm:justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 bg-green-400 rounded-full animate-pulse" />
-                  DEV_ID // llmnd
-                </span>
-                <span className="flex items-center gap-1">
-                  <Heart className="h-3 w-3 text-[var(--accent)]" />
-                  <span>Open to work</span>
-                </span>
+              
+              <div className="mt-6 flex flex-col gap-2 font-mono text-[0.68rem]">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
+                  <span className="text-[var(--mute)]">Status Online</span>
+                </div>
+                <div className="flex items-center gap-1 text-[var(--accent)]">
+                </div>
               </div>
             </div>
           </motion.div>
@@ -1076,22 +1077,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <section className="bg-[var(--surface)]/95 py-6 overflow-hidden">
-        <div className="container overflow-hidden">
-          <div className="relative overflow-hidden bg-black/95 rounded-xl">
-            <video
-              src="https://res.cloudinary.com/dcs9vkwe0/video/upload/v1775477690/vzcc5hhwqnlvhi8exxn4.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="aspect-video w-full object-cover"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* HERO 3D BACKGROUND */}
+      {/* HERO 3D BACKGROUND WITH VIDEO */}
       <section className="relative overflow-hidden bg-[var(--bg)]">
         <HeroBackground3D />
         <div className="relative z-10">
