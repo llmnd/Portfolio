@@ -14,6 +14,8 @@ import {
 import NeuralExhibit from './NeuralExhibit';
 import HeroExhibit from './HeroExhibit';
 import ThreeExperience from './ThreeExperience';
+import HeroBackground3D from './components/HeroBackground3D';
+import { ProjectCard3D } from './components/ProjectCard3D';
 
 // ============================================
 // TYPES & INTERFACES
@@ -586,19 +588,12 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
   const Icon = project.icon;
   
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className="group relative"
-    >
-      <div className={`absolute -inset-0.5 bg-gradient-to-r ${project.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
+    <ProjectCard3D gradient={project.gradient} index={index}>
       <a
         href={project.demo}
         target="_blank"
         rel="noreferrer"
-        className="card group flex flex-col justify-between p-6 relative overflow-hidden"
+        className="card group flex flex-col justify-between p-6 relative overflow-hidden h-full"
       >
         <div>
           <div className="flex items-center justify-between font-mono text-xs text-[var(--mute)]">
@@ -624,7 +619,7 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
           </div>
         </div>
       </a>
-    </motion.div>
+    </ProjectCard3D>
   );
 };
 
@@ -796,7 +791,7 @@ export default function Home() {
             </div>
 
             <h1 className="font-display text-4xl font-semibold leading-[1.08] text-[var(--ink)] sm:text-6xl uppercase tracking-tight">
-              Développeur <br />
+              <span className="text-white/80">Développeur</span> <br />
               <span className="text-[var(--accent)] relative inline-block">
                 Full-Stack &amp; Systems
                 <motion.div 
@@ -849,7 +844,7 @@ export default function Home() {
               </motion.a>
               <a href="/cv.pdf" className="btn group">
                 <Download className="h-4 w-4 text-[var(--accent)] group-hover:-translate-y-1 transition-transform" /> 
-                Télécharger CV
+                <span className="text-white">Télécharger CV</span>
               </a>
             </div>
           </motion.div>
@@ -1096,8 +1091,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* HERO SECTION */}
-      {heroContent}
+      {/* HERO 3D BACKGROUND */}
+      <section className="relative overflow-hidden bg-[var(--bg)]">
+        <HeroBackground3D />
+        <div className="relative z-10">
+          {heroContent}
+        </div>
+      </section>
 
       {/* VISUAL & WORKSPACE */}
       <section className="border-t border-[var(--line)] bg-[var(--surface)]/50 py-24 overflow-hidden">
