@@ -34,20 +34,20 @@ float sdRoundedBox(vec3 p, vec3 b, float r) {
 }
 
 float map(vec3 p, out float matID, out vec2 texCoord) {
-  // Rotations interactives de l'écran
-  p.yz *= rot2D(0.1); 
-  p.xz *= rot2D(uTime * 0.12 + uMouse.x * 1.4);
-  p.xy *= rot2D(sin(uTime * 0.08) * 0.04 + uMouse.y * 0.8);
+  // Rotations interactives
+  p.yz *= rot2D(0.08); 
+  p.xz *= rot2D(uTime * 0.1 + uMouse.x * 1.2);
+  p.xy *= rot2D(sin(uTime * 0.08) * 0.03 + uMouse.y * 0.6);
 
-  // Écran plat simple (juste la dalle d'affichage)
+  // Écran PARFAITEMENT CARRÉ (0.85 x 0.85)
   vec3 pScreen = p - vec3(0.0, 0.0, 0.0);
-  float dDisplay = sdRoundedBox(pScreen, vec3(1.5, 0.88, 0.01), 0.02);
+  float dDisplay = sdRoundedBox(pScreen, vec3(0.85, 0.85, 0.015), 0.03);
 
   matID = 2.0;
-  // Projection UV avec inversion Y pour WebGL
+  // Projection UV ajustée pour un maillage carré
   texCoord = vec2(
-    (pScreen.x / 1.5) * 0.5 + 0.5,
-    1.0 - ((pScreen.y / 0.88) * 0.5 + 0.5)
+    (pScreen.x / 0.85) * 0.5 + 0.5,
+    1.0 - ((pScreen.y / 0.85) * 0.5 + 0.5)
   );
 
   return dDisplay;
@@ -69,7 +69,8 @@ vec3 getNormal(vec3 p) {
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
 
-  float camDist = uIsMobile ? -4.2 : -3.2;
+  // Caméra rapprochée pour rendre l'écran grand et bien visible
+  float camDist = uIsMobile ? -2.8 : -2.3;
   vec3 ro = vec3(0.0, 0.0, camDist);
   vec3 rd = normalize(vec3(uv, 1.2));
 
@@ -103,9 +104,9 @@ void main() {
     float spec = pow(max(0.0, dot(ref, l)), 32.0);
     float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.0);
 
-    // Texture IDE avec simulation de code animé
+    // Texture IDE
     vec4 ideSample = texture(uIdeTexture, hitTexCoord);
-    color = ideSample.rgb + spec * vec3(0.12) + fresnel * vec3(0.0, 0.3, 0.6) * 0.25;
+    color = ideSample.rgb + spec * vec3(0.15) + fresnel * vec3(0.0, 0.4, 0.8) * 0.3;
   }
 
   float radialDist = length(uv);
@@ -123,7 +124,7 @@ const RAW_CODE = `import { useState, useEffect } from 'react';
 import { Canvas3D } from '@/components/engine';
 
 export const SimulatedIDE = () => {
-  const [status, setStatus] = useState('Compiling...');
+  const [status, setStatus] = useState('Ready');
   const [fps, setFps] = useState(60);
 
   useEffect(() => {
@@ -165,10 +166,10 @@ export const FloatingScreenIDE = () => {
 
     if (!gl) return;
 
-    // --- CANVAS 2D OFFSCREEN POUR SIMULER L'IDE ---
+    // --- CANVAS 2D OFFSCREEN CARRÉ POUR L'IDE ---
     const ideCanvas = document.createElement('canvas');
     ideCanvas.width = 1024;
-    ideCanvas.height = 512;
+    ideCanvas.height = 1024;
     const ctx = ideCanvas.getContext('2d');
 
     const drawIDE = (time: number) => {
@@ -182,44 +183,44 @@ export const FloatingScreenIDE = () => {
 
       // Barre de titre
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 0, w, 40);
+      ctx.fillRect(0, 0, w, 50);
 
       // Boutons fenêtres
       const dotColors = ['#ef4444', '#f59e0b', '#10b981'];
       dotColors.forEach((color, i) => {
         ctx.beginPath();
-        ctx.arc(20 + i * 20, 20, 6, 0, Math.PI * 2);
+        ctx.arc(30 + i * 28, 25, 9, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
       });
 
       // Onglet
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(90, 6, 170, 34);
+      ctx.fillRect(130, 8, 220, 42);
       ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(90, 6, 170, 3);
-      ctx.font = 'bold 13px monospace';
+      ctx.fillRect(130, 8, 220, 4);
+      ctx.font = 'bold 20px monospace';
       ctx.fillStyle = '#e2e8f0';
-      ctx.fillText('AppSimulation.tsx', 105, 27);
+      ctx.fillText('AppSimulation.tsx', 150, 36);
 
       // Sidebar
       ctx.fillStyle = '#020617';
-      ctx.fillRect(0, 40, 48, h - 40);
+      ctx.fillRect(0, 50, 70, h - 50);
       ctx.fillStyle = '#334155';
-      ctx.fillRect(16, 60, 16, 16);
-      ctx.fillRect(16, 90, 16, 16);
-      ctx.fillRect(16, 120, 16, 16);
+      ctx.fillRect(22, 80, 26, 26);
+      ctx.fillRect(22, 130, 26, 26);
+      ctx.fillRect(22, 180, 26, 26);
 
-      // SIMULATION DE FRAPPE DE CODE (Caractère par caractère)
-      const charSpeed = 25; // Nombre de caractères par seconde
+      // SIMULATION DE FRAPPE DE CODE (Texte plus grand pour une lisibilité maximale)
+      const charSpeed = 25;
       const charCount = Math.floor(time * charSpeed) % (RAW_CODE.length + 30);
       const currentText = RAW_CODE.slice(0, Math.min(charCount, RAW_CODE.length));
       const lines = currentText.split('\n');
 
-      const startX = 100;
-      const startY = 75;
-      const lineHeight = 28;
-      ctx.font = 'bold 15px monospace';
+      const startX = 130;
+      const startY = 110;
+      const lineHeight = 42;
+      ctx.font = 'bold 24px monospace';
 
       let lastX = startX;
       let lastY = startY;
@@ -230,10 +231,9 @@ export const FloatingScreenIDE = () => {
 
         // Numéro de ligne
         ctx.fillStyle = '#475569';
-        ctx.fillText(String(idx + 1).padStart(2, ' '), 60, y);
+        ctx.fillText(String(idx + 1).padStart(2, ' '), 85, y);
 
-        // Coloration rudimentaire du texte simulé
-        ctx.fillStyle = '#38bdf8';
+        // Coloration syntaxique
         if (lineText.includes('import') || lineText.includes('export') || lineText.includes('return')) {
           ctx.fillStyle = '#f472b6';
         } else if (lineText.includes('const') || lineText.includes('let')) {
@@ -248,19 +248,19 @@ export const FloatingScreenIDE = () => {
         lastX = startX + ctx.measureText(lineText).width;
       });
 
-      // Curseur clignotant au bout du texte en cours de frappe
+      // Curseur clignotant
       const blink = Math.sin(time * 10) > 0;
       if (blink) {
         ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(lastX + 4, lastY - 14, 9, 18);
+        ctx.fillRect(lastX + 6, lastY - 22, 14, 28);
       }
 
       // Barre de statut
       ctx.fillStyle = '#0284c7';
-      ctx.fillRect(0, h - 24, w, 24);
+      ctx.fillRect(0, h - 40, w, 40);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText('● SIMULATION ACTIVE | Live Code Typing...', 12, h - 8);
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText('● SIMULATION ACTIVE | Live Code Typing...', 20, h - 14);
     };
 
     drawIDE(0);
@@ -348,10 +348,8 @@ export const FloatingScreenIDE = () => {
     const render = (now: number) => {
       const elapsedTime = (now - startTime) * 0.001;
 
-      // Mise à jour de la simulation de frappe dans le Canvas 2D
       drawIDE(elapsedTime);
 
-      // Injection dans la texture WebGL
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, ideTexture);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, ideCanvas);
