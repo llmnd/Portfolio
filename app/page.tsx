@@ -9,7 +9,7 @@ import {
   GitBranch, Globe, Clock, Award, Brain, Binary, Boxes,
   Signal, Cpu as CpuIcon, Cloud, Users,
   CheckCircle, Star, TrendingUp, Coffee, Heart, Zap as ZapIcon,
-  LucideIcon
+  FileText, LucideIcon // Ajout pour le CV
 } from 'lucide-react';
 import NeuralExhibit from './NeuralExhibit';
 import HeroExhibit from './HeroExhibit';
@@ -273,6 +273,80 @@ const useScrollLock = (active: boolean) => {
 // COMPONENTS
 // ============================================
 
+// ===== CV DOWNLOAD COMPONENT =====
+const CVDownloadSection = () => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="relative"
+    >
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)]/50 p-6 backdrop-blur-sm">
+        {/* Background gradient effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-[var(--accent)]/5 via-transparent to-[var(--accent)]/5 opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
+        
+        <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)]/10">
+              <FileText className="h-5 w-5 text-[var(--accent)]" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h3 className="font-display text-sm font-semibold text-[var(--ink)]">
+                Curriculum Vitae
+              </h3>
+              <p className="font-mono text-[0.6rem] text-[var(--mute)] uppercase tracking-wider">
+                Version 2.0.1 • Mis à jour 2026
+              </p>
+            </div>
+          </div>
+
+          <motion.a
+            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/fl_attachment/v1775085940/fisafi/brochures/rraqn8hdzxqswwqccnre.pdf"
+            download="Lamine_NDIAYE_CV.pdf"
+            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-black transition-all hover:brightness-110"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+              Télécharger
+            </span>
+            
+            {/* Animated background */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-[var(--accent)] via-white/20 to-[var(--accent)]"
+              initial={{ x: '-100%' }}
+              animate={{ x: isHovered ? '100%' : '-100%' }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+            />
+          </motion.a>
+        </div>
+
+        {/* File info */}
+        <div className="relative mt-4 flex flex-wrap items-center gap-4 border-t border-[var(--line)] pt-4">
+          <div className="flex items-center gap-2 font-mono text-[0.55rem] text-[var(--mute)]">
+            <FileText className="h-3 w-3" />
+            <span>PDF • 2.4 MB</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[0.55rem] text-[var(--mute)]">
+            <Clock className="h-3 w-3" />
+            <span>Dernière mise à jour: Mars 2026</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[0.55rem] text-[var(--mute)]">
+            <Award className="h-3 w-3" />
+            <span>3 certifications incluses</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // ===== TECH STACK COMPONENT =====
 const TechStackItem = ({ tech, index }: { tech: string; index: number }) => {
   const getTechColor = (name: string) => {
@@ -416,7 +490,7 @@ const TechStackSection = () => {
 
   return (
     <motion.div 
-      className="group mt-8"
+      className="group"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
@@ -529,11 +603,11 @@ const StatsDisplay = () => {
   const [showStats, setShowStats] = useState(false);
 
   return (
-    <div className="mt-14">
+    <div>
       <button
         type="button"
         onClick={() => setShowStats((prev) => !prev)}
-        className="mb-4 inline-flex items-center rounded-full border border-[var(--line)] bg-[var(--surface)]/80 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-[var(--mute)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        className="mb-3 inline-flex items-center rounded-full border border-[var(--line)] bg-[var(--surface)]/80 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-[var(--mute)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         {showStats ? 'Masquer les stats' : 'Afficher les stats'}
       </button>
@@ -740,7 +814,7 @@ export default function Home() {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.98]);
   const isMobile = useMobileDetection();
   
-  // 🔥 Hook pour bloquer le scroll quand le menu est ouvert
+  // Hook pour bloquer le scroll quand le menu est ouvert
   useScrollLock(navOpen);
   
   const handleHeroToggle = useCallback(() => {
@@ -1023,18 +1097,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-t border-[var(--line)] py-20 overflow-hidden">
-        <div className="container text-center">
-          <div className="mx-auto mb-12 max-w-xl rounded-3xl border border-[var(--line)] bg-[var(--surface)]/70 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
-            <div className="mt-8 flex justify-center">
-              <a href="https://res.cloudinary.com/dcs9vkwe0/image/upload/fl_attachment/v1775085940/fisafi/brochures/rraqn8hdzxqswwqccnre.pdf" download="MonCV.pdf" className="btn-solid inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110">
-                <Download className="h-4 w-4" />
-                Télécharger CV
-              </a>
-            </div>
-          </div>
+      {/* CV DOWNLOAD SECTION - AMÉLIORÉ */}
+      <section className="border-t border-[var(--line)] py-10 overflow-hidden">
+        <div className="container">
+          <CVDownloadSection />
+        </div>
+      </section>
 
-          <div className="space-y-16">
+      {/* TECH STACK & STATS */}
+      <section className="border-t border-[var(--line)] py-10 overflow-hidden">
+        <div className="container text-center">
+          <div className="space-y-10">
             <StatsDisplay />
             <TechStackSection />
           </div>
@@ -1121,148 +1194,145 @@ export default function Home() {
       </section>
 
       {/* ABOUT & SKILLS */}
-      {/* ABOUT & SKILLS */}
-<section id="about" className="border-t border-[var(--line]) py-24 bg-gradient-to-b from-[var(--bg]) to-[var(--surface)]/30 overflow-hidden">
-  <div className="container overflow-hidden">
-    <div className="grid gap-16 lg:grid-cols-2">
-      {/* TIMELINE */}
-      <div className="min-w-0">
-        <p className="eyebrow flex items-center gap-2">
-          <GitBranch className="h-3 w-3 flex-shrink-0" /> PARCOURS &amp; EXPÉRIENCE
-        </p>
-        <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
-          Chronologie des systèmes
-        </h2>
-        <p className="mt-2 font-mono text-xs text-[var(--mute)]">
-          Évolution technique et projets majeurs
-        </p>
-        
-        {/* Timeline avec espacement corrigé */}
-        <div className="mt-8 space-y-8 border-l-2 border-[var(--accent)]/30 pl-4 sm:pl-6">
-          {TIMELINE.map((item, index) => {
-            const Icon = item.icon;
-            return (
+      <section id="about" className="border-t border-[var(--line]) py-24 bg-gradient-to-b from-[var(--bg)] to-[var(--surface)]/30 overflow-hidden">
+        <div className="container overflow-hidden">
+          <div className="grid gap-16 lg:grid-cols-2">
+            {/* TIMELINE */}
+            <div className="min-w-0">
+              <p className="eyebrow flex items-center gap-2">
+                <GitBranch className="h-3 w-3 flex-shrink-0" /> PARCOURS &amp; EXPÉRIENCE
+              </p>
+              <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
+                Chronologie des systèmes
+              </h2>
+              <p className="mt-2 font-mono text-xs text-[var(--mute)]">
+                Évolution technique et projets majeurs
+              </p>
+              
+              <div className="mt-8 space-y-8 border-l-2 border-[var(--accent)]/30 pl-4 sm:pl-6">
+                {TIMELINE.map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div 
+                      key={item.title}
+                      className="relative"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      viewport={{ once: true }}
+                    >
+                      <div className="absolute -left-[17px] sm:-left-[25px] top-1.5">
+                        <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                          <div className="absolute inset-0 rounded-full bg-[var(--accent)] animate-ping opacity-75" />
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <span className="font-mono text-sm font-bold text-[var(--accent)] flex-shrink-0">
+                          {item.year}
+                        </span>
+                        <span className="text-xs text-[var(--mute)] flex-shrink-0">//</span>
+                        <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
+                          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--accent)]" strokeWidth={1.5} />
+                        </div>
+                      </div>
+                      
+                      <h3 className="font-display text-lg font-medium text-[var(--ink)] mt-2 break-words">
+                        {item.title}
+                      </h3>
+                      
+                      <p className="mt-1 font-mono text-xs leading-6 text-[var(--mute)] break-words">
+                        {item.details}
+                      </p>
+                      
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.tech.map((t) => (
+                          <span key={t} className="tag text-[0.55rem] whitespace-nowrap">{t}</span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* CERTIFICATIONS */}
               <motion.div 
-                key={item.title}
-                className="relative"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                className="mt-12 frame p-4 sm:p-6 bg-[var(--surface)] rounded-xl border border-[var(--line)]"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
                 viewport={{ once: true }}
               >
-                {/* Point de la timeline - repositionné */}
-                <div className="absolute -left-[17px] sm:-left-[25px] top-1.5">
-                  <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-full bg-[var(--accent)] animate-ping opacity-75" />
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <span className="font-mono text-sm font-bold text-[var(--accent)] flex-shrink-0">
-                    {item.year}
-                  </span>
-                  <span className="text-xs text-[var(--mute)] flex-shrink-0">//</span>
+                <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
-                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--accent)]" strokeWidth={1.5} />
+                    <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
+                  <span className="text-xs sm:text-sm">CERTIFICATIONS VALIDÉES</span>
+                  <span className="ml-auto text-[0.55rem] text-[var(--mute)] flex-shrink-0">3 validées</span>
                 </div>
                 
-                <h3 className="font-display text-lg font-medium text-[var(--ink)] mt-2 break-words">
-                  {item.title}
-                </h3>
-                
-                <p className="mt-1 font-mono text-xs leading-6 text-[var(--mute)] break-words">
-                  {item.details}
-                </p>
-                
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {item.tech.map((t) => (
-                    <span key={t} className="tag text-[0.55rem] whitespace-nowrap">{t}</span>
+                <div className="space-y-4 font-mono text-xs">
+                  {CERTIFICATIONS.map((cert) => (
+                    <div 
+                      key={cert.title} 
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--line)] pb-3 last:border-0 hover:bg-[var(--surface)]/50 p-2 rounded-lg transition-colors gap-2 sm:gap-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[var(--ink)] font-medium text-xs sm:text-sm break-words">
+                          {cert.title}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[0.5rem] sm:text-[0.55rem] text-[var(--accent)] uppercase whitespace-nowrap">
+                          <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          {cert.level}
+                        </span>
+                        <span className="text-[var(--accent)] font-bold text-xs sm:text-sm whitespace-nowrap">
+                          {cert.year}
+                        </span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </motion.div>
-            );
-          })}
-        </div>
-
-        {/* CERTIFICATIONS - avec gestion du texte long */}
-        <motion.div 
-          className="mt-12 frame p-4 sm:p-6 bg-[var(--surface)] rounded-xl border border-[var(--line)]"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
-              <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <span className="text-xs sm:text-sm">CERTIFICATIONS VALIDÉES</span>
-            <span className="ml-auto text-[0.55rem] text-[var(--mute)] flex-shrink-0">3 validées</span>
-          </div>
-          
-          <div className="space-y-4 font-mono text-xs">
-            {CERTIFICATIONS.map((cert) => (
-              <div 
-                key={cert.title} 
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--line)] pb-3 last:border-0 hover:bg-[var(--surface)]/50 p-2 rounded-lg transition-colors gap-2 sm:gap-0"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-[var(--ink)] font-medium text-xs sm:text-sm break-words">
-                    {cert.title}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[0.5rem] sm:text-[0.55rem] text-[var(--accent)] uppercase whitespace-nowrap">
-                    <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    {cert.level}
-                  </span>
-                  <span className="text-[var(--accent)] font-bold text-xs sm:text-sm whitespace-nowrap">
-                    {cert.year}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
 
-      {/* SKILLS MATRIX */}
-      <div className="min-w-0">
-        <p className="eyebrow flex items-center gap-2">
-          <Brain className="h-3 w-3 flex-shrink-0" /> CAPACITÉS TECHNIQUES
-        </p>
-        <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
-          Matrice de compétences
-        </h2>
-        <p className="mt-2 font-mono text-xs text-[var(--mute)]">
-          Niveaux de maîtrise par domaine technologique
-        </p>
-        <div className="mt-8 space-y-6">
-          {SKILLS.map((group, index) => (
-            <div key={group.category} className="card p-4 sm:p-5 bg-[var(--surface)] rounded-xl border border-[var(--line)] hover:border-[var(--accent)]/30 transition-colors">
-              <div className="flex items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
-                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
-                  <group.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </div>
-                <span className="font-bold text-xs sm:text-sm">{group.category}</span>
-                <span className="ml-auto text-[var(--mute)] text-[0.55rem] sm:text-[0.6rem] flex-shrink-0">
-                  {group.items.length} technologies
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4">
-                {group.items.map((item) => (
-                  <span key={item} className="tag text-[0.55rem] sm:text-xs whitespace-nowrap">{item}</span>
+            {/* SKILLS MATRIX */}
+            <div className="min-w-0">
+              <p className="eyebrow flex items-center gap-2">
+                <Brain className="h-3 w-3 flex-shrink-0" /> CAPACITÉS TECHNIQUES
+              </p>
+              <h2 className="font-display mt-2 text-3xl font-semibold uppercase tracking-tight text-[var(--ink)]">
+                Matrice de compétences
+              </h2>
+              <p className="mt-2 font-mono text-xs text-[var(--mute)]">
+                Niveaux de maîtrise par domaine technologique
+              </p>
+              <div className="mt-8 space-y-6">
+                {SKILLS.map((group, index) => (
+                  <div key={group.category} className="card p-4 sm:p-5 bg-[var(--surface)] rounded-xl border border-[var(--line)] hover:border-[var(--accent)]/30 transition-colors">
+                    <div className="flex items-center gap-2 font-mono text-xs text-[var(--accent)] mb-4">
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[var(--accent)]/10 flex-shrink-0">
+                        <group.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </div>
+                      <span className="font-bold text-xs sm:text-sm">{group.category}</span>
+                      <span className="ml-auto text-[var(--mute)] text-[0.55rem] sm:text-[0.6rem] flex-shrink-0">
+                        {group.items.length} technologies
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4">
+                      {group.items.map((item) => (
+                        <span key={item} className="tag text-[0.55rem] sm:text-xs whitespace-nowrap">{item}</span>
+                      ))}
+                    </div>
+                    <SkillBar skill={group} delay={index} />
+                  </div>
                 ))}
               </div>
-              <SkillBar skill={group} delay={index} />
             </div>
-          ))}
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
       {/* SERVICES */}
       {servicesContent}
