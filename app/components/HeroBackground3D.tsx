@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 aPosition;
@@ -196,8 +196,129 @@ void main() {
 }
 `;
 
+interface GameControllerProps {
+  onMove: (x: number, y: number) => void;
+  isMobile: boolean;
+}
+
+const GameController = ({ onMove, isMobile }: GameControllerProps) => {
+  const touchRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const startPosRef = useRef({ x: 0, y: 0 });
+
+  const handleStart = (clientX: number, clientY: number) => {
+    if (!touchRef.current) return;
+    const rect = touchRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    startPosRef.current = { x: centerX, y: centerY };
+    setIsDragging(true);
+    handleMove(clientX, clientY);
+  };
+
+  const handleMove = (clientX: number, clientY: number) => {
+    if (!isDragging || !touchRef.current) return;
+    const rect = touchRef.current.getBoundingClientRect();
+    const radius = rect.width / 2 - 20;
+    let dx = clientX - startPosRef.current.x;
+    let dy = clientY - startPosRef.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance > radius) {
+      dx = (dx / distance) * radius;
+      dy = (dy / distance) * radius;
+    }
+    
+    const normalizedX = dx / radius;
+    const normalizedY = -dy / radius;
+    setPosition({ x: dx, y: dy });
+    onMove(normalizedX, normalizedY);
+  };
+
+  const handleEnd = () => {
+    setIsDragging(false);
+    setPosition({ x: 0, y: 0 });
+    onMove(0, 0);
+  };
+
+  if (!isMobile) return null;
+
+  return (
+    <div className="fixed bottom-8 left-8 z-50">
+      <div
+        ref={touchRef}
+        className="relative w-32 h-32 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg touch-none"
+        onTouchStart={(e) => {
+          e.preventDefault();
+          handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        }}
+        onTouchMove={(e) => {
+          e.preventDefault();
+          handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          handleEnd();
+        }}
+        onTouchCancel={handleEnd}
+      >
+        {/* Cercles concentriques décoratifs */}
+        <div className="absolute inset-0 rounded-full border border-white/5" />
+        <div className="absolute inset-4 rounded-full border border-white/5" />
+        <div className="absolute inset-8 rounded-full border border-white/5" />
+        
+        {/* Point central */}
+        <div className="absolute top-1/2 left-1/2 w-1 h-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/20" />
+        
+        {/* Stick de contrôle */}
+        <div
+          className="absolute w-10 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20 shadow-lg transition-all duration-75"
+          style={{
+            left: `calc(50% + ${position.x}px)`,
+            top: `calc(50% + ${position.y}px)`,
+          }}
+        >
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/5 to-transparent" />
+        </div>
+
+        {/* Labels */}
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-white/40 text-xs font-mono tracking-wider">
+          MOVE
+        </div>
+        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-white/20 text-[10px] font-mono">
+          ← → ↑ ↓
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Bouton d'action minimaliste
+const ActionButton = ({ label, onPress }: { label: string; onPress: () => void }) => {
+  return (
+    <button
+      onClick={onPress}
+      className="fixed bottom-8 right-8 z-50 w-16 h-16 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg flex items-center justify-center text-white/60 text-sm font-mono tracking-wider hover:bg-white/10 transition-all active:scale-95 touch-none select-none"
+    >
+      {label}
+    </button>
+  );
+};
+
 export const HeroBackground3D = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [mouseTarget, setMouseTarget] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+
+  const handleControllerMove = (x: number, y: number) => {
+    setMouseTarget({ x, y });
+  };
+
+  const handleAction = () => {
+    // Action déclenchée par le bouton (ex: reset, interaction, etc.)
+    setMouseTarget({ x: 0, y: 0 });
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -257,42 +378,25 @@ export const HeroBackground3D = () => {
 
     let animationFrameId: number;
     let startTime = performance.now();
-    let targetMouse = { x: 0, y: 0 };
     let currentMouse = { x: 0, y: 0 };
-    let isMobile = false;
-
-    const updateCoordinates = (clientX: number, clientY: number) => {
-      targetMouse.x = (clientX / window.innerWidth) * 2 - 1;
-      targetMouse.y = -(clientY / window.innerHeight) * 2 + 1;
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      updateCoordinates(e.clientX, e.clientY);
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) {
-        updateCoordinates(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    };
 
     const handleResize = () => {
       if (!canvas) return;
-      isMobile = window.innerWidth < 768;
-      const dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 2);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      const dpr = mobile ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('resize', handleResize);
     handleResize();
 
     const render = (now: number) => {
-      currentMouse.x += (targetMouse.x - currentMouse.x) * 0.06;
-      currentMouse.y += (targetMouse.y - currentMouse.y) * 0.06;
+      // Lissage du mouvement (inertie)
+      currentMouse.x += (mouseTarget.x - currentMouse.x) * 0.08;
+      currentMouse.y += (mouseTarget.y - currentMouse.y) * 0.08;
 
       gl.useProgram(program);
       gl.bindVertexArray(vao);
@@ -310,14 +414,12 @@ export const HeroBackground3D = () => {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('resize', handleResize);
       gl.deleteProgram(program);
       gl.deleteShader(vertShader);
       gl.deleteShader(fragShader);
     };
-  }, []);
+  }, [mouseTarget]);
 
   return (
     <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] touch-none">
@@ -325,8 +427,20 @@ export const HeroBackground3D = () => {
 
       {/* Grille technique vectorielle */}
       <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem] md:bg-[size:5rem_5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
+      
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent pointer-events-none" />
+
+      {/* Contrôleurs de jeu mobiles */}
+      <GameController onMove={handleControllerMove} isMobile={isMobile} />
+      <ActionButton label="A" onPress={handleAction} />
+      
+      {/* Indicateur de contrôle */}
+      {isMobile && (
+        <div className="fixed bottom-[6.5rem] left-1/2 -translate-x-1/2 z-50 text-white/10 text-[10px] font-mono tracking-[0.3em] uppercase select-none">
+          Touch & drag to explore
+        </div>
+      )}
     </div>
   );
 };
