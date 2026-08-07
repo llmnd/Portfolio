@@ -1027,7 +1027,7 @@ export default function Home() {
         <div className="container text-center">
           <div className="mx-auto mb-12 max-w-xl rounded-3xl border border-[var(--line)] bg-[var(--surface)]/70 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
             <div className="mt-8 flex justify-center">
-              <a href="/cv.pdf" className="btn-solid inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110">
+              <a href="https://res.cloudinary.com/dcs9vkwe0/image/upload/fl_attachment/v1775085940/fisafi/brochures/rraqn8hdzxqswwqccnre.pdf" download="MonCV.pdf" className="btn-solid inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110">
                 <Download className="h-4 w-4" />
                 Télécharger CV
               </a>
