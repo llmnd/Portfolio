@@ -455,9 +455,6 @@ const TechStackSection = () => {
         <div className="rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-lg shadow-black/5">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-display text-lg font-semibold text-[var(--ink)]">
-                Visualisation 3D du Stack
-              </h3>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -776,7 +773,7 @@ export default function Home() {
 
   // Memoized sections for performance
   const heroContent = useMemo(() => (
-    <div className="relative overflow-hidden pb-20 pt-10">
+    <div className="relative overflow-hidden pb-16 pt-14">
       <div className="container relative z-10">
         <div className="grid gap-12 md:gap-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <motion.div
@@ -821,15 +818,7 @@ export default function Home() {
             </div>
 
             <div className="mt-10 flex flex-wrap gap-4">
-              <motion.a 
-                href="#work" 
-                className="btn-solid group !bg-white !text-black"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Explorer les travaux 
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
+              
               <a href="/cv.pdf" className="btn group">
                 <Download className="h-4 w-4 text-[var(--accent)] group-hover:-translate-y-1 transition-transform" /> 
                 <span className="text-white">Télécharger CV</span>
@@ -839,8 +828,6 @@ export default function Home() {
           
         </div>
 
-        <StatsDisplay />
-        <TechStackSection />
       </div>
     </div>
   ), [showHeroDetails, isMobile, handleHeroToggle]);
@@ -1041,6 +1028,15 @@ export default function Home() {
         <HeroBackground3D />
         <div className="relative z-10">
           {heroContent}
+        </div>
+      </section>
+
+      <section className="border-t border-[var(--line)] py-20 overflow-hidden">
+        <div className="container">
+          <div className="space-y-16">
+            <StatsDisplay />
+            <TechStackSection />
+          </div>
         </div>
       </section>
 
