@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+const COVER_IMAGE_URL = '/e.jpg';
+
 const VERTEX_SHADER = `#version 300 es
 in vec2 aPosition;
 void main() {
@@ -35,8 +37,8 @@ float sdRoundedBox(vec3 p, vec3 b, float r) {
 
 float map(vec3 p, out float matID, out vec2 texCoord) {
   if (!uIsMobile) {
-    p.xz *= rot2D(uMouse.x * 0.12);
-    p.yz *= rot2D(uMouse.y * 0.08);
+    p.xz *= rot2D(uMouse.x * 0.1);
+    p.yz *= rot2D(uMouse.y * 0.06);
   }
 
   vec3 pScreen = p - vec3(0.0, 0.0, 0.0);
@@ -89,7 +91,7 @@ void main() {
     if (dO > MAX_DIST) break;
   }
 
-  vec3 color = vec3(0.02, 0.04, 0.09);
+  vec3 color = vec3(0.05, 0.03, 0.02);
 
   if (dO < MAX_DIST) {
     vec3 p = ro + rd * dO;
@@ -103,11 +105,11 @@ void main() {
     float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.0);
 
     vec4 ideSample = texture(uIdeTexture, hitTexCoord);
-    color = ideSample.rgb + spec * vec3(0.2) + fresnel * vec3(0.0, 0.6, 1.0) * 0.4;
+    color = ideSample.rgb + spec * vec3(0.2) + fresnel * vec3(0.9, 0.4, 0.1) * 0.3;
   }
 
   float radialDist = length(uv);
-  color += vec3(0.05, 0.35, 0.7) * (0.08 / (radialDist + 0.4));
+  color += vec3(0.6, 0.25, 0.05) * (0.06 / (radialDist + 0.4));
 
   fragColor = vec4(color, 1.0);
 }
@@ -117,6 +119,7 @@ export const AestheticArcadeGame = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [showControlsHint, setShowControlsHint] = useState(true);
 
@@ -143,13 +146,14 @@ export const AestheticArcadeGame = () => {
     lastShot: 0,
   });
 
-  // Masquer l'instruction initiale après 4.5 secondes
   useEffect(() => {
+    if (!gameStarted) return;
+
     const timer = setTimeout(() => {
       setShowControlsHint(false);
     }, 4500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [gameStarted]);
 
   const resetGame = () => {
     gameState.current.playerX = 512;
@@ -163,6 +167,7 @@ export const AestheticArcadeGame = () => {
     gameState.current.isOver = false;
     gameState.current.lastShot = 0;
     setGameOver(false);
+    setGameStarted(true);
   };
 
   useEffect(() => {
@@ -185,6 +190,8 @@ export const AestheticArcadeGame = () => {
   }, []);
 
   useEffect(() => {
+    if (!gameStarted) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -202,29 +209,30 @@ export const AestheticArcadeGame = () => {
     const ctx = ideCanvas.getContext('2d');
 
     const bugTypes = [
-      { label: '404', radius: 24, color: '#f43f5e' },
-      { label: 'NULL', radius: 20, color: '#eab308' },
-      { label: 'BUG', radius: 28, color: '#a855f7' },
-      { label: 'ERR', radius: 22, color: '#06b6d4' },
+      { label: '404', radius: 24 },
+      { label: 'NULL', radius: 20 },
+      { label: 'BUG', radius: 28 },
+      { label: 'ERR', radius: 22 },
     ];
 
     const updateAndDrawGame = (time: number) => {
       if (!ctx) return;
       const w = ideCanvas.width;
       const h = ideCanvas.height;
+
       const state = gameState.current;
 
-      ctx.fillStyle = '#030712';
+      ctx.fillStyle = '#0a0806';
       ctx.fillRect(0, 0, w, h);
 
-      ctx.fillStyle = '#ffffffaa';
+      ctx.fillStyle = '#f59e0b22';
       state.stars.forEach((star) => {
         star.y += star.speed;
         if (star.y > h) star.y = 0;
         ctx.fillRect(star.x, star.y, star.size, star.size);
       });
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.06)';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 64) {
         ctx.beginPath();
@@ -233,20 +241,20 @@ export const AestheticArcadeGame = () => {
         ctx.stroke();
       }
 
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#140c06';
       ctx.fillRect(0, 0, w, 76);
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#f59e0b';
       ctx.fillRect(0, 74, w, 2);
 
       ctx.font = 'bold 28px monospace';
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#f59e0b';
       ctx.fillText(`SCORE: ${state.score.toString().padStart(6, '0')}`, 30, 48);
 
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = '#26150a';
       ctx.fillRect(w - 280, 26, 240, 26);
-      ctx.fillStyle = state.health > 40 ? '#10b981' : '#ef4444';
+      ctx.fillStyle = state.health > 40 ? '#f59e0b' : '#ef4444';
       ctx.fillRect(w - 280, 26, (state.health / 100) * 240, 26);
-      ctx.strokeStyle = '#64748b';
+      ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 2;
       ctx.strokeRect(w - 280, 26, 240, 26);
 
@@ -305,16 +313,16 @@ export const AestheticArcadeGame = () => {
         }
       }
 
-      ctx.fillStyle = '#38bdf8';
-      ctx.shadowColor = '#38bdf8';
+      ctx.fillStyle = '#fbbf24';
+      ctx.shadowColor = '#fbbf24';
       ctx.shadowBlur = 10;
       state.bullets.forEach((b) => {
         ctx.fillRect(b.x - 3, b.y, 6, 18);
       });
 
-      ctx.shadowColor = '#06b6d4';
+      ctx.shadowColor = '#d97706';
       ctx.shadowBlur = 16;
-      ctx.fillStyle = '#06b6d4';
+      ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
       ctx.moveTo(state.playerX, state.playerY - 32);
       ctx.lineTo(state.playerX - 30, state.playerY + 20);
@@ -323,7 +331,7 @@ export const AestheticArcadeGame = () => {
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = Math.sin(time * 25) > 0 ? '#f59e0b' : '#ef4444';
+      ctx.fillStyle = Math.sin(time * 25) > 0 ? '#fbbf24' : '#b45309';
       ctx.beginPath();
       ctx.moveTo(state.playerX - 12, state.playerY + 14);
       ctx.lineTo(state.playerX, state.playerY + 32);
@@ -332,10 +340,10 @@ export const AestheticArcadeGame = () => {
       ctx.fill();
 
       state.bugs.forEach((bug) => {
-        ctx.shadowColor = '#f43f5e';
+        ctx.shadowColor = '#ef4444';
         ctx.shadowBlur = 12;
-        ctx.fillStyle = '#0f172a';
-        ctx.strokeStyle = '#f43f5e';
+        ctx.fillStyle = '#1c0a00';
+        ctx.strokeStyle = '#ea580c';
         ctx.lineWidth = 3;
 
         ctx.beginPath();
@@ -344,7 +352,7 @@ export const AestheticArcadeGame = () => {
         ctx.stroke();
 
         ctx.shadowBlur = 0;
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#ffedd5';
         ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(bug.label, bug.x, bug.y + 6);
@@ -354,7 +362,7 @@ export const AestheticArcadeGame = () => {
       ctx.shadowBlur = 0;
 
       if (state.isOver) {
-        ctx.fillStyle = 'rgba(3, 7, 18, 0.92)';
+        ctx.fillStyle = 'rgba(12, 6, 2, 0.94)';
         ctx.fillRect(0, 0, w, h);
 
         ctx.fillStyle = '#ef4444';
@@ -362,7 +370,7 @@ export const AestheticArcadeGame = () => {
         ctx.textAlign = 'center';
         ctx.fillText('SYSTEM CRASH', w / 2, h / 2 - 30);
 
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#f59e0b';
         ctx.font = '24px monospace';
         ctx.fillText(`FINAL SCORE: ${state.score}`, w / 2, h / 2 + 30);
         ctx.textAlign = 'left';
@@ -485,7 +493,7 @@ export const AestheticArcadeGame = () => {
       gl.deleteShader(vertShader);
       gl.deleteShader(fragShader);
     };
-  }, [isMobileDevice]);
+  }, [isMobileDevice, gameStarted]);
 
   const startMoveLeft = () => (gameState.current.moveLeft = true);
   const stopMoveLeft = () => (gameState.current.moveLeft = false);
@@ -493,35 +501,78 @@ export const AestheticArcadeGame = () => {
   const stopMoveRight = () => (gameState.current.moveRight = false);
 
   return (
-    <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] select-none touch-none">
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full block" />
+    <div className="relative w-full h-screen overflow-hidden bg-[#0a0705] select-none touch-none font-mono">
+      {/* 1. Couverture Minimaliste Flat 2D (Visible avant START) */}
+      {!gameStarted && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0705]">
+          <div className="w-full max-w-sm rounded-2xl bg-[#140d07] border border-amber-900/40 p-6 shadow-2xl flex flex-col items-center text-center space-y-5">
+            {/* Image compacte et lisible */}
+            <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-amber-800/30 bg-[#070503]">
+              <img
+                src={COVER_IMAGE_URL}
+                alt="Mission Cover"
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-      {/* Notification de contrôles au démarrage (disparaît après 4s) */}
-      {!isMobileDevice && showControlsHint && (
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 font-mono text-cyan-300 text-sm bg-slate-900/90 border border-cyan-500/40 px-6 py-3 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.3)] backdrop-blur-md animate-bounce">
-          ⌨️ Utilisez <span className="text-white font-bold">[←] [→]</span> ou <span className="text-white font-bold">[Q] [D]</span> pour vous déplacer
+            {/* Titre & Description lisible */}
+            <div className="space-y-2">
+              <p className="text-amber-100 text-sm font-medium leading-relaxed">
+                Après le succès de la mission de sabotage, vous êtes resté bloqué en ligne ennemie.
+              </p>
+              <p className="text-amber-500/80 text-xs">
+                Trouvez la sortie de la base avant la détection totale.
+              </p>
+            </div>
+
+            {/* Objectifs discrets */}
+            <div className="w-full py-2 px-3 rounded-lg bg-amber-950/30 border border-amber-800/20 text-xs text-amber-400/90 text-left space-y-1">
+              <div>• Sortir de la base ennemie</div>
+              <div>• Bonus : Éliminer tous les bugs</div>
+            </div>
+
+            {/* Bouton START épuré */}
+            <button
+              onClick={resetGame}
+              className="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-zinc-950 font-bold text-sm rounded-xl transition shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+            >
+              PRESS TO START
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Overlay Game Over */}
+      {/* 2. Écran WebGL 3D (S'affiche au lancement du jeu) */}
+      {gameStarted && (
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
+      )}
+
+      {/* Indication des contrôles sur PC */}
+      {gameStarted && !isMobileDevice && showControlsHint && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/80 border border-amber-700/40 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-md animate-bounce">
+          ⌨️ Touches <span className="text-white font-bold">[←] [→]</span> ou <span className="text-white font-bold">[Q] [D]</span>
+        </div>
+      )}
+
+      {/* Écran Game Over */}
       {gameOver && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <button
             onClick={resetGame}
-            className="px-8 py-4 bg-cyan-500 text-slate-950 font-mono text-lg font-bold rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:bg-cyan-400 active:scale-95 transition"
+            className="px-6 py-3 bg-amber-500 text-zinc-950 text-sm font-bold rounded-xl hover:bg-amber-400 active:scale-95 transition shadow-[0_0_20px_rgba(245,158,11,0.4)]"
           >
             RECOUVRER LE SYSTÈME
           </button>
         </div>
       )}
 
-      {/* Boutons Tactiles Mini & Néon (UNIQUEMENT SUR MOBILE) */}
-      {isMobileDevice && (
+      {/* Contrôles tactiles mobile */}
+      {gameStarted && isMobileDevice && (
         <div className="absolute bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
           <button
             onTouchStart={startMoveLeft}
             onTouchEnd={stopMoveLeft}
-            className="w-14 h-14 rounded-full bg-slate-900/40 border border-cyan-400/50 text-cyan-300 font-mono font-bold text-xl backdrop-blur-sm flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)] active:bg-cyan-500/40 active:scale-90 transition-all touch-none"
+            className="w-14 h-14 rounded-full bg-amber-950/60 border border-amber-500/50 text-amber-300 font-bold text-xl backdrop-blur-sm flex items-center justify-center active:bg-amber-500/40 active:scale-90 transition-all touch-none"
           >
             ◄
           </button>
@@ -529,7 +580,7 @@ export const AestheticArcadeGame = () => {
           <button
             onTouchStart={startMoveRight}
             onTouchEnd={stopMoveRight}
-            className="w-14 h-14 rounded-full bg-slate-900/40 border border-cyan-400/50 text-cyan-300 font-mono font-bold text-xl backdrop-blur-sm flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)] active:bg-cyan-500/40 active:scale-90 transition-all touch-none"
+            className="w-14 h-14 rounded-full bg-amber-950/60 border border-amber-500/50 text-amber-300 font-bold text-xl backdrop-blur-sm flex items-center justify-center active:bg-amber-500/40 active:scale-90 transition-all touch-none"
           >
             ►
           </button>
