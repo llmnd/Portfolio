@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import NeuralExhibit from './NeuralExhibit';
 import HeroExhibit from './HeroExhibit';
+import ThreeExperience from './ThreeExperience';
 
 // ============================================
 // TYPES & INTERFACES
@@ -77,7 +78,7 @@ const STATS: Stat[] = [
   { value: '24/7', label: 'Disponibilité', icon: Signal },
 ];
 
-const STACK = ['React', 'Next.js', 'Django', 'PostgreSQL', 'Docker', 'Tailwind CSS', 'Flutter', 'Git', 'Linux', 'Vercel'];
+const STACK = ['React', 'Next.js', 'Django', 'PostgreSQL', 'Docker', 'Tailwind CSS', 'Flutter', 'Git', 'Linux'];
 
 const SKILLS: Skill[] = [
   { 
@@ -352,6 +353,7 @@ const TechStackItem = ({ tech, index }: { tech: string; index: number }) => {
 
 const TechStackSection = () => {
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
+  const [showTechCards, setShowTechCards] = useState(false);
   
   const techDetails: Record<string, { description: string; level: string; usage: string }> = {
     'React': {
@@ -412,7 +414,7 @@ const TechStackSection = () => {
 
   return (
     <motion.div 
-      className="mt-8"
+      className="group mt-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
@@ -447,19 +449,49 @@ const TechStackSection = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {STACK.map((tech, index) => (
-          <div key={tech} onClick={() => handleTechClick(tech)}>
-            <TechStackItem tech={tech} index={index} />
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.9fr]">
+        <div className="rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-lg shadow-black/5">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-[var(--ink)]">
+                Visualisation 3D du Stack
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowTechCards((prev) => !prev)}
+                className="rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-[var(--mute)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10"
+              >
+                {showTechCards ? 'Masquer la stack' : 'Afficher la stack'}
+              </button>
+              <span className="rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-[var(--mute)]">
+                3D beauty
+              </span>
+            </div>
           </div>
-        ))}
+
+          <div className="h-[360px] overflow-hidden rounded-3xl border border-[var(--line)] bg-[#020617]">
+            <ThreeExperience techs={STACK} />
+          </div>
+        </div>
+
+        {showTechCards && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            {STACK.map((tech, index) => (
+              <div key={tech} onClick={() => handleTechClick(tech)}>
+                <TechStackItem tech={tech} index={index} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {selectedTech && techDetails[selectedTech] && (
         <motion.div
+          className="mt-6 rounded-xl border border-[var(--line)] bg-[var(--surface)]/50 p-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-6 rounded-xl border border-[var(--line)] bg-[var(--surface)]/50 p-4"
         >
           <div className="flex items-start justify-between">
             <div>
@@ -1111,6 +1143,11 @@ export default function Home() {
       {projectsContent}
 
       {/* NEURAL EXHIBIT */}
+      <section className="border-t border-[var(--line)] bg-[var(--surface)] py-12 overflow-hidden">
+        <div className="container overflow-hidden">
+        </div>
+      </section>
+
       <section className="border-t border-[var(--line)] bg-[var(--surface)] py-12 overflow-hidden">
         <div className="container overflow-hidden">
           <NeuralExhibit />
