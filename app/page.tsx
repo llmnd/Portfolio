@@ -810,8 +810,8 @@ export default function Home() {
                     transition={{ duration: 0.3 }}
                     className="bg-[var(--surface)]/50 p-4 rounded-xl border border-[var(--line)]"
                   >
-                    <span className="block mt-2 text-[var(--accent)]">_ build systems, not just code.</span>
-                    <span className="block mt-1 text-[0.6rem] text-[var(--mute)]">// Spécialisé en architecture cloud et applications haute performance</span>
+                    <span className="block mt-2 text-[var(--accent)]">build systems</span>
+                   
                   </motion.p>
                 )}
               </AnimatePresence>
