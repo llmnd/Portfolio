@@ -196,7 +196,9 @@ export default function ThreeExperience({ techs, onTechClick }: ThreeExperienceP
     screenGroup.add(standBase, standArm);
 
     // Écran
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.4, 0.04), frameMat);
+    const screenWidth = isMobile ? 2.8 : 2.44;
+    const screenHeight = isMobile ? 1.54 : 1.34;
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(screenWidth + 0.06, screenHeight + 0.06, 0.04), frameMat);
     frame.position.set(0, 0.95, -0.05);
     frame.castShadow = true;
     screenGroup.add(frame);
@@ -209,7 +211,7 @@ export default function ThreeExperience({ techs, onTechClick }: ThreeExperienceP
     const screenTexture = new THREE.CanvasTexture(canvas);
 
     const screenMat = new THREE.MeshBasicMaterial({ map: screenTexture });
-    const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.44, 1.34), screenMat);
+    const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(screenWidth, screenHeight), screenMat);
     screenMesh.position.set(0, 0.95, -0.029);
     screenGroup.add(screenMesh);
 
