@@ -857,21 +857,9 @@ export default function Home() {
           >
             <div className="inline-flex flex-wrap items-center gap-2 border border-[var(--line)] bg-[var(--surface)]/80 px-4 py-2 font-mono text-xs text-[var(--accent)] mb-8 rounded-full">
               <Activity className="h-3.5 w-3.5 animate-pulse" />
-              <span>SYSTEM ONLINE — DAKAR, SN</span>
+              <span>SYSTEM | DAKAR, SN</span>
               <span className="h-1 w-1 bg-[var(--accent)] rounded-full" />
             </div>
-
-            <h1 className="font-display text-1xl font-semibold leading-[1.08] text-[var(--ink)] sm:text-2xl uppercase tracking-tight">
-              <span className="text-white/80">Développeur</span> <br />
-              <span className="text-[var(--accent)] relative inline-block">
-                Full-Stack &amp; Systems
-                <motion.div 
-                  className="absolute -inset-4 -z-10 bg-[var(--accent)] opacity-5 blur-2xl"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                />
-              </span>
-            </h1>
 
             <div className="mt-6 max-w-lg font-mono text-sm leading-7 text-[var(--mute)]">
               <AnimatePresence mode="wait">
