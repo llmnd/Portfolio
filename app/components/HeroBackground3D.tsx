@@ -23,13 +23,22 @@ uniform sampler2D uIdeTexture;
 #define SURF_DIST 0.001
 #define MAX_DIST 20.0
 
+mat2 rot2D(float angle) {
+  float s = sin(angle), c = cos(angle);
+  return mat2(c, -s, s, c);
+}
+
 float sdRoundedBox(vec3 p, vec3 b, float r) {
   vec3 q = abs(p) - b;
   return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
 float map(vec3 p, out float matID, out vec2 texCoord) {
-  // ÉCRAN STATIQUE : Alignement parfait face caméra pour une jouabilité optimale
+  if (!uIsMobile) {
+    p.xz *= rot2D(uMouse.x * 0.12);
+    p.yz *= rot2D(uMouse.y * 0.08);
+  }
+
   vec3 pScreen = p - vec3(0.0, 0.0, 0.0);
   float dDisplay = sdRoundedBox(pScreen, vec3(0.9, 0.9, 0.015), 0.03);
 
@@ -58,12 +67,11 @@ vec3 getNormal(vec3 p) {
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
 
-  // Caméra fixe et cadrée
-  float camDist = uIsMobile ? -2.7 : -2.2;
+  float camDist = uIsMobile ? -2.35 : -2.25;
   vec3 ro = vec3(0.0, 0.0, camDist);
   vec3 rd = normalize(vec3(uv, 1.2));
 
-  int maxSteps = uIsMobile ? 40 : 70;
+  int maxSteps = uIsMobile ? 50 : 70;
   float dO = 0.0;
   vec2 hitTexCoord = vec2(0.0);
 
@@ -87,39 +95,30 @@ void main() {
     vec3 p = ro + rd * dO;
     vec3 n = getNormal(p);
     
-    // Éclairage dynamique qui suit le curseur autour du cadre
-    vec3 lightPos = vec3(uMouse.x * 2.0, uMouse.y * 2.0, -1.5);
+    vec3 lightPos = vec3(uMouse.x * 2.0, 2.5, -2.0);
     vec3 l = normalize(lightPos - p);
 
     vec3 ref = reflect(rd, n);
     float spec = pow(max(0.0, dot(ref, l)), 32.0);
     float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.0);
 
-    // Image du jeu
     vec4 ideSample = texture(uIdeTexture, hitTexCoord);
     color = ideSample.rgb + spec * vec3(0.2) + fresnel * vec3(0.0, 0.6, 1.0) * 0.4;
   }
 
-  // Halo néon d'arrière-plan
   float radialDist = length(uv);
   color += vec3(0.05, 0.35, 0.7) * (0.08 / (radialDist + 0.4));
-
-  // Subtil grain
-  float noise = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.01;
-  color += noise;
 
   fragColor = vec4(color, 1.0);
 }
 `;
 
-export const StaticScreenArcadeGame = () => {
+export const AestheticArcadeGame = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const joystickRef = useRef<HTMLDivElement | null>(null);
 
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [showControlsHint, setShowControlsHint] = useState(true);
 
   const targetMouseRef = useRef({ x: 0, y: 0 });
   const currentMouseRef = useRef({ x: 0, y: 0 });
@@ -127,13 +126,15 @@ export const StaticScreenArcadeGame = () => {
   const gameState = useRef({
     playerX: 512,
     playerY: 880,
+    moveLeft: false,
+    moveRight: false,
     bullets: [] as { x: number; y: number }[],
     bugs: [] as { x: number; y: number; speed: number; label: string; radius: number }[],
-    stars: Array.from({ length: 40 }, () => ({
+    stars: Array.from({ length: 45 }, () => ({
       x: Math.random() * 1024,
       y: Math.random() * 1024,
-      size: Math.random() * 2 + 1,
-      speed: Math.random() * 2 + 0.5,
+      size: Math.random() * 2.5 + 1,
+      speed: Math.random() * 2 + 1,
     })),
     keys: {} as Record<string, boolean>,
     score: 0,
@@ -142,9 +143,19 @@ export const StaticScreenArcadeGame = () => {
     lastShot: 0,
   });
 
+  // Masquer l'instruction initiale après 4.5 secondes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowControlsHint(false);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const resetGame = () => {
     gameState.current.playerX = 512;
     gameState.current.playerY = 880;
+    gameState.current.moveLeft = false;
+    gameState.current.moveRight = false;
     gameState.current.bullets = [];
     gameState.current.bugs = [];
     gameState.current.score = 0;
@@ -179,7 +190,7 @@ export const StaticScreenArcadeGame = () => {
 
     const gl = canvas.getContext('webgl2', {
       powerPreference: 'high-performance',
-      antialias: false,
+      antialias: true,
       alpha: false,
     });
 
@@ -191,10 +202,10 @@ export const StaticScreenArcadeGame = () => {
     const ctx = ideCanvas.getContext('2d');
 
     const bugTypes = [
-      { label: '404', radius: 22, color: '#f43f5e' },
-      { label: 'NULL', radius: 18, color: '#eab308' },
-      { label: 'BUG', radius: 26, color: '#a855f7' },
-      { label: 'ERR', radius: 20, color: '#06b6d4' },
+      { label: '404', radius: 24, color: '#f43f5e' },
+      { label: 'NULL', radius: 20, color: '#eab308' },
+      { label: 'BUG', radius: 28, color: '#a855f7' },
+      { label: 'ERR', radius: 22, color: '#06b6d4' },
     ];
 
     const updateAndDrawGame = (time: number) => {
@@ -203,20 +214,17 @@ export const StaticScreenArcadeGame = () => {
       const h = ideCanvas.height;
       const state = gameState.current;
 
-      // Fond espace / cyber
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, w, h);
 
-      // Fond d'étoiles défilantes
-      ctx.fillStyle = '#ffffff88';
+      ctx.fillStyle = '#ffffffaa';
       state.stars.forEach((star) => {
         star.y += star.speed;
         if (star.y > h) star.y = 0;
         ctx.fillRect(star.x, star.y, star.size, star.size);
       });
 
-      // Grille Cyber
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 64) {
         ctx.beginPath();
@@ -225,74 +233,70 @@ export const StaticScreenArcadeGame = () => {
         ctx.stroke();
       }
 
-      // En-tête HUD Chic
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, w, 70);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 68, w, 2);
-
-      // Score
-      ctx.font = 'bold 24px monospace';
+      ctx.fillRect(0, 0, w, 76);
       ctx.fillStyle = '#38bdf8';
-      ctx.fillText(`SCORE: ${state.score.toString().padStart(6, '0')}`, 30, 44);
+      ctx.fillRect(0, 74, w, 2);
 
-      // Barre de Vie
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(w - 260, 24, 220, 22);
+      ctx.font = 'bold 28px monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`SCORE: ${state.score.toString().padStart(6, '0')}`, 30, 48);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(w - 280, 26, 240, 26);
       ctx.fillStyle = state.health > 40 ? '#10b981' : '#ef4444';
-      ctx.fillRect(w - 260, 24, (state.health / 100) * 220, 22);
+      ctx.fillRect(w - 280, 26, (state.health / 100) * 240, 26);
       ctx.strokeStyle = '#64748b';
-      ctx.strokeRect(w - 260, 24, 220, 22);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(w - 280, 26, 240, 26);
 
       if (!state.isOver) {
-        // --- LOGIQUE JOUEUR ---
-        if (state.keys['ArrowLeft'] || state.keys['KeyA']) state.playerX -= 11;
-        if (state.keys['ArrowRight'] || state.keys['KeyD']) state.playerX += 11;
-        state.playerX = Math.max(40, Math.min(w - 40, state.playerX));
+        const speed = 14;
+        if (state.keys['ArrowLeft'] || state.keys['KeyA'] || state.keys['KeyQ'] || state.moveLeft) {
+          state.playerX -= speed;
+        }
+        if (state.keys['ArrowRight'] || state.keys['KeyD'] || state.moveRight) {
+          state.playerX += speed;
+        }
+        state.playerX = Math.max(50, Math.min(w - 50, state.playerX));
 
-        // Tir continu
-        if (time - state.lastShot > 0.12) {
-          state.bullets.push({ x: state.playerX - 14, y: state.playerY - 20 });
-          state.bullets.push({ x: state.playerX + 14, y: state.playerY - 20 });
+        if (time - state.lastShot > 0.11) {
+          state.bullets.push({ x: state.playerX - 16, y: state.playerY - 24 });
+          state.bullets.push({ x: state.playerX + 16, y: state.playerY - 24 });
           state.lastShot = time;
         }
 
-        // Apparition des ennemis
-        if (Math.random() < 0.045) {
+        if (Math.random() < 0.05) {
           const type = bugTypes[Math.floor(Math.random() * bugTypes.length)];
           state.bugs.push({
-            x: Math.random() * (w - 120) + 60,
+            x: Math.random() * (w - 140) + 70,
             y: 80,
-            speed: 2.5 + Math.random() * 3.5,
+            speed: 3 + Math.random() * 4,
             label: type.label,
             radius: type.radius,
           });
         }
 
-        // Tirs
-        state.bullets.forEach((b) => (b.y -= 18));
+        state.bullets.forEach((b) => (b.y -= 20));
         state.bullets = state.bullets.filter((b) => b.y > 70);
 
-        // Ennemis et Collisions
         for (let i = state.bugs.length - 1; i >= 0; i--) {
           const bug = state.bugs[i];
           bug.y += bug.speed;
 
-          // Tir touche ennemi
           for (let j = state.bullets.length - 1; j >= 0; j--) {
             const bullet = state.bullets[j];
-            if (Math.hypot(bug.x - bullet.x, bug.y - bullet.y) < bug.radius + 6) {
+            if (Math.hypot(bug.x - bullet.x, bug.y - bullet.y) < bug.radius + 8) {
               state.bugs.splice(i, 1);
               state.bullets.splice(j, 1);
-              state.score += 150;
+              state.score += 100;
               break;
             }
           }
 
-          // Ennemi franchit la ligne
-          if (bug.y > h - 60) {
+          if (bug.y > h - 70) {
             state.bugs.splice(i, 1);
-            state.health -= 20;
+            state.health -= 25;
             if (state.health <= 0) {
               state.isOver = true;
               setGameOver(true);
@@ -301,42 +305,36 @@ export const StaticScreenArcadeGame = () => {
         }
       }
 
-      // --- GRAPHIQUES ET RENDU NEON ---
-
-      // Projectiles
       ctx.fillStyle = '#38bdf8';
       ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 10;
       state.bullets.forEach((b) => {
-        ctx.fillRect(b.x - 2, b.y, 4, 16);
+        ctx.fillRect(b.x - 3, b.y, 6, 18);
       });
 
-      // Vaisseau spatial du Joueur
       ctx.shadowColor = '#06b6d4';
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 16;
       ctx.fillStyle = '#06b6d4';
       ctx.beginPath();
-      ctx.moveTo(state.playerX, state.playerY - 30);
-      ctx.lineTo(state.playerX - 28, state.playerY + 18);
+      ctx.moveTo(state.playerX, state.playerY - 32);
+      ctx.lineTo(state.playerX - 30, state.playerY + 20);
       ctx.lineTo(state.playerX, state.playerY + 8);
-      ctx.lineTo(state.playerX + 28, state.playerY + 18);
+      ctx.lineTo(state.playerX + 30, state.playerY + 20);
       ctx.closePath();
       ctx.fill();
 
-      // Reactor Flame
-      ctx.fillStyle = Math.sin(time * 30) > 0 ? '#f59e0b' : '#ef4444';
+      ctx.fillStyle = Math.sin(time * 25) > 0 ? '#f59e0b' : '#ef4444';
       ctx.beginPath();
-      ctx.moveTo(state.playerX - 10, state.playerY + 12);
-      ctx.lineTo(state.playerX, state.playerY + 28);
-      ctx.lineTo(state.playerX + 10, state.playerY + 12);
+      ctx.moveTo(state.playerX - 12, state.playerY + 14);
+      ctx.lineTo(state.playerX, state.playerY + 32);
+      ctx.lineTo(state.playerX + 12, state.playerY + 14);
       ctx.closePath();
       ctx.fill();
 
-      // Ennemis
       state.bugs.forEach((bug) => {
         ctx.shadowColor = '#f43f5e';
-        ctx.shadowBlur = 14;
-        ctx.fillStyle = '#1e1b4b';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#0f172a';
         ctx.strokeStyle = '#f43f5e';
         ctx.lineWidth = 3;
 
@@ -347,31 +345,26 @@ export const StaticScreenArcadeGame = () => {
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 14px monospace';
+        ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(bug.label, bug.x, bug.y + 5);
+        ctx.fillText(bug.label, bug.x, bug.y + 6);
         ctx.textAlign = 'left';
       });
 
       ctx.shadowBlur = 0;
 
-      // Écran Game Over
       if (state.isOver) {
-        ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
+        ctx.fillStyle = 'rgba(3, 7, 18, 0.92)';
         ctx.fillRect(0, 0, w, h);
 
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 20;
         ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 52px monospace';
+        ctx.font = 'bold 56px monospace';
         ctx.textAlign = 'center';
         ctx.fillText('SYSTEM CRASH', w / 2, h / 2 - 30);
 
-        ctx.shadowBlur = 0;
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '22px monospace';
-        ctx.fillText(`FINAL SCORE: ${state.score}`, w / 2, h / 2 + 20);
-        ctx.fillText('PRESS SPACE TO RESTART', w / 2, h / 2 + 70);
+        ctx.font = '24px monospace';
+        ctx.fillText(`FINAL SCORE: ${state.score}`, w / 2, h / 2 + 30);
         ctx.textAlign = 'left';
       }
     };
@@ -446,7 +439,7 @@ export const StaticScreenArcadeGame = () => {
       const mobile = window.innerWidth < 768;
       setIsMobileDevice(mobile);
 
-      const dpr = mobile ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -494,81 +487,56 @@ export const StaticScreenArcadeGame = () => {
     };
   }, [isMobileDevice]);
 
-  // Commandes tactiles
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    updateJoystick(e.touches[0]);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    updateJoystick(e.touches[0]);
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    setJoystickPos({ x: 0, y: 0 });
-  };
-
-  const updateJoystick = (touch: React.Touch) => {
-    if (!joystickRef.current) return;
-    const rect = joystickRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const maxRadius = 45;
-
-    let deltaX = touch.clientX - centerX;
-    deltaX = Math.max(-maxRadius, Math.min(maxRadius, deltaX));
-
-    setJoystickPos({ x: deltaX, y: 0 });
-
-    gameState.current.playerX += (deltaX / maxRadius) * 14;
-    gameState.current.playerX = Math.max(40, Math.min(984, gameState.current.playerX));
-  };
+  const startMoveLeft = () => (gameState.current.moveLeft = true);
+  const stopMoveLeft = () => (gameState.current.moveLeft = false);
+  const startMoveRight = () => (gameState.current.moveRight = true);
+  const stopMoveRight = () => (gameState.current.moveRight = false);
 
   return (
-    <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] select-none">
+    <div className="absolute inset-0 h-full w-full overflow-hidden bg-[#030712] select-none touch-none">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full block" />
 
-      {/* Guide minimaliste */}
-      <div className="absolute bottom-6 left-6 z-20 font-mono text-cyan-400 text-xs bg-slate-900/80 px-4 py-3 rounded-lg border border-cyan-500/30 backdrop-blur-md">
-        <p className="font-bold mb-1">🎮 COMMANDES :</p>
-        <p>• Flèches / A-D : Se déplacer</p>
-        <p>• Espace : Recommencer</p>
-      </div>
+      {/* Notification de contrôles au démarrage (disparaît après 4s) */}
+      {!isMobileDevice && showControlsHint && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 font-mono text-cyan-300 text-sm bg-slate-900/90 border border-cyan-500/40 px-6 py-3 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.3)] backdrop-blur-md animate-bounce">
+          ⌨️ Utilisez <span className="text-white font-bold">[←] [→]</span> ou <span className="text-white font-bold">[Q] [D]</span> pour vous déplacer
+        </div>
+      )}
 
+      {/* Overlay Game Over */}
       {gameOver && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <button
             onClick={resetGame}
-            className="px-6 py-3 bg-cyan-500 text-slate-950 font-mono font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:bg-cyan-400 transition transform hover:scale-105"
+            className="px-8 py-4 bg-cyan-500 text-slate-950 font-mono text-lg font-bold rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:bg-cyan-400 active:scale-95 transition"
           >
             RECOUVRER LE SYSTÈME
           </button>
         </div>
       )}
 
-      {/* Controller Mobile */}
+      {/* Boutons Tactiles Mini & Néon (UNIQUEMENT SUR MOBILE) */}
       {isMobileDevice && (
-        <div className="absolute bottom-8 right-8 z-30 flex flex-col items-center gap-2">
-          <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase opacity-70">
-            DÉPLACER
-          </span>
-          <div
-            ref={joystickRef}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className="relative w-28 h-28 rounded-full bg-slate-900/60 border border-cyan-500/30 backdrop-blur-md flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.15)] touch-none"
+        <div className="absolute bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
+          <button
+            onTouchStart={startMoveLeft}
+            onTouchEnd={stopMoveLeft}
+            className="w-14 h-14 rounded-full bg-slate-900/40 border border-cyan-400/50 text-cyan-300 font-mono font-bold text-xl backdrop-blur-sm flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)] active:bg-cyan-500/40 active:scale-90 transition-all touch-none"
           >
-            <div
-              className="w-12 h-12 rounded-full border border-cyan-400/60 bg-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.4)] flex items-center justify-center"
-              style={{ transform: `translate3d(${joystickPos.x}px, 0, 0)` }}
-            />
-          </div>
+            ◄
+          </button>
+
+          <button
+            onTouchStart={startMoveRight}
+            onTouchEnd={stopMoveRight}
+            className="w-14 h-14 rounded-full bg-slate-900/40 border border-cyan-400/50 text-cyan-300 font-mono font-bold text-xl backdrop-blur-sm flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)] active:bg-cyan-500/40 active:scale-90 transition-all touch-none"
+          >
+            ►
+          </button>
         </div>
       )}
     </div>
   );
 };
 
-export default StaticScreenArcadeGame;
+export default AestheticArcadeGame;
