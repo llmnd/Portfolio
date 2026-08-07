@@ -501,7 +501,7 @@ export const AestheticArcadeGame = () => {
   const stopMoveRight = () => (gameState.current.moveRight = false);
 
   return (
-    <div className="relative w-full min-h-screen overflow-y-auto bg-[#0a0705] select-none touch-pan-y font-mono">
+    <div className="relative w-full min-h-screen bg-[#0a0705] select-none touch-pan-y font-mono">
       {/* 1. Couverture Minimaliste Flat 2D */}
       {!gameStarted && (
         <div className="min-h-screen w-full z-50 flex items-center justify-center p-4 bg-[#0a0705]">
@@ -538,21 +538,21 @@ export const AestheticArcadeGame = () => {
         </div>
       )}
 
-      {/* 2. Écran WebGL 3D */}
+      {/* 2. Écran WebGL 3D en position absolue pour défiler */}
       {gameStarted && (
-        <canvas ref={canvasRef} className="fixed inset-0 w-full h-full block" />
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
       )}
 
       {/* Indication des contrôles PC */}
       {gameStarted && !isMobileDevice && showControlsHint && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/80 border border-amber-700/40 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-md animate-bounce">
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/80 border border-amber-700/40 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-md animate-bounce">
           ⌨️ Touches <span className="text-white font-bold">[←] [→]</span> ou <span className="text-white font-bold">[Q] [D]</span>
         </div>
       )}
 
       {/* Écran Game Over */}
       {gameOver && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <button
             onClick={resetGame}
             className="px-6 py-3 bg-amber-500 text-zinc-950 text-sm font-bold rounded-xl hover:bg-amber-400 active:scale-95 transition shadow-[0_0_20px_rgba(245,158,11,0.4)]"
@@ -564,7 +564,7 @@ export const AestheticArcadeGame = () => {
 
       {/* Contrôles tactiles mobile */}
       {gameStarted && isMobileDevice && (
-        <div className="fixed bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
+        <div className="absolute bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
           <button
             onTouchStart={startMoveLeft}
             onTouchEnd={stopMoveLeft}
