@@ -527,33 +527,57 @@ const TechStackSection = () => {
 
 // ===== STATS =====
 const StatsDisplay = () => {
+  const [showStats, setShowStats] = useState(false);
+
   return (
-    <motion.div 
-      className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-    >
-      {STATS.map((stat) => (
-        <motion.div
-          key={stat.label}
-          className="group relative overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 text-center transition-all hover:border-[var(--accent)]"
-          whileHover={{ y: -4 }}
-        >
-          <div className="relative z-10">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)] transition-transform group-hover:scale-110">
-              <stat.icon className="h-6 w-6" />
-            </div>
-            <p className="font-display text-3xl font-bold tracking-tight text-[var(--ink)]">
-              {stat.value}
-            </p>
-            <p className="mt-1 font-mono text-[0.6rem] uppercase tracking-[0.15em] text-[var(--mute)]">
-              {stat.label}
-            </p>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
+    <div className="mt-14">
+      <button
+        type="button"
+        onClick={() => setShowStats((prev) => !prev)}
+        className="mb-4 inline-flex items-center rounded-full border border-[var(--line)] bg-[var(--surface)]/80 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-[var(--mute)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+      >
+        {showStats ? 'Masquer les stats' : 'Afficher les stats'}
+      </button>
+
+      <AnimatePresence initial={false}>
+        {showStats ? (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: 12 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: 12 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              {STATS.map((stat) => (
+                <motion.div
+                  key={stat.label}
+                  className="group relative overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 text-center transition-all hover:border-[var(--accent)]"
+                  whileHover={{ y: -4 }}
+                >
+                  <div className="relative z-10">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)] transition-transform group-hover:scale-110">
+                      <stat.icon className="h-6 w-6" />
+                    </div>
+                    <p className="font-display text-3xl font-bold tracking-tight text-[var(--ink)]">
+                      {stat.value}
+                    </p>
+                    <p className="mt-1 font-mono text-[0.6rem] uppercase tracking-[0.15em] text-[var(--mute)]">
+                      {stat.label}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
   );
 };
 
