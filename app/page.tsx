@@ -182,7 +182,7 @@ export default function Home() {
       <AnimatePresence>
         {navOpen && (
           <motion.div
-            className="fixed inset-0 z-50 bg-white text-zinc-950 md:hidden flex flex-col justify-between p-8"
+            className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
