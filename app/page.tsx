@@ -258,7 +258,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-0 pb-20 border-b border-[var(--line)] min-h-[70vh] md:min-h-[78vh] xl:min-h-[88vh]">
+      <section className="relative overflow-hidden pt-0 pb-20 border-b border-[var(--line)] min-h-[40vh] md:min-h-[78vh] xl:min-h-[88vh]">
         <HeroBackground3D />
         <div className="container mx-auto px-6 relative z-10">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
