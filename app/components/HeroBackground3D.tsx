@@ -2,16 +2,50 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const COVER_IMAGE_URL = '/e.jpg';
+/* =========================================================
+   COLORS
+   ========================================================= */
+
+const COLORS = {
+  cream: '#f4ecdd',
+  creamSoft: '#eee3d1',
+  beige: '#dcc4aa',
+  beigeDark: '#c9a88b',
+  brown: '#9b765d',
+  brownDark: '#725643',
+
+  gameBg: '#151411',
+  gamePanel: '#1c1a16',
+  gameGrid: '#332d26',
+  gameLine: '#4a4035',
+
+  white: '#f8f2e8',
+  muted: '#b9aa98',
+
+  enemy: '#c99d79',
+  enemyDark: '#8d6b52',
+
+  player: '#ead5bc',
+  bullet: '#e4c09b',
+
+  danger: '#c8876d',
+};
+
+/* =========================================================
+   WEBGL SHADERS
+   ========================================================= */
 
 const VERTEX_SHADER = `#version 300 es
+
 in vec2 aPosition;
+
 void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }
 `;
 
 const FRAGMENT_SHADER = `#version 300 es
+
 precision highp float;
 
 out vec4 fragColor;
@@ -26,657 +60,2706 @@ uniform sampler2D uIdeTexture;
 #define MAX_DIST 20.0
 
 mat2 rot2D(float angle) {
-  float s = sin(angle), c = cos(angle);
-  return mat2(c, -s, s, c);
+  float s = sin(angle);
+  float c = cos(angle);
+
+  return mat2(
+    c, -s,
+    s, c
+  );
 }
 
-float sdRoundedBox(vec3 p, vec3 b, float r) {
+float sdRoundedBox(
+  vec3 p,
+  vec3 b,
+  float r
+) {
   vec3 q = abs(p) - b;
-  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
+
+  return length(max(q, 0.0))
+    + min(
+        max(q.x, max(q.y, q.z)),
+        0.0
+      )
+    - r;
 }
 
-float map(vec3 p, out float matID, out vec2 texCoord) {
+float map(
+  vec3 p,
+  out float matID,
+  out vec2 texCoord
+) {
+
   if (!uIsMobile) {
-    p.xz *= rot2D(uMouse.x * 0.1);
-    p.yz *= rot2D(uMouse.y * 0.06);
+
+    p.xz *= rot2D(
+      uMouse.x * 0.12
+    );
+
+    p.yz *= rot2D(
+      uMouse.y * 0.08
+    );
   }
 
-  vec3 pScreen = p - vec3(0.0, 0.0, 0.0);
-  float dDisplay = sdRoundedBox(pScreen, vec3(0.9, 0.9, 0.015), 0.03);
+  vec3 pScreen = p;
+
+  float dDisplay = sdRoundedBox(
+    pScreen,
+    vec3(0.9, 0.9, 0.015),
+    0.03
+  );
 
   matID = 2.0;
+
   texCoord = vec2(
     (pScreen.x / 0.9) * 0.5 + 0.5,
-    1.0 - ((pScreen.y / 0.9) * 0.5 + 0.5)
+    1.0 -
+      (
+        (pScreen.y / 0.9) *
+          0.5 +
+        0.5
+      )
   );
 
   return dDisplay;
 }
 
 float mapDistOnly(vec3 p) {
+
   float dummyMat;
   vec2 dummyUv;
-  return map(p, dummyMat, dummyUv);
+
+  return map(
+    p,
+    dummyMat,
+    dummyUv
+  );
 }
 
 vec3 getNormal(vec3 p) {
+
   float d = mapDistOnly(p);
-  vec2 e = vec2(0.001, 0.0);
-  vec3 n = d - vec3(mapDistOnly(p - e.xyy), mapDistOnly(p - e.yxy), mapDistOnly(p - e.yyx));
+
+  vec2 e = vec2(
+    0.001,
+    0.0
+  );
+
+  vec3 n =
+    d -
+    vec3(
+      mapDistOnly(
+        p - e.xyy
+      ),
+
+      mapDistOnly(
+        p - e.yxy
+      ),
+
+      mapDistOnly(
+        p - e.yyx
+      )
+    );
+
   return normalize(n);
 }
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
 
-  float camDist = uIsMobile ? -2.45 : -2.25;
-  vec3 ro = vec3(0.0, 0.0, camDist);
-  vec3 rd = normalize(vec3(uv, 1.2));
+  vec2 uv =
+    (
+      gl_FragCoord.xy -
+      0.5 * uResolution.xy
+    )
+    /
+    min(
+      uResolution.x,
+      uResolution.y
+    );
 
-  int maxSteps = uIsMobile ? 50 : 70;
+  float camDist =
+    uIsMobile
+      ? -2.35
+      : -2.25;
+
+  vec3 ro = vec3(
+    0.0,
+    0.0,
+    camDist
+  );
+
+  vec3 rd = normalize(
+    vec3(
+      uv,
+      1.2
+    )
+  );
+
+  int maxSteps =
+    uIsMobile
+      ? 50
+      : 70;
+
   float dO = 0.0;
-  vec2 hitTexCoord = vec2(0.0);
 
-  for (int i = 0; i < 70; i++) {
-    if (i >= maxSteps) break;
-    vec3 p = ro + rd * dO;
-    float currentMat;
-    vec2 currentTexCoord;
-    float dS = map(p, currentMat, currentTexCoord);
-    dO += dS;
-    if (dS < SURF_DIST) {
-      hitTexCoord = currentTexCoord;
+  vec2 hitTexCoord =
+    vec2(0.0);
+
+  for (
+    int i = 0;
+    i < 70;
+    i++
+  ) {
+
+    if (i >= maxSteps) {
       break;
     }
-    if (dO > MAX_DIST) break;
+
+    vec3 p =
+      ro + rd * dO;
+
+    float currentMat;
+
+    vec2 currentTexCoord;
+
+    float dS =
+      map(
+        p,
+        currentMat,
+        currentTexCoord
+      );
+
+    dO += dS;
+
+    if (
+      dS <
+      SURF_DIST
+    ) {
+
+      hitTexCoord =
+        currentTexCoord;
+
+      break;
+    }
+
+    if (
+      dO >
+      MAX_DIST
+    ) {
+      break;
+    }
   }
 
-  vec3 color = vec3(0.05, 0.03, 0.02);
+  /*
+    Warm dark background.
+  */
 
-  if (dO < MAX_DIST) {
-    vec3 p = ro + rd * dO;
-    vec3 n = getNormal(p);
-    
-    vec3 lightPos = vec3(uMouse.x * 2.0, 2.5, -2.0);
-    vec3 l = normalize(lightPos - p);
+  vec3 color =
+    vec3(
+      0.055,
+      0.05,
+      0.043
+    );
 
-    vec3 ref = reflect(rd, n);
-    float spec = pow(max(0.0, dot(ref, l)), 32.0);
-    float fresnel = pow(1.0 - max(0.0, dot(-rd, n)), 3.0);
+  if (
+    dO <
+    MAX_DIST
+  ) {
 
-    vec4 ideSample = texture(uIdeTexture, hitTexCoord);
-    color = ideSample.rgb + spec * vec3(0.2) + fresnel * vec3(0.9, 0.4, 0.1) * 0.3;
+    vec3 p =
+      ro + rd * dO;
+
+    vec3 n =
+      getNormal(p);
+
+    /*
+      Warm directional light.
+    */
+
+    vec3 lightPos =
+      vec3(
+        uMouse.x * 2.0,
+        2.5,
+        -2.0
+      );
+
+    vec3 l =
+      normalize(
+        lightPos - p
+      );
+
+    vec3 ref =
+      reflect(
+        rd,
+        n
+      );
+
+    float spec =
+      pow(
+        max(
+          0.0,
+          dot(
+            ref,
+            l
+          )
+        ),
+        32.0
+      );
+
+    float fresnel =
+      pow(
+        1.0 -
+        max(
+          0.0,
+          dot(
+            -rd,
+            n
+          )
+        ),
+        3.0
+      );
+
+    vec4 gameSample =
+      texture(
+        uIdeTexture,
+        hitTexCoord
+      );
+
+    /*
+      Warm highlight instead of cyan.
+    */
+
+    color =
+      gameSample.rgb
+      +
+      spec *
+      vec3(
+        0.25,
+        0.19,
+        0.14
+      )
+      +
+      fresnel *
+      vec3(
+        0.32,
+        0.22,
+        0.15
+      ) *
+      0.35;
   }
 
-  float radialDist = length(uv);
-  color += vec3(0.6, 0.25, 0.05) * (0.06 / (radialDist + 0.4));
+  /*
+    Very subtle warm vignette.
+  */
 
-  fragColor = vec4(color, 1.0);
+  float radialDist =
+    length(uv);
+
+  color +=
+    vec3(
+      0.12,
+      0.08,
+      0.05
+    )
+    *
+    (
+      0.035 /
+      (radialDist + 0.4)
+    );
+
+  fragColor =
+    vec4(
+      color,
+      1.0
+    );
 }
 `;
 
+/* =========================================================
+   GAME
+   ========================================================= */
+
 export const AestheticArcadeGame = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [showControlsHint, setShowControlsHint] = useState(true);
+  const canvasRef =
+    useRef<HTMLCanvasElement | null>(
+      null
+    );
 
-  const isPausedRef = useRef(isPaused);
-  useEffect(() => {
-    isPausedRef.current = isPaused;
-  }, [isPaused]);
+  const [isMobileDevice, setIsMobileDevice] =
+    useState(false);
 
-  const targetMouseRef = useRef({ x: 0, y: 0 });
-  const currentMouseRef = useRef({ x: 0, y: 0 });
+  const [gameOver, setGameOver] =
+    useState(false);
+
+  const [hasStarted, setHasStarted] =
+    useState(false);
+
+  const [isPaused, setIsPaused] =
+    useState(false);
+
+  const [showControlsHint, setShowControlsHint] =
+    useState(true);
+
+  const hasStartedRef =
+    useRef(false);
+
+  const isPausedRef =
+    useRef(false);
+
+  const targetMouseRef =
+    useRef({
+      x: 0,
+      y: 0,
+    });
+
+  const currentMouseRef =
+    useRef({
+      x: 0,
+      y: 0,
+    });
+
+  /*
+   * =======================================================
+   * GAME STATE
+   * =======================================================
+   */
 
   const gameState = useRef({
+
     playerX: 512,
+
     playerY: 880,
+
     moveLeft: false,
+
     moveRight: false,
-    bullets: [] as { x: number; y: number }[],
-    bugs: [] as { x: number; y: number; speed: number; label: string; radius: number }[],
-    stars: Array.from({ length: 45 }, () => ({
-      x: Math.random() * 1024,
-      y: Math.random() * 1024,
-      size: Math.random() * 2.5 + 1,
-      speed: Math.random() * 2 + 1,
-    })),
-    keys: {} as Record<string, boolean>,
+
+    bullets: [] as {
+      x: number;
+      y: number;
+    }[],
+
+    bugs: [] as {
+      x: number;
+      y: number;
+      speed: number;
+      label: string;
+      radius: number;
+      rotation: number;
+    }[],
+
+    stars: Array.from(
+      {
+        length: 55,
+      },
+      () => ({
+        x:
+          Math.random() *
+          1024,
+
+        y:
+          Math.random() *
+          1024,
+
+        size:
+          Math.random() *
+            1.8 +
+          0.5,
+
+        speed:
+          Math.random() *
+            1.5 +
+          0.4,
+      })
+    ),
+
+    keys:
+      {} as Record<
+        string,
+        boolean
+      >,
+
     score: 0,
+
     health: 100,
+
     isOver: false,
+
     lastShot: 0,
   });
 
-  useEffect(() => {
-    if (!gameStarted) return;
-
-    const timer = setTimeout(() => {
-      setShowControlsHint(false);
-    }, 4500);
-    return () => clearTimeout(timer);
-  }, [gameStarted]);
+  /* =========================================================
+     START / RESET
+     ========================================================= */
 
   const resetGame = () => {
-    gameState.current.playerX = 512;
-    gameState.current.playerY = 880;
-    gameState.current.moveLeft = false;
-    gameState.current.moveRight = false;
-    gameState.current.bullets = [];
-    gameState.current.bugs = [];
-    gameState.current.score = 0;
-    gameState.current.health = 100;
-    gameState.current.isOver = false;
-    gameState.current.lastShot = 0;
+
+    const state =
+      gameState.current;
+
+    state.playerX = 512;
+
+    state.playerY = 880;
+
+    state.moveLeft =
+      false;
+
+    state.moveRight =
+      false;
+
+    state.bullets = [];
+
+    state.bugs = [];
+
+    state.score = 0;
+
+    state.health = 100;
+
+    state.isOver = false;
+
+    state.lastShot = 0;
+
     setGameOver(false);
+
     setIsPaused(false);
-    setGameStarted(true);
+
+    isPausedRef.current =
+      false;
+  };
+
+  const startGame = () => {
+
+    resetGame();
+
+    hasStartedRef.current =
+      true;
+
+    isPausedRef.current =
+      false;
+
+    setHasStarted(true);
+
+    setIsPaused(false);
+
+    setShowControlsHint(
+      true
+    );
+
+    window.setTimeout(
+      () => {
+        setShowControlsHint(
+          false
+        );
+      },
+      4500
+    );
+  };
+
+  const pauseGame = () => {
+
+    if (
+      !hasStartedRef.current ||
+      gameState.current.isOver
+    ) {
+      return;
+    }
+
+    const next =
+      !isPausedRef.current;
+
+    isPausedRef.current =
+      next;
+
+    setIsPaused(next);
+
+    gameState.current.moveLeft =
+      false;
+
+    gameState.current.moveRight =
+      false;
   };
 
   const quitGame = () => {
+
+    hasStartedRef.current =
+      false;
+
+    isPausedRef.current =
+      false;
+
     setIsPaused(false);
+
     setGameOver(false);
-    setGameStarted(false);
+
+    setHasStarted(false);
+
+    resetGame();
   };
 
-  const togglePause = () => {
-    if (gameStarted && !gameOver) {
-      setIsPaused((prev) => !prev);
-    }
-  };
+  /* =========================================================
+     KEYBOARD
+     ========================================================= */
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      gameState.current.keys[e.code] = true;
-      if (e.code === 'KeyP' || e.code === 'Escape') {
-        togglePause();
-      }
-      if (e.code === 'Space' && gameState.current.isOver) {
-        resetGame();
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      gameState.current.keys[e.code] = false;
-    };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    const handleKeyDown =
+      (e: KeyboardEvent) => {
+
+        gameState.current.keys[
+          e.code
+        ] = true;
+
+        /*
+         * Pause
+         */
+
+        if (
+          e.code === 'Escape' ||
+          e.code === 'KeyP'
+        ) {
+
+          e.preventDefault();
+
+          pauseGame();
+
+          return;
+        }
+
+        /*
+         * Restart
+         */
+
+        if (
+          e.code === 'Space' &&
+          gameState.current.isOver
+        ) {
+
+          e.preventDefault();
+
+          startGame();
+        }
+      };
+
+    const handleKeyUp =
+      (e: KeyboardEvent) => {
+
+        gameState.current.keys[
+          e.code
+        ] = false;
+      };
+
+    window.addEventListener(
+      'keydown',
+      handleKeyDown
+    );
+
+    window.addEventListener(
+      'keyup',
+      handleKeyUp
+    );
+
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown
+      );
+
+      window.removeEventListener(
+        'keyup',
+        handleKeyUp
+      );
     };
-  }, [gameStarted, gameOver]);
+
+  }, []);
+
+  /* =========================================================
+     WEBGL + GAME LOOP
+     ========================================================= */
 
   useEffect(() => {
-    if (!gameStarted) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvas =
+      canvasRef.current;
 
-    const gl = canvas.getContext('webgl2', {
-      powerPreference: 'high-performance',
-      antialias: true,
-      alpha: false,
-    });
+    if (!canvas) {
+      return;
+    }
 
-    if (!gl) return;
+    const gl =
+      canvas.getContext(
+        'webgl2',
+        {
+          powerPreference:
+            'high-performance',
 
-    const ideCanvas = document.createElement('canvas');
+          antialias: true,
+
+          alpha: false,
+        }
+      );
+
+    if (!gl) {
+      return;
+    }
+
+    /*
+     * =======================================================
+     * INTERNAL CANVAS
+     * =======================================================
+     */
+
+    const ideCanvas =
+      document.createElement(
+        'canvas'
+      );
+
     ideCanvas.width = 1024;
+
     ideCanvas.height = 1024;
-    const ctx = ideCanvas.getContext('2d');
+
+    const ctx =
+      ideCanvas.getContext(
+        '2d'
+      );
+
+    if (!ctx) {
+      return;
+    }
+
+    /*
+     * =======================================================
+     * BUG TYPES
+     * =======================================================
+     */
 
     const bugTypes = [
-      { label: '404', radius: 24 },
-      { label: 'NULL', radius: 20 },
-      { label: 'BUG', radius: 28 },
-      { label: 'ERR', radius: 22 },
+      {
+        label: '404',
+        radius: 24,
+      },
+
+      {
+        label: 'NULL',
+        radius: 21,
+      },
+
+      {
+        label: 'BUG',
+        radius: 27,
+      },
+
+      {
+        label: 'ERR',
+        radius: 22,
+      },
     ];
 
-    const updateAndDrawGame = (time: number) => {
-      if (!ctx) return;
-      const w = ideCanvas.width;
-      const h = ideCanvas.height;
+    /*
+     * =======================================================
+     * DRAW GAME
+     * =======================================================
+     */
 
-      const state = gameState.current;
+    const updateAndDrawGame =
+      (time: number) => {
 
-      ctx.fillStyle = '#0a0806';
-      ctx.fillRect(0, 0, w, h);
+        const w =
+          ideCanvas.width;
 
-      ctx.fillStyle = '#f59e0b22';
-      state.stars.forEach((star) => {
-        if (!isPausedRef.current) {
-          star.y += star.speed;
-          if (star.y > h) star.y = 0;
-        }
-        ctx.fillRect(star.x, star.y, star.size, star.size);
-      });
+        const h =
+          ideCanvas.height;
 
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.06)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < w; x += 64) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
+        const state =
+          gameState.current;
 
-      ctx.fillStyle = '#140c06';
-      ctx.fillRect(0, 0, w, 76);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(0, 74, w, 2);
+        /*
+         * BACKGROUND
+         */
 
-      ctx.font = 'bold 28px monospace';
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillText(`SCORE: ${state.score.toString().padStart(6, '0')}`, 30, 48);
+        ctx.fillStyle =
+          COLORS.gameBg;
 
-      ctx.fillStyle = '#26150a';
-      ctx.fillRect(w - 280, 25, 250, 26);
-      ctx.fillStyle = state.health > 40 ? '#f59e0b' : '#ef4444';
-      ctx.fillRect(w - 280, 25, (state.health / 100) * 250, 26);
-      ctx.strokeStyle = '#d97706';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(w - 280, 25, 250, 26);
+        ctx.fillRect(
+          0,
+          0,
+          w,
+          h
+        );
 
-      if (!state.isOver && !isPausedRef.current) {
-        const speed = 14;
-        if (state.keys['ArrowLeft'] || state.keys['KeyA'] || state.keys['KeyQ'] || state.moveLeft) {
-          state.playerX -= speed;
-        }
-        if (state.keys['ArrowRight'] || state.keys['KeyD'] || state.moveRight) {
-          state.playerX += speed;
-        }
-        state.playerX = Math.max(50, Math.min(w - 50, state.playerX));
+        /*
+         * ===================================================
+         * STARS
+         * ===================================================
+         */
 
-        if (time - state.lastShot > 0.11) {
-          state.bullets.push({ x: state.playerX - 16, y: state.playerY - 24 });
-          state.bullets.push({ x: state.playerX + 16, y: state.playerY - 24 });
-          state.lastShot = time;
-        }
+        ctx.fillStyle =
+          'rgba(238, 224, 205, 0.55)';
 
-        if (Math.random() < 0.05) {
-          const type = bugTypes[Math.floor(Math.random() * bugTypes.length)];
-          state.bugs.push({
-            x: Math.random() * (w - 140) + 70,
-            y: 80,
-            speed: 3 + Math.random() * 4,
-            label: type.label,
-            radius: type.radius,
-          });
-        }
+        state.stars.forEach(
+          (star) => {
 
-        state.bullets.forEach((b) => (b.y -= 20));
-        state.bullets = state.bullets.filter((b) => b.y > 70);
+            if (
+              hasStartedRef.current &&
+              !isPausedRef.current &&
+              !state.isOver
+            ) {
 
-        for (let i = state.bugs.length - 1; i >= 0; i--) {
-          const bug = state.bugs[i];
-          bug.y += bug.speed;
-
-          for (let j = state.bullets.length - 1; j >= 0; j--) {
-            const bullet = state.bullets[j];
-            if (Math.hypot(bug.x - bullet.x, bug.y - bullet.y) < bug.radius + 8) {
-              state.bugs.splice(i, 1);
-              state.bullets.splice(j, 1);
-              state.score += 100;
-              break;
+              star.y +=
+                star.speed;
             }
+
+            if (
+              star.y >
+              h
+            ) {
+
+              star.y = 76;
+            }
+
+            ctx.fillRect(
+              star.x,
+              star.y,
+              star.size,
+              star.size
+            );
+          }
+        );
+
+        /*
+         * ===================================================
+         * GRID
+         * ===================================================
+         */
+
+        ctx.strokeStyle =
+          'rgba(220, 196, 170, 0.065)';
+
+        ctx.lineWidth = 1;
+
+        for (
+          let x = 0;
+          x < w;
+          x += 64
+        ) {
+
+          ctx.beginPath();
+
+          ctx.moveTo(
+            x,
+            76
+          );
+
+          ctx.lineTo(
+            x,
+            h
+          );
+
+          ctx.stroke();
+        }
+
+        for (
+          let y = 140;
+          y < h;
+          y += 64
+        ) {
+
+          ctx.beginPath();
+
+          ctx.moveTo(
+            0,
+            y
+          );
+
+          ctx.lineTo(
+            w,
+            y
+          );
+
+          ctx.stroke();
+        }
+
+        /*
+         * ===================================================
+         * TOP HUD
+         * ===================================================
+         */
+
+        ctx.fillStyle =
+          'rgba(27, 25, 21, 0.96)';
+
+        ctx.fillRect(
+          0,
+          0,
+          w,
+          76
+        );
+
+        /*
+         * Bottom HUD border
+         */
+
+        ctx.strokeStyle =
+          'rgba(220, 196, 170, 0.24)';
+
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          0,
+          75.5
+        );
+
+        ctx.lineTo(
+          w,
+          75.5
+        );
+
+        ctx.stroke();
+
+        /*
+         * SCORE LABEL
+         */
+
+        ctx.font =
+          '11px Arial, sans-serif';
+
+        ctx.fillStyle =
+          COLORS.muted;
+
+        ctx.letterSpacing =
+          '2px';
+
+        ctx.fillText(
+          'SCORE',
+          30,
+          28
+        );
+
+        /*
+         * SCORE
+         */
+
+        ctx.font =
+          '20px monospace';
+
+        ctx.fillStyle =
+          COLORS.white;
+
+        ctx.fillText(
+          state.score
+            .toString()
+            .padStart(
+              6,
+              '0'
+            ),
+          30,
+          52
+        );
+
+        /*
+         * HEALTH LABEL
+         */
+
+        ctx.font =
+          '11px Arial, sans-serif';
+
+        ctx.fillStyle =
+          COLORS.muted;
+
+        ctx.fillText(
+          'HEALTH',
+          w - 300,
+          28
+        );
+
+        /*
+         * HEALTH BAR
+         */
+
+        const healthSegments =
+          7;
+
+        const segmentWidth = 22;
+
+        const segmentGap = 5;
+
+        const totalWidth =
+          healthSegments *
+            segmentWidth +
+          (healthSegments - 1) *
+            segmentGap;
+
+        const healthStart =
+          w -
+          30 -
+          totalWidth;
+
+        for (
+          let i = 0;
+          i < healthSegments;
+          i++
+        ) {
+
+          const threshold =
+            ((i + 1) /
+              healthSegments) *
+            100;
+
+          const active =
+            state.health >=
+            threshold;
+
+          ctx.fillStyle =
+            active
+              ? COLORS.beige
+              : '#39332c';
+
+          ctx.beginPath();
+
+          ctx.roundRect(
+            healthStart +
+              i *
+                (
+                  segmentWidth +
+                  segmentGap
+                ),
+            40,
+            segmentWidth,
+            10,
+            3
+          );
+
+          ctx.fill();
+        }
+
+        /*
+         * ===================================================
+         * GAMEPLAY
+         * ===================================================
+         */
+
+        if (
+          hasStartedRef.current &&
+          !isPausedRef.current &&
+          !state.isOver
+        ) {
+
+          /*
+           * PLAYER SPEED
+           */
+
+          const speed =
+            14;
+
+          /*
+           * MOVE LEFT
+           */
+
+          if (
+            state.keys[
+              'ArrowLeft'
+            ] ||
+            state.keys[
+              'KeyA'
+            ] ||
+            state.keys[
+              'KeyQ'
+            ] ||
+            state.moveLeft
+          ) {
+
+            state.playerX -=
+              speed;
           }
 
-          if (bug.y > h - 70) {
-            state.bugs.splice(i, 1);
-            state.health -= 25;
-            if (state.health <= 0) {
-              state.isOver = true;
-              setGameOver(true);
+          /*
+           * MOVE RIGHT
+           */
+
+          if (
+            state.keys[
+              'ArrowRight'
+            ] ||
+            state.keys[
+              'KeyD'
+            ] ||
+            state.moveRight
+          ) {
+
+            state.playerX +=
+              speed;
+          }
+
+          /*
+           * LIMIT PLAYER
+           */
+
+          state.playerX =
+            Math.max(
+              50,
+              Math.min(
+                w - 50,
+                state.playerX
+              )
+            );
+
+          /*
+           * =================================================
+           * AUTO SHOOT
+           * =================================================
+           */
+
+          if (
+            time -
+              state.lastShot >
+            0.11
+          ) {
+
+            state.bullets.push({
+              x:
+                state.playerX -
+                16,
+
+              y:
+                state.playerY -
+                24,
+            });
+
+            state.bullets.push({
+              x:
+                state.playerX +
+                16,
+
+              y:
+                state.playerY -
+                24,
+            });
+
+            state.lastShot =
+              time;
+          }
+
+          /*
+           * =================================================
+           * SPAWN BUG
+           * =================================================
+           */
+
+          if (
+            Math.random() <
+            0.05
+          ) {
+
+            const type =
+              bugTypes[
+                Math.floor(
+                  Math.random() *
+                    bugTypes.length
+                )
+              ];
+
+            state.bugs.push({
+              x:
+                Math.random() *
+                  (w - 140) +
+                70,
+
+              y: 100,
+
+              speed:
+                3 +
+                Math.random() *
+                  4,
+
+              label:
+                type.label,
+
+              radius:
+                type.radius,
+
+              rotation:
+                Math.random() *
+                Math.PI *
+                2,
+            });
+          }
+
+          /*
+           * =================================================
+           * BULLETS UPDATE
+           * =================================================
+           */
+
+          state.bullets.forEach(
+            (bullet) => {
+
+              bullet.y -=
+                20;
+            }
+          );
+
+          state.bullets =
+            state.bullets.filter(
+              (bullet) =>
+                bullet.y > 76
+            );
+
+          /*
+           * =================================================
+           * BUG UPDATE
+           * =================================================
+           */
+
+          for (
+            let i =
+              state.bugs.length -
+              1;
+
+            i >= 0;
+
+            i--
+          ) {
+
+            const bug =
+              state.bugs[i];
+
+            bug.y +=
+              bug.speed;
+
+            bug.rotation +=
+              0.01;
+
+            /*
+             * COLLISIONS
+             */
+
+            for (
+              let j =
+                state.bullets.length -
+                1;
+
+              j >= 0;
+
+              j--
+            ) {
+
+              const bullet =
+                state.bullets[j];
+
+              const distance =
+                Math.hypot(
+                  bug.x -
+                    bullet.x,
+
+                  bug.y -
+                    bullet.y
+                );
+
+              if (
+                distance <
+                bug.radius +
+                  8
+              ) {
+
+                state.bugs.splice(
+                  i,
+                  1
+                );
+
+                state.bullets.splice(
+                  j,
+                  1
+                );
+
+                state.score +=
+                  100;
+
+                break;
+              }
+            }
+
+            /*
+             * BUG REACHED BOTTOM
+             */
+
+            if (
+              bug.y >
+              h - 70
+            ) {
+
+              state.bugs.splice(
+                i,
+                1
+              );
+
+              state.health -=
+                25;
+
+              if (
+                state.health <=
+                0
+              ) {
+
+                state.health =
+                  0;
+
+                state.isOver =
+                  true;
+
+                setGameOver(
+                  true
+                );
+              }
             }
           }
         }
-      }
 
-      ctx.fillStyle = '#fbbf24';
-      ctx.shadowColor = '#fbbf24';
-      ctx.shadowBlur = 10;
-      state.bullets.forEach((b) => {
-        ctx.fillRect(b.x - 3, b.y, 6, 18);
-      });
+        /*
+         * ===================================================
+         * BULLETS DRAW
+         * ===================================================
+         */
 
-      ctx.shadowColor = '#d97706';
-      ctx.shadowBlur = 16;
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.moveTo(state.playerX, state.playerY - 32);
-      ctx.lineTo(state.playerX - 30, state.playerY + 20);
-      ctx.lineTo(state.playerX, state.playerY + 8);
-      ctx.lineTo(state.playerX + 30, state.playerY + 20);
-      ctx.closePath();
-      ctx.fill();
+        ctx.shadowColor =
+          'rgba(228, 192, 155, 0.8)';
 
-      ctx.fillStyle = Math.sin(time * 25) > 0 ? '#fbbf24' : '#b45309';
-      ctx.beginPath();
-      ctx.moveTo(state.playerX - 12, state.playerY + 14);
-      ctx.lineTo(state.playerX, state.playerY + 32);
-      ctx.lineTo(state.playerX + 12, state.playerY + 14);
-      ctx.closePath();
-      ctx.fill();
+        ctx.shadowBlur = 8;
 
-      state.bugs.forEach((bug) => {
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 12;
-        ctx.fillStyle = '#1c0a00';
-        ctx.strokeStyle = '#ea580c';
-        ctx.lineWidth = 3;
+        state.bullets.forEach(
+          (bullet) => {
 
-        ctx.beginPath();
-        ctx.arc(bug.x, bug.y, bug.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+            ctx.fillStyle =
+              COLORS.bullet;
+
+            ctx.beginPath();
+
+            ctx.roundRect(
+              bullet.x - 2,
+              bullet.y,
+              4,
+              18,
+              2
+            );
+
+            ctx.fill();
+          }
+        );
 
         ctx.shadowBlur = 0;
-        ctx.fillStyle = '#ffedd5';
-        ctx.font = 'bold 16px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(bug.label, bug.x, bug.y + 6);
-        ctx.textAlign = 'left';
-      });
 
-      ctx.shadowBlur = 0;
+        /*
+         * ===================================================
+         * PLAYER
+         * ===================================================
+         */
 
-      if (state.isOver) {
-        ctx.fillStyle = 'rgba(12, 6, 2, 0.94)';
-        ctx.fillRect(0, 0, w, h);
+        ctx.save();
 
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 56px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('SYSTEM CRASH', w / 2, h / 2 - 20);
+        ctx.translate(
+          state.playerX,
+          state.playerY
+        );
 
-        ctx.fillStyle = '#f59e0b';
-        ctx.font = '24px monospace';
-        ctx.fillText(`FINAL SCORE: ${state.score}`, w / 2, h / 2 + 40);
-        ctx.textAlign = 'left';
-      }
-    };
+        /*
+         * Soft shadow
+         */
 
-    updateAndDrawGame(0);
+        ctx.shadowColor =
+          'rgba(226, 193, 157, 0.5)';
 
-    const ideTexture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, ideTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ideCanvas);
+        ctx.shadowBlur = 18;
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        /*
+         * Ship
+         */
 
-    const createShader = (gl: WebGL2RenderingContext, type: number, source: string) => {
-      const shader = gl.createShader(type);
-      if (!shader) return null;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        gl.deleteShader(shader);
+        ctx.fillStyle =
+          COLORS.player;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          0,
+          -32
+        );
+
+        ctx.lineTo(
+          -30,
+          20
+        );
+
+        ctx.lineTo(
+          0,
+          8
+        );
+
+        ctx.lineTo(
+          30,
+          20
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        /*
+         * Ship center
+         */
+
+        ctx.fillStyle =
+          '#fff8ed';
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          0,
+          -20
+        );
+
+        ctx.lineTo(
+          -8,
+          10
+        );
+
+        ctx.lineTo(
+          8,
+          10
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        /*
+         * Engine
+         */
+
+        ctx.shadowBlur = 10;
+
+        ctx.fillStyle =
+          Math.sin(
+            time * 25
+          ) > 0
+            ? '#cba47e'
+            : '#a77d5e';
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          -9,
+          15
+        );
+
+        ctx.lineTo(
+          0,
+          34
+        );
+
+        ctx.lineTo(
+          9,
+          15
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        ctx.restore();
+
+        /*
+         * ===================================================
+         * BUGS DRAW
+         * ===================================================
+         */
+
+        state.bugs.forEach(
+          (bug) => {
+
+            ctx.save();
+
+            ctx.translate(
+              bug.x,
+              bug.y
+            );
+
+            ctx.rotate(
+              Math.sin(
+                bug.rotation
+              ) * 0.08
+            );
+
+            /*
+             * Soft glow
+             */
+
+            ctx.shadowColor =
+              'rgba(201, 157, 121, 0.55)';
+
+            ctx.shadowBlur = 12;
+
+            /*
+             * Body
+             */
+
+            ctx.fillStyle =
+              COLORS.enemy;
+
+            ctx.strokeStyle =
+              COLORS.enemyDark;
+
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+
+            ctx.arc(
+              0,
+              0,
+              bug.radius,
+              0,
+              Math.PI * 2
+            );
+
+            ctx.fill();
+
+            ctx.stroke();
+
+            /*
+             * Tiny legs
+             */
+
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle =
+              COLORS.enemy;
+
+            ctx.lineWidth = 2;
+
+            for (
+              let i = -1;
+              i <= 1;
+              i++
+            ) {
+
+              ctx.beginPath();
+
+              ctx.moveTo(
+                -bug.radius + 4,
+                i * 8
+              );
+
+              ctx.lineTo(
+                -bug.radius -
+                  7,
+                i * 10
+              );
+
+              ctx.stroke();
+
+              ctx.beginPath();
+
+              ctx.moveTo(
+                bug.radius - 4,
+                i * 8
+              );
+
+              ctx.lineTo(
+                bug.radius + 7,
+                i * 10
+              );
+
+              ctx.stroke();
+            }
+
+            /*
+             * Eyes
+             */
+
+            ctx.fillStyle =
+              COLORS.gameBg;
+
+            ctx.beginPath();
+
+            ctx.arc(
+              -7,
+              -4,
+              3,
+              0,
+              Math.PI * 2
+            );
+
+            ctx.arc(
+              7,
+              -4,
+              3,
+              0,
+              Math.PI * 2
+            );
+
+            ctx.fill();
+
+            /*
+             * Label
+             */
+
+            ctx.fillStyle =
+              COLORS.gameBg;
+
+            ctx.font =
+              'bold 10px monospace';
+
+            ctx.textAlign =
+              'center';
+
+            ctx.textBaseline =
+              'middle';
+
+            ctx.fillText(
+              bug.label,
+              0,
+              10
+            );
+
+            ctx.restore();
+          }
+        );
+
+        /*
+         * ===================================================
+         * GAME OVER
+         * ===================================================
+         */
+
+        if (
+          state.isOver
+        ) {
+
+          ctx.fillStyle =
+            'rgba(18, 16, 13, 0.88)';
+
+          ctx.fillRect(
+            0,
+            0,
+            w,
+            h
+          );
+
+          ctx.fillStyle =
+            COLORS.beige;
+
+          ctx.font =
+            '500 42px Arial, sans-serif';
+
+          ctx.textAlign =
+            'center';
+
+          ctx.fillText(
+            'GAME OVER',
+            w / 2,
+            h / 2 - 30
+          );
+
+          ctx.fillStyle =
+            COLORS.muted;
+
+          ctx.font =
+            '16px monospace';
+
+          ctx.fillText(
+            `SCORE  ${state.score
+              .toString()
+              .padStart(
+                6,
+                '0'
+              )}`,
+            w / 2,
+            h / 2 + 10
+          );
+
+          ctx.textAlign =
+            'left';
+        }
+
+        /*
+         * ===================================================
+         * PAUSE DARKEN
+         * ===================================================
+         */
+
+        if (
+          isPausedRef.current &&
+          hasStartedRef.current &&
+          !state.isOver
+        ) {
+
+          ctx.fillStyle =
+            'rgba(15, 14, 12, 0.35)';
+
+          ctx.fillRect(
+            0,
+            0,
+            w,
+            h
+          );
+        }
+      };
+
+    /*
+     * INITIAL
+     */
+
+    updateAndDrawGame(
+      0
+    );
+
+    /*
+     * =======================================================
+     * TEXTURE
+     * =======================================================
+     */
+
+    const ideTexture =
+      gl.createTexture();
+
+    gl.activeTexture(
+      gl.TEXTURE0
+    );
+
+    gl.bindTexture(
+      gl.TEXTURE_2D,
+      ideTexture
+    );
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      ideCanvas
+    );
+
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_WRAP_S,
+      gl.CLAMP_TO_EDGE
+    );
+
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_WRAP_T,
+      gl.CLAMP_TO_EDGE
+    );
+
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_MIN_FILTER,
+      gl.LINEAR
+    );
+
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_MAG_FILTER,
+      gl.LINEAR
+    );
+
+    /*
+     * =======================================================
+     * SHADERS
+     * =======================================================
+     */
+
+    const createShader = (
+      type: number,
+      source: string
+    ) => {
+
+      const shader =
+        gl.createShader(
+          type
+        );
+
+      if (!shader) {
         return null;
       }
+
+      gl.shaderSource(
+        shader,
+        source
+      );
+
+      gl.compileShader(
+        shader
+      );
+
+      if (
+        !gl.getShaderParameter(
+          shader,
+          gl.COMPILE_STATUS
+        )
+      ) {
+
+        console.error(
+          gl.getShaderInfoLog(
+            shader
+          )
+        );
+
+        gl.deleteShader(
+          shader
+        );
+
+        return null;
+      }
+
       return shader;
     };
 
-    const vertShader = createShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-    const fragShader = createShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
-    if (!vertShader || !fragShader) return;
+    const vertShader =
+      createShader(
+        gl.VERTEX_SHADER,
+        VERTEX_SHADER
+      );
 
-    const program = gl.createProgram();
-    if (!program) return;
+    const fragShader =
+      createShader(
+        gl.FRAGMENT_SHADER,
+        FRAGMENT_SHADER
+      );
 
-    gl.attachShader(program, vertShader);
-    gl.attachShader(program, fragShader);
-    gl.linkProgram(program);
+    if (
+      !vertShader ||
+      !fragShader
+    ) {
+      return;
+    }
 
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+    /*
+     * =======================================================
+     * PROGRAM
+     * =======================================================
+     */
 
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    const program =
+      gl.createProgram();
+
+    if (!program) {
+      return;
+    }
+
+    gl.attachShader(
+      program,
+      vertShader
+    );
+
+    gl.attachShader(
+      program,
+      fragShader
+    );
+
+    gl.linkProgram(
+      program
+    );
+
+    if (
+      !gl.getProgramParameter(
+        program,
+        gl.LINK_STATUS
+      )
+    ) {
+
+      console.error(
+        gl.getProgramInfoLog(
+          program
+        )
+      );
+
+      return;
+    }
+
+    /*
+     * =======================================================
+     * BUFFER
+     * =======================================================
+     */
+
+    const positionBuffer =
+      gl.createBuffer();
+
+    gl.bindBuffer(
+      gl.ARRAY_BUFFER,
+      positionBuffer
+    );
+
     gl.bufferData(
       gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+
+        -1,  1,
+         1, -1,
+         1,  1,
+      ]),
       gl.STATIC_DRAW
     );
 
-    const positionAttributeLocation = gl.getAttribLocation(program, 'aPosition');
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    /*
+     * =======================================================
+     * VAO
+     * =======================================================
+     */
 
-    const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
-    const mouseLocation = gl.getUniformLocation(program, 'uMouse');
-    const timeLocation = gl.getUniformLocation(program, 'uTime');
-    const isMobileLocation = gl.getUniformLocation(program, 'uIsMobile');
-    const ideTextureLocation = gl.getUniformLocation(program, 'uIdeTexture');
+    const positionAttributeLocation =
+      gl.getAttribLocation(
+        program,
+        'aPosition'
+      );
 
-    let animationFrameId: number;
-    let startTime = performance.now();
+    const vao =
+      gl.createVertexArray();
 
-    const handleMouseMove = (e: MouseEvent) => {
-      targetMouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      targetMouseRef.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    };
+    gl.bindVertexArray(
+      vao
+    );
 
-    const handleResize = () => {
-      if (!canvas) return;
-      const mobile = window.innerWidth < 768;
-      setIsMobileDevice(mobile);
+    gl.enableVertexAttribArray(
+      positionAttributeLocation
+    );
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    };
+    gl.vertexAttribPointer(
+      positionAttributeLocation,
+      2,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('resize', handleResize);
+    /*
+     * =======================================================
+     * UNIFORMS
+     * =======================================================
+     */
+
+    const resolutionLocation =
+      gl.getUniformLocation(
+        program,
+        'uResolution'
+      );
+
+    const mouseLocation =
+      gl.getUniformLocation(
+        program,
+        'uMouse'
+      );
+
+    const timeLocation =
+      gl.getUniformLocation(
+        program,
+        'uTime'
+      );
+
+    const isMobileLocation =
+      gl.getUniformLocation(
+        program,
+        'uIsMobile'
+      );
+
+    const ideTextureLocation =
+      gl.getUniformLocation(
+        program,
+        'uIdeTexture'
+      );
+
+    /*
+     * =======================================================
+     * MOUSE
+     * =======================================================
+     */
+
+    const handleMouseMove =
+      (e: MouseEvent) => {
+
+        targetMouseRef.current.x =
+          (
+            e.clientX /
+            window.innerWidth
+          ) *
+            2 -
+          1;
+
+        targetMouseRef.current.y =
+          -(
+            e.clientY /
+            window.innerHeight
+          ) *
+            2 +
+          1;
+      };
+
+    /*
+     * =======================================================
+     * RESIZE
+     * =======================================================
+     */
+
+    const handleResize =
+      () => {
+
+        if (!canvas) {
+          return;
+        }
+
+        const mobile =
+          window.innerWidth <
+          768;
+
+        setIsMobileDevice(
+          mobile
+        );
+
+        const dpr =
+          Math.min(
+            window.devicePixelRatio ||
+              1,
+            2.5
+          );
+
+        canvas.width =
+          window.innerWidth *
+          dpr;
+
+        canvas.height =
+          window.innerHeight *
+          dpr;
+
+        gl.viewport(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+      };
+
+    window.addEventListener(
+      'mousemove',
+      handleMouseMove
+    );
+
+    window.addEventListener(
+      'resize',
+      handleResize
+    );
+
     handleResize();
 
-    const render = (now: number) => {
-      const elapsedTime = (now - startTime) * 0.001;
+    /*
+     * =======================================================
+     * RENDER LOOP
+     * =======================================================
+     */
 
-      updateAndDrawGame(elapsedTime);
+    let animationFrameId =
+      0;
 
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, ideTexture);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, ideCanvas);
+    const startTime =
+      performance.now();
 
-      currentMouseRef.current.x += (targetMouseRef.current.x - currentMouseRef.current.x) * 0.1;
-      currentMouseRef.current.y += (targetMouseRef.current.y - currentMouseRef.current.y) * 0.1;
+    const render =
+      (now: number) => {
 
-      gl.useProgram(program);
-      gl.bindVertexArray(vao);
+        const elapsedTime =
+          (
+            now -
+            startTime
+          ) *
+          0.001;
 
-      gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-      gl.uniform2f(mouseLocation, currentMouseRef.current.x, currentMouseRef.current.y);
-      gl.uniform1f(timeLocation, elapsedTime);
-      gl.uniform1i(isMobileLocation, isMobileDevice ? 1 : 0);
-      gl.uniform1i(ideTextureLocation, 0);
+        updateAndDrawGame(
+          elapsedTime
+        );
 
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-      animationFrameId = requestAnimationFrame(render);
-    };
+        /*
+         * Update texture
+         */
 
-    animationFrameId = requestAnimationFrame(render);
+        gl.activeTexture(
+          gl.TEXTURE0
+        );
+
+        gl.bindTexture(
+          gl.TEXTURE_2D,
+          ideTexture
+        );
+
+        gl.texSubImage2D(
+          gl.TEXTURE_2D,
+          0,
+          0,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          ideCanvas
+        );
+
+        /*
+         * Smooth mouse
+         */
+
+        currentMouseRef.current.x +=
+          (
+            targetMouseRef.current.x -
+            currentMouseRef.current.x
+          ) *
+          0.1;
+
+        currentMouseRef.current.y +=
+          (
+            targetMouseRef.current.y -
+            currentMouseRef.current.y
+          ) *
+          0.1;
+
+        /*
+         * WebGL render
+         */
+
+        gl.useProgram(
+          program
+        );
+
+        gl.bindVertexArray(
+          vao
+        );
+
+        gl.uniform2f(
+          resolutionLocation,
+          canvas.width,
+          canvas.height
+        );
+
+        gl.uniform2f(
+          mouseLocation,
+          currentMouseRef.current.x,
+          currentMouseRef.current.y
+        );
+
+        gl.uniform1f(
+          timeLocation,
+          elapsedTime
+        );
+
+        gl.uniform1i(
+          isMobileLocation,
+          isMobileDevice
+            ? 1
+            : 0
+        );
+
+        gl.uniform1i(
+          ideTextureLocation,
+          0
+        );
+
+        gl.drawArrays(
+          gl.TRIANGLES,
+          0,
+          6
+        );
+
+        animationFrameId =
+          requestAnimationFrame(
+            render
+          );
+      };
+
+    animationFrameId =
+      requestAnimationFrame(
+        render
+      );
+
+    /*
+     * =======================================================
+     * CLEANUP
+     * =======================================================
+     */
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
-      gl.deleteTexture(ideTexture);
-      gl.deleteProgram(program);
-      gl.deleteShader(vertShader);
-      gl.deleteShader(fragShader);
-    };
-  }, [isMobileDevice, gameStarted]);
 
-  const startMoveLeft = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
-    gameState.current.moveLeft = true;
-  };
-  const stopMoveLeft = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
-    gameState.current.moveLeft = false;
-  };
-  const startMoveRight = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
-    gameState.current.moveRight = true;
-  };
-  const stopMoveRight = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
-    gameState.current.moveRight = false;
-  };
+      cancelAnimationFrame(
+        animationFrameId
+      );
+
+      window.removeEventListener(
+        'mousemove',
+        handleMouseMove
+      );
+
+      window.removeEventListener(
+        'resize',
+        handleResize
+      );
+
+      gl.deleteTexture(
+        ideTexture
+      );
+
+      gl.deleteProgram(
+        program
+      );
+
+      gl.deleteShader(
+        vertShader
+      );
+
+      gl.deleteShader(
+        fragShader
+      );
+
+      gl.deleteBuffer(
+        positionBuffer
+      );
+
+      gl.deleteVertexArray(
+        vao
+      );
+    };
+
+  }, [isMobileDevice]);
+
+  /* =========================================================
+     TOUCH CONTROLS
+     ========================================================= */
+
+  const startMoveLeft =
+    () => {
+      gameState.current.moveLeft =
+        true;
+    };
+
+  const stopMoveLeft =
+    () => {
+      gameState.current.moveLeft =
+        false;
+    };
+
+  const startMoveRight =
+    () => {
+      gameState.current.moveRight =
+        true;
+    };
+
+  const stopMoveRight =
+    () => {
+      gameState.current.moveRight =
+        false;
+    };
+
+  /* =========================================================
+     UI
+     ========================================================= */
 
   return (
-    <div className="relative w-full h-[100dvh] bg-[#0a0705] select-none font-mono overflow-hidden flex items-center justify-center">
-      {/* ÉCRAN D'ACCUEIL */}
-      {!gameStarted && (
-        <div className="w-full h-full flex flex-col items-center justify-between p-6 sm:p-8 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0] overflow-y-auto">
-          <div className="w-full max-w-sm my-auto flex flex-col items-center space-y-6 text-center">
-            <div className="w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/50 shadow-md">
-              <img
-                src={COVER_IMAGE_URL}
-                alt="Mission"
-                className="w-full h-full object-cover opacity-90"
-              />
-            </div>
 
-            <div className="w-full space-y-2">
-              <p className="text-[#8b7d72] text-xs uppercase tracking-[0.25em] font-semibold">
-                Escape Protocol
-              </p>
-              <p className="text-[#a89f94] text-xs sm:text-sm font-light leading-relaxed max-w-xs mx-auto">
-                Éliminez les bugs avant la détection complète du système.
-              </p>
-            </div>
+    <div
+      className="absolute inset-0 h-full w-full overflow-hidden select-none touch-none"
+      style={{
+        backgroundColor:
+          COLORS.cream,
+      }}
+    >
+
+      {/* =====================================================
+          GAME CANVAS
+          ===================================================== */}
+
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block h-full w-full"
+      />
+
+      {/* =====================================================
+          START COVER
+          ===================================================== */}
+
+      {!hasStarted && (
+
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden"
+          style={{
+            backgroundColor:
+              COLORS.cream,
+          }}
+        >
+
+          {/* IMAGE */}
+
+          <img
+            src="/e.jpg"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+
+          {/* VERY LIGHT OVERLAY */}
+
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'rgba(244,236,221,0.18)',
+            }}
+          />
+
+          {/* CONTENT */}
+
+          <div className="relative z-10 flex flex-col items-center text-center">
+
+            {/* small dot */}
+
+            <div
+              className="mb-7 h-1.5 w-1.5 rounded-full"
+              style={{
+                backgroundColor:
+                  COLORS.brown,
+              }}
+            />
+
+            {/* TITLE */}
+
+            <h1
+              className="font-sans text-4xl font-light tracking-[0.38em] sm:text-6xl"
+              style={{
+                color:
+                  COLORS.brown,
+              }}
+            >
+              ARCADE
+            </h1>
+
+            {/* DOT */}
+
+            <div
+              className="mt-7 h-1.5 w-1.5 rounded-full"
+              style={{
+                backgroundColor:
+                  COLORS.brown,
+              }}
+            />
+
+            {/* PLAY */}
 
             <button
-              onClick={resetGame}
-              className="w-full py-4 bg-[#b8b8b8] text-[#1a1a1a] text-base font-extrabold uppercase tracking-widest border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.9)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all font-mono rounded-none"
+              onClick={startGame}
+              className="mt-8 min-w-[190px] rounded-md px-10 py-4 font-sans text-sm font-medium tracking-[0.2em] transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]"
+              style={{
+                backgroundColor:
+                  COLORS.beigeDark,
+
+                color:
+                  COLORS.white,
+
+                boxShadow:
+                  '0 12px 35px rgba(114,86,67,0.12)',
+              }}
             >
-              Start Game
+              PLAY
             </button>
+
+            {/* CONTROLS */}
+
+            <p
+              className="mt-5 font-sans text-xs tracking-wide"
+              style={{
+                color:
+                  COLORS.brown,
+              }}
+            >
+              ← → to move
+            </p>
+
           </div>
 
-          <p className="hidden md:block text-[#b3a896] text-[0.65rem] uppercase tracking-[0.2em] font-light pb-2">
-            Utilisez [←][→] ou [Q][D] pour déplacer | [P] ou [ECHAP] pour la Pause
-          </p>
         </div>
       )}
 
-      {/* Canvas WebGL */}
-      {gameStarted && (
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
-      )}
+      {/* =====================================================
+          DESKTOP TOP CONTROLS
+          ===================================================== */}
 
-      {/* BOUTON PAUSE ET EN-TÊTE D'ACTION */}
-      {gameStarted && !gameOver && (
-        <div className="absolute top-4 right-4 z-30 flex items-center gap-3">
-          <button
-            onClick={togglePause}
-            className="w-11 h-11 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-400 font-bold text-sm backdrop-blur-md flex items-center justify-center active:scale-95 transition shadow-lg"
-            aria-label="Pause"
+      {hasStarted &&
+        !isMobileDevice && (
+
+          <div className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5">
+
+            {/* LEFT */}
+
+            <div
+              className="font-sans text-xs tracking-[0.16em]"
+              style={{
+                color:
+                  COLORS.muted,
+              }}
+            >
+              ← →
+            </div>
+
+            {/* CENTER */}
+
+            <div
+              className="h-1 w-8 rounded-full"
+              style={{
+                backgroundColor:
+                  COLORS.beigeDark,
+              }}
+            />
+
+            {/* RIGHT */}
+
+            <div className="flex items-center gap-2">
+
+              <button
+                onClick={
+                  pauseGame
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-md border transition-all hover:bg-white/5"
+                style={{
+                  borderColor:
+                    'rgba(220,196,170,0.25)',
+
+                  color:
+                    COLORS.beige,
+                }}
+                aria-label={
+                  isPaused
+                    ? 'Resume'
+                    : 'Pause'
+                }
+              >
+                {isPaused
+                  ? '▶'
+                  : 'Ⅱ'}
+              </button>
+
+              <button
+                onClick={
+                  quitGame
+                }
+                className="flex h-9 items-center justify-center rounded-md border px-3 font-sans text-[10px] tracking-[0.14em] transition-all hover:bg-white/5"
+                style={{
+                  borderColor:
+                    'rgba(220,196,170,0.25)',
+
+                  color:
+                    COLORS.muted,
+                }}
+              >
+                MENU
+              </button>
+
+            </div>
+
+          </div>
+        )}
+
+      {/* =====================================================
+          CONTROL HINT
+          ===================================================== */}
+
+      {hasStarted &&
+        !isMobileDevice &&
+        showControlsHint &&
+        !isPaused && (
+
+          <div
+            className="absolute bottom-7 left-1/2 z-30 -translate-x-1/2 font-sans text-xs tracking-wide"
+            style={{
+              color:
+                COLORS.muted,
+            }}
           >
-            {isPaused ? '▶' : '❚❚'}
-          </button>
-        </div>
-      )}
-
-      {/* INDICATION DE SOURIS / TOUCHES SUR PC */}
-      {gameStarted && !isMobileDevice && showControlsHint && !isPaused && (
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/90 border border-amber-700/50 px-6 py-2.5 rounded-full shadow-xl backdrop-blur-md animate-bounce">
-          ⌨️ Touches <span className="text-white font-bold">[←] [→]</span> | Pause <span className="text-white font-bold">[P]</span>
-        </div>
-      )}
-
-      {/* ÉCRAN DE PAUSE */}
-      {gameStarted && isPaused && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-          <div className="w-full max-w-xs flex flex-col items-center space-y-4 text-center">
-            <h2 className="text-amber-400 font-extrabold text-2xl tracking-widest uppercase">
-              PAUSE
-            </h2>
-
-            <button
-              onClick={togglePause}
-              className="w-full py-3.5 bg-amber-500 text-zinc-950 text-sm font-black rounded-xl active:scale-95 transition shadow-lg uppercase tracking-wider"
-            >
-              Reprendre
-            </button>
-
-            <button
-              onClick={resetGame}
-              className="w-full py-3.5 bg-zinc-900 border border-amber-500/40 text-amber-300 text-sm font-bold rounded-xl active:scale-95 transition uppercase tracking-wider"
-            >
-              Recommencer
-            </button>
-
-            <button
-              onClick={quitGame}
-              className="w-full py-3.5 bg-red-950/60 border border-red-500/40 text-red-300 text-sm font-bold rounded-xl active:scale-95 transition uppercase tracking-wider"
-            >
-              Quitter
-            </button>
+            Use ← → to move
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ÉCRAN GAME OVER */}
+      {/* =====================================================
+          PAUSE
+          ===================================================== */}
+
+      {hasStarted &&
+        isPaused &&
+        !gameOver && (
+
+          <div
+            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-[5px]"
+            style={{
+              background:
+                'rgba(18,16,13,0.76)',
+            }}
+          >
+
+            <div className="flex w-[280px] flex-col items-center text-center">
+
+              {/* DOT TITLE */}
+
+              <div
+                className="font-sans text-xs tracking-[0.4em]"
+                style={{
+                  color:
+                    COLORS.beige,
+                }}
+              >
+                · PAUSED ·
+              </div>
+
+              {/* RESUME */}
+
+              <button
+                onClick={
+                  pauseGame
+                }
+                className="mt-8 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+                style={{
+                  backgroundColor:
+                    COLORS.cream,
+
+                  color:
+                    COLORS.brownDark,
+                }}
+              >
+                RESUME
+              </button>
+
+              {/* MENU */}
+
+              <button
+                onClick={
+                  quitGame
+                }
+                className="mt-3 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+                style={{
+                  backgroundColor:
+                    COLORS.beigeDark,
+
+                  color:
+                    COLORS.white,
+                }}
+              >
+                MENU
+              </button>
+
+              {/* SHORTCUT */}
+
+              <p
+                className="mt-6 font-sans text-[10px]"
+                style={{
+                  color:
+                    COLORS.muted,
+                }}
+              >
+                Press P to resume
+              </p>
+
+            </div>
+
+          </div>
+        )}
+
+      {/* =====================================================
+          GAME OVER
+          ===================================================== */}
+
       {gameOver && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md p-6">
-          <div className="w-full max-w-xs flex flex-col items-center space-y-4">
-            <button
-              onClick={resetGame}
-              className="w-full py-4 bg-amber-500 text-zinc-950 text-sm font-black rounded-2xl active:scale-95 transition shadow-[0_0_30px_rgba(245,158,11,0.5)] uppercase tracking-wider"
+
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[5px]"
+          style={{
+            background:
+              'rgba(18,16,13,0.82)',
+          }}
+        >
+
+          <div className="flex w-[280px] flex-col items-center text-center">
+
+            <div
+              className="font-sans text-xs tracking-[0.4em]"
+              style={{
+                color:
+                  COLORS.beige,
+              }}
             >
-              Recouvrer le système
-            </button>
+              · GAME OVER ·
+            </div>
+
+            {/* SCORE */}
+
+            <div
+              className="mt-7 font-mono text-3xl"
+              style={{
+                color:
+                  COLORS.white,
+              }}
+            >
+              {gameState.current.score
+                .toString()
+                .padStart(
+                  6,
+                  '0'
+                )}
+            </div>
+
+            <div
+              className="mt-1 font-sans text-[10px] tracking-[0.2em]"
+              style={{
+                color:
+                  COLORS.muted,
+              }}
+            >
+              SCORE
+            </div>
+
+            {/* RETRY */}
 
             <button
-              onClick={quitGame}
-              className="w-full py-3.5 bg-zinc-900 border border-amber-500/40 text-amber-300 text-sm font-bold rounded-2xl active:scale-95 transition uppercase tracking-wider"
+              onClick={
+                startGame
+              }
+              className="mt-8 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+              style={{
+                backgroundColor:
+                  COLORS.cream,
+
+                color:
+                  COLORS.brownDark,
+              }}
             >
-              Quitter
+              RETRY
             </button>
+
+            {/* MENU */}
+
+            <button
+              onClick={
+                quitGame
+              }
+              className="mt-3 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+              style={{
+                backgroundColor:
+                  COLORS.beigeDark,
+
+                color:
+                  COLORS.white,
+              }}
+            >
+              MENU
+            </button>
+
+            <p
+              className="mt-6 font-sans text-[10px]"
+              style={{
+                color:
+                  COLORS.muted,
+              }}
+            >
+              Press SPACE to retry
+            </p>
+
           </div>
+
         </div>
       )}
 
-      {/* COMMANDES TACTILES MOBILE */}
-      {gameStarted && isMobileDevice && !isPaused && (
-        <div className="absolute bottom-10 inset-x-0 z-30 flex justify-between items-center px-8 max-w-sm mx-auto pointer-events-auto pb-safe">
-          <button
-            onTouchStart={startMoveLeft}
-            onTouchEnd={stopMoveLeft}
-            onMouseDown={startMoveLeft}
-            onMouseUp={stopMoveLeft}
-            className="w-20 h-20 rounded-2xl bg-amber-950/80 border-2 border-amber-500/60 text-amber-300 font-black text-3xl backdrop-blur-lg flex items-center justify-center active:bg-amber-500 active:text-zinc-950 active:scale-90 transition-all touch-none shadow-2xl"
-            aria-label="Gauche"
-          >
-            ◄
-          </button>
+      {/* =====================================================
+          MOBILE CONTROLS
+          ===================================================== */}
 
-          <button
-            onTouchStart={startMoveRight}
-            onTouchEnd={stopMoveRight}
-            onMouseDown={startMoveRight}
-            onMouseUp={stopMoveRight}
-            className="w-20 h-20 rounded-2xl bg-amber-950/80 border-2 border-amber-500/60 text-amber-300 font-black text-3xl backdrop-blur-lg flex items-center justify-center active:bg-amber-500 active:text-zinc-950 active:scale-90 transition-all touch-none shadow-2xl"
-            aria-label="Droite"
-          >
-            ►
-          </button>
-        </div>
-      )}
+      {isMobileDevice &&
+        hasStarted &&
+        !gameOver && (
+
+          <div className="absolute bottom-5 left-0 right-0 z-30 flex items-center justify-between px-7">
+
+            {/* LEFT */}
+
+            <button
+              onTouchStart={
+                startMoveLeft
+              }
+              onTouchEnd={
+                stopMoveLeft
+              }
+              onTouchCancel={
+                stopMoveLeft
+              }
+              className="flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
+              style={{
+                borderColor:
+                  'rgba(220,196,170,0.4)',
+
+                backgroundColor:
+                  'rgba(28,26,22,0.7)',
+
+                color:
+                  COLORS.beige,
+              }}
+            >
+              ←
+            </button>
+
+            {/* PAUSE */}
+
+            <button
+              onClick={
+                pauseGame
+              }
+              className="flex h-11 w-11 items-center justify-center rounded-full border font-sans text-xs transition-all active:scale-90"
+              style={{
+                borderColor:
+                  'rgba(220,196,170,0.4)',
+
+                backgroundColor:
+                  'rgba(28,26,22,0.7)',
+
+                color:
+                  COLORS.beige,
+              }}
+            >
+              Ⅱ
+            </button>
+
+            {/* RIGHT */}
+
+            <button
+              onTouchStart={
+                startMoveRight
+              }
+              onTouchEnd={
+                stopMoveRight
+              }
+              onTouchCancel={
+                stopMoveRight
+              }
+              className="flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
+              style={{
+                borderColor:
+                  'rgba(220,196,170,0.4)',
+
+                backgroundColor:
+                  'rgba(28,26,22,0.7)',
+
+                color:
+                  COLORS.beige,
+              }}
+            >
+              →
+            </button>
+
+          </div>
+        )}
+
     </div>
   );
 };

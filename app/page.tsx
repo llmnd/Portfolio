@@ -259,7 +259,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-0 pb-20 border-b border-[var(--line)]">
+      <section className="relative overflow-hidden pt-0 pb-20 border-b border-[var(--line)] min-h-[70vh] md:min-h-[78vh] xl:min-h-[88vh]">
         <HeroBackground3D />
         <div className="container mx-auto px-6 relative z-10">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -273,37 +273,32 @@ export default function Home() {
                 <Activity className="h-3.5 w-3.5 animate-pulse" />
                 <span>DAKAR, SN •</span>
               </motion.div>
-
-              <h1 className="font-display text-4xl font-bold tracking-tight text-[var(--ink)] sm:text-6xl lg:text-7xl">
-                Lamine Ndiaye
-              </h1>
-              <p className="mt-4 max-w-lg font-mono text-sm leading-relaxed text-[var(--mute)]">
-                Conception d&apos;architectures web modernes, d&apos;interfaces 3D interactives et d&apos;applications mobiles fluides.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <a
-                  href="#contact"
-                  className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 font-mono text-xs font-bold text-black transition-transform hover:scale-105"
-                >
-                  <span>Lancer un projet</span>
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-                <a
-                  href="https://res.cloudinary.com/dcs9vkwe0/image/upload/fl_attachment/v1775085940/fisafi/brochures/rraqn8hdzxqswwqccnre.pdf"
-                  download="Lamine_NDIAYE_CV.pdf"
-                  className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5 text-[var(--accent)]" />
-                  <span>CV (PDF)</span>
-                </a>
-              </div>
             </div>
 
             <div className="flex justify-center">
               <HeroExhibit />
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="py-10">
+        <div className="container mx-auto px-6 flex flex-wrap justify-center gap-4">
+          <a
+            href="#contact"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 font-mono text-xs font-bold text-black transition-transform hover:scale-105"
+          >
+            <span>Lancer un projet</span>
+            <ArrowRight className="h-4 w-4" />
+          </a>
+          <a
+            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/fl_attachment/v1775085940/fisafi/brochures/rraqn8hdzxqswwqccnre.pdf"
+            download="Lamine_NDIAYE_CV.pdf"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-colors"
+          >
+            <Download className="h-3.5 w-3.5 text-[var(--accent)]" />
+            <span>CV (PDF)</span>
+          </a>
         </div>
       </section>
 
