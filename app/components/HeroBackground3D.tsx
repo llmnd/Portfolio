@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from 'react';
 
 const COLORS = {
   bgPage: '#020617',
-  bgOverlay: 'rgba(2, 6, 23, 0.92)',
   textMuted: '#64748b',
   textMain: '#f8fafc',
   accent: '#00f3ff',
@@ -18,7 +17,6 @@ const COLORS = {
   gameGrid: 'rgba(56, 189, 248, 0.04)',
 
   playerPrimary: '#00f3ff',
-  playerSecondary: '#0284c7',
   playerCockpit: '#e0f2fe',
   
   enemyAce: '#f43f5e',
@@ -147,10 +145,9 @@ type StarCoin = {
 type Aircraft = {
   x: number; y: number;
   vx: number; vy: number;
-  bank: number;
   type: 'ACE' | 'BOMBER';
   radius: number;
-  hp: number; maxHp: number;
+  hp: number;
   shootTimer: number;
 };
 
@@ -178,17 +175,16 @@ export const AeroArcadeGame = () => {
     isPaused: false,
     gameOver: false,
     score: 0,
-    combo: 1,
     health: 100,
     escapedEnemies: 0,
     maxEscaped: 15,
     starsCollected: 0,
   });
 
-  const isPausedRef = useRef(false);
+  const gameStateRef = useRef(gameState);
   useEffect(() => {
-    isPausedRef.current = gameState.isPaused;
-  }, [gameState.isPaused]);
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -322,7 +318,7 @@ export const AeroArcadeGame = () => {
   };
 
   /* ---------------------------------------------------------
-     DESSIN VECTORIEL DES CHASSEURS
+     DESSIN VECTORIEL
      --------------------------------------------------------- */
   const drawPlayerJet = (ctx: CanvasRenderingContext2D, bank: number) => {
     ctx.save();
@@ -371,12 +367,6 @@ export const AeroArcadeGame = () => {
     ctx.beginPath();
     ctx.ellipse(0, -10, 5, 14, 0, 0, Math.PI * 2);
     ctx.fill();
-
-    if (Math.abs(bank) > 0.4) {
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.fillRect(-34, 12, 2, 20);
-      ctx.fillRect(34, 12, 2, 20);
-    }
 
     ctx.restore();
   };
@@ -428,6 +418,7 @@ export const AeroArcadeGame = () => {
      --------------------------------------------------------- */
   const updateAndDraw = (ctx: CanvasRenderingContext2D, delta: number, time: number) => {
     const g = game.current;
+    const currentGameState = gameStateRef.current;
 
     ctx.save();
     if (g.screenShake > 0) {
@@ -438,12 +429,10 @@ export const AeroArcadeGame = () => {
     ctx.fillStyle = COLORS.gameBg;
     ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-    const paused = isPausedRef.current;
-
     // Nuages
     g.clouds.forEach(c => {
-      if (!paused) {
-        c.y += c.speed * (gameState.hasStarted ? 1.5 : 0.5);
+      if (!currentGameState.isPaused) {
+        c.y += c.speed * (currentGameState.hasStarted ? 1.5 : 0.5);
         if (c.y > GAME_H + 100) { c.y = -100; c.x = Math.random() * GAME_W; }
       }
       ctx.fillStyle = `rgba(148, 163, 184, ${c.opacity})`;
@@ -461,9 +450,12 @@ export const AeroArcadeGame = () => {
       ctx.beginPath(); ctx.moveTo(x, HUD_H); ctx.lineTo(x, GAME_H); ctx.stroke();
     }
 
-    if (gameState.hasStarted && !paused && !gameState.gameOver) {
+    if (currentGameState.hasStarted && !currentGameState.isPaused && !currentGameState.gameOver) {
       g.elapsed += delta;
       const difficulty = 1 + g.elapsed * 0.02;
+
+      // Augmentation du score avec le temps
+      setGameState(s => ({ ...s, score: s.score + Math.floor(delta * 10) }));
 
       let targetVx = 0;
       let targetVy = 0;
@@ -484,7 +476,7 @@ export const AeroArcadeGame = () => {
 
       g.playerBank = g.playerVx / 12;
 
-      // Tirs
+      // Tirs Joueur
       if (time * 1000 - g.lastShot > 140) {
         g.bullets.push({ x: g.playerX - 18, y: g.playerY - 20, vx: 0, vy: -26, isEnemy: false });
         g.bullets.push({ x: g.playerX + 18, y: g.playerY - 20, vx: 0, vy: -26, isEnemy: false });
@@ -492,7 +484,7 @@ export const AeroArcadeGame = () => {
         g.lastShot = time * 1000;
       }
 
-      // Ennemis Spawn
+      // Spawn Ennemis
       if (time * 1000 - g.lastSpawn > Math.max(350, 850 - g.elapsed * 10)) {
         const isBomber = Math.random() < 0.25;
         g.enemies.push({
@@ -500,20 +492,19 @@ export const AeroArcadeGame = () => {
           y: HUD_H - 40,
           vx: (Math.random() - 0.5) * 3,
           vy: (isBomber ? 2 : 3.5) * difficulty,
-          bank: 0,
           type: isBomber ? 'BOMBER' : 'ACE',
           radius: isBomber ? 30 : 22,
           hp: isBomber ? 4 : 1,
-          maxHp: isBomber ? 4 : 1,
           shootTimer: 0,
         });
         g.lastSpawn = time * 1000;
       }
 
-      // Updates
+      // Mises à jour des balles
       g.bullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
       g.bullets = g.bullets.filter(b => b.y > HUD_H && b.y < GAME_H && b.x > 0 && b.x < GAME_W);
 
+      // Pièces étoiles
       g.starCoins.forEach(s => {
         s.y += s.vy;
         s.rotation += 0.05;
@@ -532,13 +523,14 @@ export const AeroArcadeGame = () => {
           setGameState(s => ({
             ...s,
             starsCollected: s.starsCollected + 1,
-            score: s.score + 50,
-            health: Math.min(100, s.health + 2),
+            score: s.score + 100,
+            health: Math.min(100, s.health + 5),
           }));
         }
       }
       g.starCoins = g.starCoins.filter(s => s.y < GAME_H + 20);
 
+      // Traitement des ennemis
       for (let i = g.enemies.length - 1; i >= 0; i--) {
         const enemy = g.enemies[i];
         enemy.x += enemy.vx;
@@ -565,6 +557,7 @@ export const AeroArcadeGame = () => {
           continue;
         }
 
+        // Tirs du joueur touchant un ennemi
         for (let j = g.bullets.length - 1; j >= 0; j--) {
           const bul = g.bullets[j];
           if (!bul.isEnemy && Math.hypot(enemy.x - bul.x, enemy.y - bul.y) < enemy.radius + 8) {
@@ -602,13 +595,14 @@ export const AeroArcadeGame = () => {
               g.enemies.splice(i, 1);
               setGameState(s => ({
                 ...s,
-                score: s.score + (enemy.type === 'BOMBER' ? 250 : 100) * s.combo,
+                score: s.score + (enemy.type === 'BOMBER' ? 250 : 100),
               }));
               break;
             }
           }
         }
 
+        // Collision direct Ennemi - Joueur (Diminution santé)
         if (Math.hypot(enemy.x - g.playerX, enemy.y - g.playerY) < enemy.radius + 24) {
           g.enemies.splice(i, 1);
           playSound('hit');
@@ -620,6 +614,7 @@ export const AeroArcadeGame = () => {
         }
       }
 
+      // Balles ennemies touchant le Joueur (Diminution santé)
       for (let j = g.bullets.length - 1; j >= 0; j--) {
         const bul = g.bullets[j];
         if (bul.isEnemy && Math.hypot(g.playerX - bul.x, g.playerY - bul.y) < 22) {
@@ -627,7 +622,7 @@ export const AeroArcadeGame = () => {
           playSound('hit');
           g.screenShake = 15;
           setGameState(s => {
-            const nextHp = Math.max(0, s.health - 12);
+            const nextHp = Math.max(0, s.health - 15);
             return { ...s, health: nextHp, gameOver: nextHp <= 0 };
           });
         }
@@ -699,17 +694,17 @@ export const AeroArcadeGame = () => {
     ctx.fillText('ÉVASIONS ENNEMIES (MAX 15)', 260, 26);
 
     ctx.fillStyle = COLORS.textMain; ctx.font = 'bold 22px monospace';
-    ctx.fillText(gameState.score.toString().padStart(6, '0'), 24, 54);
+    ctx.fillText(currentGameState.score.toString().padStart(6, '0'), 24, 54);
 
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(260, 38, 160, 14);
-    ctx.fillStyle = gameState.escapedEnemies > 10 ? COLORS.enemyAce : COLORS.accent;
-    ctx.fillRect(260, 38, (gameState.escapedEnemies / gameState.maxEscaped) * 160, 14);
+    ctx.fillStyle = currentGameState.escapedEnemies > 10 ? COLORS.enemyAce : COLORS.accent;
+    ctx.fillRect(260, 38, (currentGameState.escapedEnemies / currentGameState.maxEscaped) * 160, 14);
 
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(GAME_W - 200, 38, 170, 14);
-    ctx.fillStyle = gameState.health > 30 ? COLORS.accent : COLORS.enemyAce;
-    ctx.fillRect(GAME_W - 200, 38, (gameState.health / 100) * 170, 14);
+    ctx.fillStyle = currentGameState.health > 30 ? COLORS.accent : COLORS.enemyAce;
+    ctx.fillRect(GAME_W - 200, 38, (Math.max(0, currentGameState.health) / 100) * 170, 14);
 
     ctx.restore();
   };
@@ -812,7 +807,7 @@ export const AeroArcadeGame = () => {
       gl.deleteTexture(texture);
       gl.deleteProgram(program);
     };
-  }, [gameState.hasStarted]);
+  }, []);
 
   /* ---------------------------------------------------------
      CONTROLES & ACTIONS
@@ -827,7 +822,7 @@ export const AeroArcadeGame = () => {
     };
     setGameState({
       hasStarted: true, isPaused: false, gameOver: false,
-      score: 0, combo: 1, health: 100, escapedEnemies: 0, maxEscaped: 15, starsCollected: 0,
+      score: 0, health: 100, escapedEnemies: 0, maxEscaped: 15, starsCollected: 0,
     });
   };
 
@@ -842,7 +837,6 @@ export const AeroArcadeGame = () => {
       isPaused: false,
       gameOver: false,
       score: 0,
-      combo: 1,
       health: 100,
       escapedEnemies: 0,
       maxEscaped: 15,
@@ -951,7 +945,7 @@ export const AeroArcadeGame = () => {
           </div>
         )}
 
-        {/* Contrôles Mobile : DPad Centré & Designer Arcade/Néon */}
+        {/* Contrôles Mobile */}
         {isMobile && gameState.hasStarted && !gameState.gameOver && !gameState.isPaused && (
           <div className="absolute bottom-6 inset-x-0 flex justify-center items-center pointer-events-none">
             <div className="relative w-48 h-48 rounded-full bg-slate-950/40 backdrop-blur-md border border-cyan-500/20 shadow-[0_0_25px_rgba(0,243,255,0.1)] p-2 pointer-events-auto flex items-center justify-center">
@@ -992,7 +986,6 @@ export const AeroArcadeGame = () => {
                 ▶
               </button>
 
-              {/* Décoration centrale */}
               <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
                 <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               </div>
