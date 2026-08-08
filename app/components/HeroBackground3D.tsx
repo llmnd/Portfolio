@@ -3,3081 +3,995 @@
 import { useEffect, useRef, useState } from 'react';
 
 /* =========================================================
-   PALETTE
+   PALETTE & CONSTANTES
    ========================================================= */
 
 const COLORS = {
-  cream: '#f4ecdd',
-  creamSoft: '#eee3d1',
-  beige: '#dcc4aa',
-  beigeDark: '#c9a88b',
-  brown: '#9b765d',
-  brownDark: '#725643',
+  bgPage: '#020617',
+  bgOverlay: 'rgba(2, 6, 23, 0.92)',
+  textMuted: '#64748b',
+  textMain: '#f8fafc',
+  accent: '#00f3ff',
+  border: 'rgba(0, 243, 255, 0.25)',
 
-  gameBg: '#151411',
-  gamePanel: '#1c1a16',
-  gameGrid: '#332d26',
-  gameLine: '#4a4035',
+  gameBg: '#030712',
+  gameGrid: 'rgba(56, 189, 248, 0.04)',
 
-  white: '#f8f2e8',
-  muted: '#b9aa98',
+  playerPrimary: '#00f3ff',
+  playerSecondary: '#0284c7',
+  playerCockpit: '#e0f2fe',
+  
+  enemyAce: '#f43f5e',
+  enemyAceDark: '#9f1239',
+  enemyBomber: '#fbbf24',
 
-  enemy: '#c99d79',
-  enemyDark: '#8d6b52',
-
-  player: '#ead5bc',
-  bullet: '#e4c09b',
+  starGold: '#facc15',
+  bulletPlayer: '#38bdf8',
+  bulletEnemy: '#fb7185',
 };
 
+const GAME_W = 1024;
+const GAME_H = 1024;
+const HUD_H = 80;
+
 /* =========================================================
-   WEBGL VERTEX SHADER
+   WEBGL SHADERS
    ========================================================= */
 
 const VERTEX_SHADER = `#version 300 es
-
 in vec2 aPosition;
-
+out vec2 vUv;
 void main() {
+  vUv = aPosition * 0.5 + 0.5;
+  vUv.y = 1.0 - vUv.y;
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }
 `;
 
-/* =========================================================
-   WEBGL FRAGMENT SHADER
-   ========================================================= */
-
 const FRAGMENT_SHADER = `#version 300 es
-
 precision highp float;
 
+in vec2 vUv;
 out vec4 fragColor;
 
 uniform vec2 uResolution;
 uniform vec2 uMouse;
 uniform float uTime;
-uniform bool uIsMobile;
-uniform sampler2D uIdeTexture;
+uniform float uBankAngle;
+uniform sampler2D uGameTexture;
 
 #define SURF_DIST 0.001
 #define MAX_DIST 20.0
 
-mat2 rot2D(float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
+mat2 rot2D(float a) { float s=sin(a), c=cos(a); return mat2(c,-s,s,c); }
 
-  return mat2(
-    c, -s,
-    s, c
-  );
-}
-
-float sdRoundedBox(
-  vec3 p,
-  vec3 b,
-  float r
-) {
+float sdRoundedBox(vec3 p, vec3 b, float r) {
   vec3 q = abs(p) - b;
-
-  return length(max(q, 0.0))
-    + min(
-        max(q.x, max(q.y, q.z)),
-        0.0
-      )
-    - r;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
-float map(
-  vec3 p,
-  out float matID,
-  out vec2 texCoord
-) {
+float map(vec3 p, out vec2 texCoord) {
+  p.xz *= rot2D(uMouse.x * 0.1 + uBankAngle * 0.15);
+  p.yz *= rot2D(uMouse.y * 0.08);
 
-  if (!uIsMobile) {
-
-    p.xz *= rot2D(
-      uMouse.x * 0.12
-    );
-
-    p.yz *= rot2D(
-      uMouse.y * 0.08
-    );
-  }
-
-  vec3 pScreen = p;
-
-  float dDisplay = sdRoundedBox(
-    pScreen,
-    vec3(0.9, 0.9, 0.015),
-    0.03
-  );
-
-  matID = 2.0;
-
-  texCoord = vec2(
-    (pScreen.x / 0.9) * 0.5 + 0.5,
-    1.0 -
-      (
-        (pScreen.y / 0.9) * 0.5 +
-        0.5
-      )
-  );
-
+  float dDisplay = sdRoundedBox(p, vec3(0.96, 0.96, 0.015), 0.03);
+  texCoord = vec2((p.x / 0.96) * 0.5 + 0.5, 1.0 - ((p.y / 0.96) * 0.5 + 0.5));
   return dDisplay;
 }
 
-float mapDistOnly(vec3 p) {
+vec4 getPostProcessedTexture(sampler2D tex, vec2 uv) {
+  float shift = 0.002;
+  float r = texture(tex, uv + vec2(shift, 0.0)).r;
+  float g = texture(tex, uv).g;
+  float b = texture(tex, uv - vec2(shift, 0.0)).b;
+  
+  float scanline = sin(uv.y * 900.0) * 0.03;
+  vec3 col = vec3(r, g, b) - scanline;
 
-  float dummyMat;
-  vec2 dummyUv;
-
-  return map(
-    p,
-    dummyMat,
-    dummyUv
-  );
-}
-
-vec3 getNormal(vec3 p) {
-
-  float d = mapDistOnly(p);
-
-  vec2 e = vec2(
-    0.001,
-    0.0
-  );
-
-  vec3 n =
-    d -
-    vec3(
-      mapDistOnly(
-        p - e.xyy
-      ),
-
-      mapDistOnly(
-        p - e.yxy
-      ),
-
-      mapDistOnly(
-        p - e.yyx
-      )
-    );
-
-  return normalize(n);
+  return vec4(col, 1.0);
 }
 
 void main() {
-
-  vec2 uv =
-    (
-      gl_FragCoord.xy -
-      0.5 * uResolution.xy
-    )
-    /
-    min(
-      uResolution.x,
-      uResolution.y
-    );
-
-  float camDist =
-    uIsMobile
-      ? -2.35
-      : -2.25;
-
-  vec3 ro = vec3(
-    0.0,
-    0.0,
-    camDist
-  );
-
-  vec3 rd = normalize(
-    vec3(
-      uv,
-      1.2
-    )
-  );
-
-  int maxSteps =
-    uIsMobile
-      ? 50
-      : 70;
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
+  vec3 ro = vec3(0.0, 0.0, -2.3);
+  vec3 rd = normalize(vec3(uv, 1.3));
 
   float dO = 0.0;
+  vec2 hitTexCoord;
+  bool hit = false;
 
-  vec2 hitTexCoord =
-    vec2(0.0);
-
-  for (
-    int i = 0;
-    i < 70;
-    i++
-  ) {
-
-    if (i >= maxSteps) {
-      break;
-    }
-
-    vec3 p =
-      ro + rd * dO;
-
-    float currentMat;
-    vec2 currentTexCoord;
-
-    float dS =
-      map(
-        p,
-        currentMat,
-        currentTexCoord
-      );
-
+  for(int i = 0; i < 60; i++) {
+    vec3 p = ro + rd * dO;
+    float dS = map(p, hitTexCoord);
     dO += dS;
-
-    if (
-      dS <
-      SURF_DIST
-    ) {
-
-      hitTexCoord =
-        currentTexCoord;
-
-      break;
-    }
-
-    if (
-      dO >
-      MAX_DIST
-    ) {
-      break;
-    }
+    if(dS < SURF_DIST) { hit = true; break; }
+    if(dO > MAX_DIST) break;
   }
 
-  /*
-   * Warm dark background
-   */
+  vec3 color = vec3(0.01, 0.03, 0.06) + vec3(0.0, 0.04, 0.08) * (1.0 - length(uv));
 
-  vec3 color =
-    vec3(
-      0.055,
-      0.05,
-      0.043
-    );
-
-  if (
-    dO <
-    MAX_DIST
-  ) {
-
-    vec3 p =
-      ro + rd * dO;
-
-    vec3 n =
-      getNormal(p);
-
-    /*
-     * Warm light
-     */
-
-    vec3 lightPos =
-      vec3(
-        uMouse.x * 2.0,
-        2.5,
-        -2.0
-      );
-
-    vec3 l =
-      normalize(
-        lightPos - p
-      );
-
-    vec3 ref =
-      reflect(
-        rd,
-        n
-      );
-
-    float spec =
-      pow(
-        max(
-          0.0,
-          dot(
-            ref,
-            l
-          )
-        ),
-        32.0
-      );
-
-    float fresnel =
-      pow(
-        1.0 -
-        max(
-          0.0,
-          dot(
-            -rd,
-            n
-          )
-        ),
-        3.0
-      );
-
-    vec4 gameSample =
-      texture(
-        uIdeTexture,
-        hitTexCoord
-      );
-
-    color =
-      gameSample.rgb
-      +
-      spec *
-      vec3(
-        0.25,
-        0.19,
-        0.14
-      )
-      +
-      fresnel *
-      vec3(
-        0.32,
-        0.22,
-        0.15
-      ) *
-      0.35;
+  if(hit) {
+    vec4 texSample = getPostProcessedTexture(uGameTexture, hitTexCoord);
+    vec3 p = ro + rd * dO;
+    vec2 e = vec2(0.001, 0);
+    vec3 n = normalize(map(p, hitTexCoord) - vec3(map(p-e.xyy, hitTexCoord), map(p-e.yxy, hitTexCoord), map(p-e.yyx, hitTexCoord)));
+    
+    float fresnel = pow(1.0 + dot(rd, n), 4.0);
+    float spec = pow(max(0.0, dot(reflect(rd, n), normalize(vec3(1, 2, -2)))), 32.0);
+    
+    color = texSample.rgb + fresnel * vec3(0.0, 0.7, 1.0) * 0.3 + spec * vec3(0.8, 0.95, 1.0) * 0.2;
   }
 
-  /*
-   * Subtle warm vignette
-   */
-
-  float radialDist =
-    length(uv);
-
-  color +=
-    vec3(
-      0.12,
-      0.08,
-      0.05
-    )
-    *
-    (
-      0.035 /
-      (radialDist + 0.4)
-    );
-
-  fragColor =
-    vec4(
-      color,
-      1.0
-    );
+  color *= 1.0 - length(uv) * 0.35;
+  fragColor = vec4(color, 1.0);
 }
 `;
 
 /* =========================================================
-   COMPONENT
+   TYPES GAMEPLAY
    ========================================================= */
 
-export const AestheticArcadeGame = () => {
+type Particle = {
+  x: number; y: number;
+  vx: number; vy: number;
+  size: number; color: string;
+  life: number; maxLife: number;
+};
 
-  const canvasRef =
-    useRef<HTMLCanvasElement | null>(
-      null
-    );
+type StarCoin = {
+  x: number; y: number;
+  vy: number; radius: number;
+  rotation: number;
+};
 
-  const audioContextRef =
-    useRef<AudioContext | null>(
-      null
-    );
+type Aircraft = {
+  x: number; y: number;
+  vx: number; vy: number;
+  bank: number;
+  type: 'ACE' | 'BOMBER';
+  radius: number;
+  hp: number; maxHp: number;
+  shootTimer: number;
+};
 
-  const [isMobileDevice, setIsMobileDevice] =
-    useState(false);
+type Bullet = {
+  x: number; y: number;
+  vx: number; vy: number;
+  isEnemy: boolean;
+};
 
-  const [gameOver, setGameOver] =
-    useState(false);
+type Cloud = {
+  x: number; y: number;
+  scale: number; speed: number; opacity: number;
+};
 
-  const [hasStarted, setHasStarted] =
-    useState(false);
+/* =========================================================
+   COMPOSANT PRINCIPAL
+   ========================================================= */
 
-  const [isPaused, setIsPaused] =
-    useState(false);
+export const AeroArcadeGame = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
-  const [showControlsHint, setShowControlsHint] =
-    useState(true);
-
-  const hasStartedRef =
-    useRef(false);
-
-  const isPausedRef =
-    useRef(false);
-
-  const targetMouseRef =
-    useRef({
-      x: 0,
-      y: 0,
-    });
-
-  const currentMouseRef =
-    useRef({
-      x: 0,
-      y: 0,
-    });
-
-  /* =======================================================
-     GAME STATE
-     ======================================================= */
-
-  const gameState = useRef({
-
-    playerX: 512,
-
-    playerY: 880,
-
-    moveLeft: false,
-
-    moveRight: false,
-
-    bullets: [] as {
-      x: number;
-      y: number;
-    }[],
-
-    bugs: [] as {
-      x: number;
-      y: number;
-      speed: number;
-      vx: number;
-      label: string;
-      radius: number;
-      rotation: number;
-      phase: number;
-    }[],
-
-    stars: Array.from(
-      {
-        length: 55,
-      },
-      () => ({
-        x:
-          Math.random() *
-          1024,
-
-        y:
-          Math.random() *
-          1024,
-
-        size:
-          Math.random() *
-            1.8 +
-          0.5,
-
-        speed:
-          Math.random() *
-            1.5 +
-          0.4,
-      })
-    ),
-
-    keys:
-      {} as Record<
-        string,
-        boolean
-      >,
-
+  const [gameState, setGameState] = useState({
+    hasStarted: false,
+    isPaused: false,
+    gameOver: false,
     score: 0,
-
+    combo: 1,
     health: 100,
-
-    isOver: false,
-
-    lastShot: 0,
-
-    lastSpawn: 0,
-
-    elapsed: 0,
+    escapedEnemies: 0,
+    maxEscaped: 15,
+    starsCollected: 0,
   });
 
-  /* =======================================================
-     KILL SOUND
-     ======================================================= */
-
-  const playKillSound = () => {
-
-    try {
-
-      let audio =
-        audioContextRef.current;
-
-      if (!audio) {
-
-        audio =
-          new AudioContext();
-
-        audioContextRef.current =
-          audio;
-      }
-
-      if (
-        audio.state ===
-        'suspended'
-      ) {
-        audio.resume();
-      }
-
-      const now =
-        audio.currentTime;
-
-      /*
-       * Main short tone
-       */
-
-      const oscillator =
-        audio.createOscillator();
-
-      const gain =
-        audio.createGain();
-
-      oscillator.type =
-        'sine';
-
-      oscillator.frequency.setValueAtTime(
-        420,
-        now
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        760,
-        now + 0.055
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        280,
-        now + 0.13
-      );
-
-      gain.gain.setValueAtTime(
-        0.0001,
-        now
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.055,
-        now + 0.008
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + 0.14
-      );
-
-      oscillator.connect(
-        gain
-      );
-
-      gain.connect(
-        audio.destination
-      );
-
-      oscillator.start(
-        now
-      );
-
-      oscillator.stop(
-        now + 0.15
-      );
-
-      /*
-       * Tiny second layer
-       */
-
-      const secondOscillator =
-        audio.createOscillator();
-
-      const secondGain =
-        audio.createGain();
-
-      secondOscillator.type =
-        'triangle';
-
-      secondOscillator.frequency.setValueAtTime(
-        920,
-        now
-      );
-
-      secondOscillator.frequency.exponentialRampToValueAtTime(
-        540,
-        now + 0.08
-      );
-
-      secondGain.gain.setValueAtTime(
-        0.0001,
-        now
-      );
-
-      secondGain.gain.exponentialRampToValueAtTime(
-        0.025,
-        now + 0.005
-      );
-
-      secondGain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + 0.09
-      );
-
-      secondOscillator.connect(
-        secondGain
-      );
-
-      secondGain.connect(
-        audio.destination
-      );
-
-      secondOscillator.start(
-        now
-      );
-
-      secondOscillator.stop(
-        now + 0.1
-      );
-
-    } catch {
-      /*
-       * Audio is optional.
-       * Never let sound break the game.
-       */
-    }
-  };
-
-  /* =======================================================
-     RESET
-     ======================================================= */
-
-  const resetGame = () => {
-
-    const state =
-      gameState.current;
-
-    state.playerX =
-      512;
-
-    state.playerY =
-      880;
-
-    state.moveLeft =
-      false;
-
-    state.moveRight =
-      false;
-
-    state.bullets =
-      [];
-
-    state.bugs =
-      [];
-
-    state.score =
-      0;
-
-    state.health =
-      100;
-
-    state.isOver =
-      false;
-
-    state.lastShot =
-      0;
-
-    state.lastSpawn =
-      0;
-
-    state.elapsed =
-      0;
-
-    setGameOver(
-      false
-    );
-
-    setIsPaused(
-      false
-    );
-
-    isPausedRef.current =
-      false;
-  };
-
-  /* =======================================================
-     START
-     ======================================================= */
-
-  const startGame = () => {
-
-    /*
-     * Unlock Web Audio after user gesture
-     */
-
-    try {
-
-      if (
-        !audioContextRef.current
-      ) {
-
-        audioContextRef.current =
-          new AudioContext();
-      }
-
-      if (
-        audioContextRef.current
-          .state ===
-        'suspended'
-      ) {
-
-        audioContextRef.current.resume();
-      }
-
-    } catch {
-      // Audio remains optional.
-    }
-
-    resetGame();
-
-    hasStartedRef.current =
-      true;
-
-    isPausedRef.current =
-      false;
-
-    setHasStarted(
-      true
-    );
-
-    setIsPaused(
-      false
-    );
-
-    setShowControlsHint(
-      true
-    );
-
-    window.setTimeout(
-      () => {
-
-        setShowControlsHint(
-          false
-        );
-
-      },
-      4500
-    );
-  };
-
-  /* =======================================================
-     PAUSE
-     ======================================================= */
-
-  const pauseGame = () => {
-
-    if (
-      !hasStartedRef.current ||
-      gameState.current.isOver
-    ) {
-      return;
-    }
-
-    const next =
-      !isPausedRef.current;
-
-    isPausedRef.current =
-      next;
-
-    setIsPaused(
-      next
-    );
-
-    gameState.current.moveLeft =
-      false;
-
-    gameState.current.moveRight =
-      false;
-  };
-
-  /* =======================================================
-     QUIT
-     ======================================================= */
-
-  const quitGame = () => {
-
-    hasStartedRef.current =
-      false;
-
-    isPausedRef.current =
-      false;
-
-    setIsPaused(
-      false
-    );
-
-    setGameOver(
-      false
-    );
-
-    setHasStarted(
-      false
-    );
-
-    resetGame();
-  };
-
-  /* =======================================================
-     KEYBOARD
-     ======================================================= */
-
+  const isPausedRef = useRef(false);
   useEffect(() => {
+    isPausedRef.current = gameState.isPaused;
+  }, [gameState.isPaused]);
 
-    const handleKeyDown =
-      (e: KeyboardEvent) => {
+  const [isMobile, setIsMobile] = useState(false);
 
-        gameState.current.keys[
-          e.code
-        ] = true;
+  const game = useRef({
+    playerX: GAME_W / 2,
+    playerY: GAME_H - 140,
+    playerVx: 0,
+    playerVy: 0,
+    playerBank: 0,
 
-        /*
-         * Pause
-         */
+    bullets: [] as Bullet[],
+    enemies: [] as Aircraft[],
+    particles: [] as Particle[],
+    starCoins: [] as StarCoin[],
+    clouds: [] as Cloud[],
+    keys: {} as Record<string, boolean>,
 
-        if (
-          e.code ===
-            'Escape' ||
-          e.code ===
-            'KeyP'
-        ) {
+    screenShake: 0,
+    lastShot: 0,
+    lastSpawn: 0,
+    elapsed: 0,
 
-          e.preventDefault();
+    moveLeft: false,
+    moveRight: false,
+    moveUp: false,
+    moveDown: false,
+  });
 
-          pauseGame();
+  const mouseRef = useRef({ targetX: 0, targetY: 0, currentX: 0, currentY: 0 });
 
-          return;
+  /* ---------------------------------------------------------
+     EFFETS SONORES SYNTHÉTIQUES
+     --------------------------------------------------------- */
+  const playSound = (type: 'laser' | 'boom' | 'coin' | 'hit') => {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const now = ctx.currentTime;
+
+      if (type === 'boom') {
+        const bufferSize = ctx.sampleRate * 0.4;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
         }
 
-        /*
-         * Restart
-         */
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
 
-        if (
-          e.code ===
-            'Space' &&
-          gameState.current.isOver
-        ) {
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now);
+        filter.frequency.exponentialRampToValueAtTime(30, now + 0.4);
 
-          e.preventDefault();
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
 
-          startGame();
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+
+        const sub = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(150, now);
+        sub.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+
+        subGain.gain.setValueAtTime(0.3, now);
+        subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+        sub.connect(subGain);
+        subGain.connect(ctx.destination);
+
+        noise.start(now);
+        sub.start(now);
+        noise.stop(now + 0.4);
+        sub.stop(now + 0.3);
+      } else if (type === 'laser') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.09);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.09);
+        osc.start(now); osc.stop(now + 0.09);
+      } else if (type === 'coin') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(987.77, now);
+        osc.frequency.setValueAtTime(1318.51, now + 0.08);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      } else if (type === 'hit') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(60, now + 0.15);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+      }
+    } catch (e) { /* Audio facultatif */ }
+  };
+
+  /* ---------------------------------------------------------
+     INIT ENVIRONNEMENT
+     --------------------------------------------------------- */
+  const initClouds = () => {
+    const list: Cloud[] = [];
+    for (let i = 0; i < 8; i++) {
+      list.push({
+        x: Math.random() * GAME_W,
+        y: Math.random() * GAME_H,
+        scale: Math.random() * 0.8 + 0.6,
+        speed: Math.random() * 2 + 1,
+        opacity: Math.random() * 0.15 + 0.05,
+      });
+    }
+    game.current.clouds = list;
+  };
+
+  /* ---------------------------------------------------------
+     DESSIN VECTORIEL DES CHASSEURS
+     --------------------------------------------------------- */
+  const drawPlayerJet = (ctx: CanvasRenderingContext2D, bank: number) => {
+    ctx.save();
+    ctx.scale(1 - Math.abs(bank) * 0.2, 1);
+    ctx.rotate(bank * 0.25);
+
+    ctx.fillStyle = COLORS.playerPrimary;
+    ctx.shadowBlur = 15; ctx.shadowColor = COLORS.playerPrimary;
+    ctx.beginPath();
+    ctx.moveTo(-8, 22); ctx.lineTo(0, 42 + Math.random() * 12); ctx.lineTo(8, 22);
+    ctx.fill();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = COLORS.playerPrimary;
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -38);
+    ctx.lineTo(8, -12);
+    ctx.lineTo(34, 12);
+    ctx.lineTo(26, 24);
+    ctx.lineTo(10, 18);
+    ctx.lineTo(12, 32);
+    ctx.lineTo(0, 26);
+    ctx.lineTo(-12, 32);
+    ctx.lineTo(-10, 18);
+    ctx.lineTo(-26, 24);
+    ctx.lineTo(-34, 12);
+    ctx.lineTo(-8, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, -38); ctx.lineTo(0, 26);
+    ctx.moveTo(-18, 5); ctx.lineTo(18, 5);
+    ctx.stroke();
+
+    const grad = ctx.createLinearGradient(0, -22, 0, 2);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, COLORS.playerCockpit);
+    grad.addColorStop(1, '#0284c7');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(0, -10, 5, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (Math.abs(bank) > 0.4) {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillRect(-34, 12, 2, 20);
+      ctx.fillRect(34, 12, 2, 20);
+    }
+
+    ctx.restore();
+  };
+
+  const drawEnemyJet = (ctx: CanvasRenderingContext2D, enemy: Aircraft) => {
+    ctx.save();
+    ctx.scale(1, -1);
+
+    const isAce = enemy.type === 'ACE';
+    const mainColor = isAce ? COLORS.enemyAce : COLORS.enemyBomber;
+    const darkColor = isAce ? COLORS.enemyAceDark : '#b45309';
+
+    ctx.shadowBlur = 10; ctx.shadowColor = mainColor;
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -enemy.radius * 1.2);
+    ctx.lineTo(enemy.radius * 0.3, -enemy.radius * 0.3);
+    ctx.lineTo(enemy.radius * 1.2, enemy.radius * 0.5);
+    ctx.lineTo(enemy.radius * 0.6, enemy.radius * 0.8);
+    ctx.lineTo(0, enemy.radius * 0.6);
+    ctx.lineTo(-enemy.radius * 0.6, enemy.radius * 0.8);
+    ctx.lineTo(-enemy.radius * 1.2, enemy.radius * 0.5);
+    ctx.lineTo(-enemy.radius * 0.3, -enemy.radius * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = darkColor;
+    ctx.beginPath();
+    ctx.moveTo(0, -enemy.radius * 0.8);
+    ctx.lineTo(enemy.radius * 0.4, 0);
+    ctx.lineTo(-enemy.radius * 0.4, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#f43f5e';
+    ctx.beginPath();
+    ctx.ellipse(0, -enemy.radius * 0.2, 4, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  };
+
+  /* ---------------------------------------------------------
+     LOGIQUE DU JEU
+     --------------------------------------------------------- */
+  const updateAndDraw = (ctx: CanvasRenderingContext2D, delta: number, time: number) => {
+    const g = game.current;
+
+    ctx.save();
+    if (g.screenShake > 0) {
+      ctx.translate((Math.random() - 0.5) * g.screenShake, (Math.random() - 0.5) * g.screenShake);
+      g.screenShake = Math.max(0, g.screenShake - delta * 35);
+    }
+
+    ctx.fillStyle = COLORS.gameBg;
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+    // VRAI PAUSE : Si en pause, on ne met pas à jour la position des éléments
+    const paused = isPausedRef.current;
+
+    // Nuages
+    g.clouds.forEach(c => {
+      if (!paused) {
+        c.y += c.speed * (gameState.hasStarted ? 1.5 : 0.5);
+        if (c.y > GAME_H + 100) { c.y = -100; c.x = Math.random() * GAME_W; }
+      }
+      ctx.fillStyle = `rgba(148, 163, 184, ${c.opacity})`;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 40 * c.scale, 0, Math.PI * 2);
+      ctx.arc(c.x + 25 * c.scale, c.y - 10 * c.scale, 30 * c.scale, 0, Math.PI * 2);
+      ctx.arc(c.x - 25 * c.scale, c.y - 10 * c.scale, 30 * c.scale, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Grille
+    ctx.strokeStyle = COLORS.gameGrid;
+    ctx.lineWidth = 1;
+    for (let x = 0; x < GAME_W; x += 64) {
+      ctx.beginPath(); ctx.moveTo(x, HUD_H); ctx.lineTo(x, GAME_H); ctx.stroke();
+    }
+
+    if (gameState.hasStarted && !paused && !gameState.gameOver) {
+      g.elapsed += delta;
+      const difficulty = 1 + g.elapsed * 0.02;
+
+      let targetVx = 0;
+      let targetVy = 0;
+
+      if (g.keys['ArrowLeft'] || g.keys['KeyA'] || g.moveLeft) targetVx = -12 * difficulty;
+      if (g.keys['ArrowRight'] || g.keys['KeyD'] || g.moveRight) targetVx = 12 * difficulty;
+      if (g.keys['ArrowUp'] || g.keys['KeyW'] || g.moveUp) targetVy = -10 * difficulty;
+      if (g.keys['ArrowDown'] || g.keys['KeyS'] || g.moveDown) targetVy = 10 * difficulty;
+
+      g.playerVx += (targetVx - g.playerVx) * 0.15;
+      g.playerVy += (targetVy - g.playerVy) * 0.15;
+
+      g.playerX += g.playerVx;
+      g.playerY += g.playerVy;
+
+      g.playerX = Math.max(40, Math.min(GAME_W - 40, g.playerX));
+      g.playerY = Math.max(HUD_H + 40, Math.min(GAME_H - 60, g.playerY));
+
+      g.playerBank = g.playerVx / 12;
+
+      // Tirs
+      if (time * 1000 - g.lastShot > 140) {
+        g.bullets.push({ x: g.playerX - 18, y: g.playerY - 20, vx: 0, vy: -26, isEnemy: false });
+        g.bullets.push({ x: g.playerX + 18, y: g.playerY - 20, vx: 0, vy: -26, isEnemy: false });
+        playSound('laser');
+        g.lastShot = time * 1000;
+      }
+
+      // Ennemis Spawn
+      if (time * 1000 - g.lastSpawn > Math.max(350, 850 - g.elapsed * 10)) {
+        const isBomber = Math.random() < 0.25;
+        g.enemies.push({
+          x: Math.random() * (GAME_W - 140) + 70,
+          y: HUD_H - 40,
+          vx: (Math.random() - 0.5) * 3,
+          vy: (isBomber ? 2 : 3.5) * difficulty,
+          bank: 0,
+          type: isBomber ? 'BOMBER' : 'ACE',
+          radius: isBomber ? 30 : 22,
+          hp: isBomber ? 4 : 1,
+          maxHp: isBomber ? 4 : 1,
+          shootTimer: 0,
+        });
+        g.lastSpawn = time * 1000;
+      }
+
+      // Updates
+      g.bullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
+      g.bullets = g.bullets.filter(b => b.y > HUD_H && b.y < GAME_H && b.x > 0 && b.x < GAME_W);
+
+      g.starCoins.forEach(s => {
+        s.y += s.vy;
+        s.rotation += 0.05;
+        const dist = Math.hypot(s.x - g.playerX, s.y - g.playerY);
+        if (dist < 120) {
+          s.x += (g.playerX - s.x) * 0.1;
+          s.y += (g.playerY - s.y) * 0.1;
         }
-      };
+      });
 
-    const handleKeyUp =
-      (e: KeyboardEvent) => {
+      for (let i = g.starCoins.length - 1; i >= 0; i--) {
+        const coin = g.starCoins[i];
+        if (Math.hypot(coin.x - g.playerX, coin.y - g.playerY) < coin.radius + 25) {
+          g.starCoins.splice(i, 1);
+          playSound('coin');
+          setGameState(s => ({
+            ...s,
+            starsCollected: s.starsCollected + 1,
+            score: s.score + 50,
+            health: Math.min(100, s.health + 2),
+          }));
+        }
+      }
+      g.starCoins = g.starCoins.filter(s => s.y < GAME_H + 20);
 
-        gameState.current.keys[
-          e.code
-        ] = false;
-      };
+      for (let i = g.enemies.length - 1; i >= 0; i--) {
+        const enemy = g.enemies[i];
+        enemy.x += enemy.vx;
+        enemy.y += enemy.vy;
 
-    window.addEventListener(
-      'keydown',
-      handleKeyDown
-    );
+        if (enemy.x < enemy.radius || enemy.x > GAME_W - enemy.radius) enemy.vx *= -1;
 
-    window.addEventListener(
-      'keyup',
-      handleKeyUp
-    );
+        enemy.shootTimer += delta;
+        if (enemy.type === 'BOMBER' && enemy.shootTimer > 1.2) {
+          enemy.shootTimer = 0;
+          g.bullets.push({ x: enemy.x, y: enemy.y + 20, vx: 0, vy: 8, isEnemy: true });
+        }
 
-    return () => {
+        if (enemy.y > GAME_H + enemy.radius) {
+          g.enemies.splice(i, 1);
+          setGameState(s => {
+            const nextEscaped = s.escapedEnemies + 1;
+            return {
+              ...s,
+              escapedEnemies: nextEscaped,
+              gameOver: nextEscaped >= s.maxEscaped,
+            };
+          });
+          continue;
+        }
 
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown
-      );
+        for (let j = g.bullets.length - 1; j >= 0; j--) {
+          const bul = g.bullets[j];
+          if (!bul.isEnemy && Math.hypot(enemy.x - bul.x, enemy.y - bul.y) < enemy.radius + 8) {
+            g.bullets.splice(j, 1);
+            enemy.hp--;
 
-      window.removeEventListener(
-        'keyup',
-        handleKeyUp
-      );
-    };
+            for (let k = 0; k < 4; k++) {
+              g.particles.push({
+                x: bul.x, y: bul.y,
+                vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+                size: 2, color: COLORS.bulletPlayer, life: 0, maxLife: 10,
+              });
+            }
 
-  }, []);
+            if (enemy.hp <= 0) {
+              playSound('boom');
+              g.screenShake = 12;
 
-  /* =======================================================
-     WEBGL + GAME LOOP
-     ======================================================= */
+              for (let k = 0; k < 20; k++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = Math.random() * 5 + 1;
+                g.particles.push({
+                  x: enemy.x, y: enemy.y,
+                  vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
+                  size: Math.random() * 5 + 2,
+                  color: enemy.type === 'ACE' ? COLORS.enemyAce : COLORS.enemyBomber,
+                  life: 0, maxLife: 25,
+                });
+              }
 
+              if (Math.random() < 0.6) {
+                g.starCoins.push({ x: enemy.x, y: enemy.y, vy: 2, radius: 10, rotation: 0 });
+              }
+
+              g.enemies.splice(i, 1);
+              setGameState(s => ({
+                ...s,
+                score: s.score + (enemy.type === 'BOMBER' ? 250 : 100) * s.combo,
+              }));
+              break;
+            }
+          }
+        }
+
+        if (Math.hypot(enemy.x - g.playerX, enemy.y - g.playerY) < enemy.radius + 24) {
+          g.enemies.splice(i, 1);
+          playSound('hit');
+          g.screenShake = 22;
+          setGameState(s => {
+            const nextHp = Math.max(0, s.health - 25);
+            return { ...s, health: nextHp, gameOver: nextHp <= 0 };
+          });
+        }
+      }
+
+      for (let j = g.bullets.length - 1; j >= 0; j--) {
+        const bul = g.bullets[j];
+        if (bul.isEnemy && Math.hypot(g.playerX - bul.x, g.playerY - bul.y) < 22) {
+          g.bullets.splice(j, 1);
+          playSound('hit');
+          g.screenShake = 15;
+          setGameState(s => {
+            const nextHp = Math.max(0, s.health - 12);
+            return { ...s, health: nextHp, gameOver: nextHp <= 0 };
+          });
+        }
+      }
+
+      g.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life++; });
+      g.particles = g.particles.filter(p => p.life < p.maxLife);
+    }
+
+    // Rendu Particules
+    g.particles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 1 - p.life / p.maxLife;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Star Coins
+    g.starCoins.forEach(s => {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rotation);
+      ctx.shadowBlur = 10; ctx.shadowColor = COLORS.starGold;
+      ctx.fillStyle = COLORS.starGold;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * s.radius, -Math.sin((18 + i * 72) * Math.PI / 180) * s.radius);
+        ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * (s.radius / 2), -Math.sin((54 + i * 72) * Math.PI / 180) * (s.radius / 2));
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Projectiles
+    g.bullets.forEach(b => {
+      ctx.save();
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = b.isEnemy ? COLORS.bulletEnemy : COLORS.bulletPlayer;
+      ctx.fillStyle = b.isEnemy ? COLORS.bulletEnemy : COLORS.bulletPlayer;
+      ctx.fillRect(b.x - 2, b.y, 4, 16);
+      ctx.restore();
+    });
+
+    // Ennemis
+    g.enemies.forEach(enemy => {
+      ctx.save();
+      ctx.translate(enemy.x, enemy.y);
+      drawEnemyJet(ctx, enemy);
+      ctx.restore();
+    });
+
+    // Joueur
+    ctx.save();
+    ctx.translate(g.playerX, g.playerY);
+    drawPlayerJet(ctx, g.playerBank);
+    ctx.restore();
+
+    // HUD
+    ctx.fillStyle = COLORS.gameBg;
+    ctx.fillRect(0, 0, GAME_W, HUD_H);
+    ctx.strokeStyle = COLORS.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, HUD_H); ctx.lineTo(GAME_W, HUD_H); ctx.stroke();
+
+    ctx.fillStyle = COLORS.textMuted; ctx.font = '10px monospace';
+    ctx.fillText('SCORE MISSION', 24, 26);
+    ctx.fillText('INTEGRITÉ STRUCTURE', GAME_W - 200, 26);
+    ctx.fillText('ÉVASIONS ENNEMIES (MAX 15)', 260, 26);
+
+    ctx.fillStyle = COLORS.textMain; ctx.font = 'bold 22px monospace';
+    ctx.fillText(gameState.score.toString().padStart(6, '0'), 24, 54);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(260, 38, 160, 14);
+    ctx.fillStyle = gameState.escapedEnemies > 10 ? COLORS.enemyAce : COLORS.accent;
+    ctx.fillRect(260, 38, (gameState.escapedEnemies / gameState.maxEscaped) * 160, 14);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(GAME_W - 200, 38, 170, 14);
+    ctx.fillStyle = gameState.health > 30 ? COLORS.accent : COLORS.enemyAce;
+    ctx.fillRect(GAME_W - 200, 38, (gameState.health / 100) * 170, 14);
+
+    ctx.restore();
+  };
+
+  /* ---------------------------------------------------------
+     PIPELINE WEBGL
+     --------------------------------------------------------- */
   useEffect(() => {
-
-    const canvas =
-      canvasRef.current;
-
-    if (!canvas) {
-      return;
-    }
-
-    const gl =
-      canvas.getContext(
-        'webgl2',
-        {
-          powerPreference:
-            'high-performance',
-
-          antialias: true,
-
-          alpha: false,
-        }
-      );
-
-    if (!gl) {
-      return;
-    }
-
-    /* =====================================================
-       INTERNAL GAME CANVAS
-       ===================================================== */
-
-    const ideCanvas =
-      document.createElement(
-        'canvas'
-      );
-
-    ideCanvas.width =
-      1024;
-
-    ideCanvas.height =
-      1024;
-
-    const ctx =
-      ideCanvas.getContext(
-        '2d'
-      );
-
-    if (!ctx) {
-      return;
-    }
-
-    /* =====================================================
-       BUG TYPES
-       ===================================================== */
-
-    const bugTypes = [
-      {
-        label: '404',
-        radius: 24,
-        speed: 1.0,
-        drift: 0.8,
-      },
-
-      {
-        label: 'NULL',
-        radius: 21,
-        speed: 1.18,
-        drift: 1.35,
-      },
-
-      {
-        label: 'BUG',
-        radius: 27,
-        speed: 0.88,
-        drift: 0.55,
-      },
-
-      {
-        label: 'ERR',
-        radius: 22,
-        speed: 1.35,
-        drift: 1.65,
-      },
-    ];
-
-    /* =====================================================
-       DRAW GAME
-       ===================================================== */
-
-    const updateAndDrawGame =
-      (time: number) => {
-
-        const w =
-          ideCanvas.width;
-
-        const h =
-          ideCanvas.height;
-
-        const state =
-          gameState.current;
-
-        /* =================================================
-           BACKGROUND
-           ================================================= */
-
-        ctx.fillStyle =
-          COLORS.gameBg;
-
-        ctx.fillRect(
-          0,
-          0,
-          w,
-          h
-        );
-
-        /* =================================================
-           STARS
-           ================================================= */
-
-        ctx.fillStyle =
-          'rgba(238, 224, 205, 0.55)';
-
-        state.stars.forEach(
-          (star) => {
-
-            if (
-              hasStartedRef.current &&
-              !isPausedRef.current &&
-              !state.isOver
-            ) {
-
-              star.y +=
-                star.speed;
-            }
-
-            if (
-              star.y >
-              h
-            ) {
-
-              star.y =
-                76;
-            }
-
-            ctx.fillRect(
-              star.x,
-              star.y,
-              star.size,
-              star.size
-            );
-          }
-        );
-
-        /* =================================================
-           GRID
-           ================================================= */
-
-        ctx.strokeStyle =
-          'rgba(220, 196, 170, 0.065)';
-
-        ctx.lineWidth =
-          1;
-
-        for (
-          let x = 0;
-          x < w;
-          x += 64
-        ) {
-
-          ctx.beginPath();
-
-          ctx.moveTo(
-            x,
-            76
-          );
-
-          ctx.lineTo(
-            x,
-            h
-          );
-
-          ctx.stroke();
-        }
-
-        for (
-          let y = 140;
-          y < h;
-          y += 64
-        ) {
-
-          ctx.beginPath();
-
-          ctx.moveTo(
-            0,
-            y
-          );
-
-          ctx.lineTo(
-            w,
-            y
-          );
-
-          ctx.stroke();
-        }
-
-        /* =================================================
-           HUD
-           ================================================= */
-
-        ctx.fillStyle =
-          'rgba(27, 25, 21, 0.96)';
-
-        ctx.fillRect(
-          0,
-          0,
-          w,
-          76
-        );
-
-        ctx.strokeStyle =
-          'rgba(220, 196, 170, 0.24)';
-
-        ctx.lineWidth =
-          1;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          0,
-          75.5
-        );
-
-        ctx.lineTo(
-          w,
-          75.5
-        );
-
-        ctx.stroke();
-
-        /* =================================================
-           SCORE
-           ================================================= */
-
-        ctx.font =
-          '11px Arial, sans-serif';
-
-        ctx.fillStyle =
-          COLORS.muted;
-
-        ctx.fillText(
-          'SCORE',
-          30,
-          28
-        );
-
-        ctx.font =
-          '20px monospace';
-
-        ctx.fillStyle =
-          COLORS.white;
-
-        ctx.fillText(
-          state.score
-            .toString()
-            .padStart(
-              6,
-              '0'
-            ),
-          30,
-          52
-        );
-
-        /* =================================================
-           HEALTH
-           ================================================= */
-
-        ctx.font =
-          '11px Arial, sans-serif';
-
-        ctx.fillStyle =
-          COLORS.muted;
-
-        ctx.fillText(
-          'HEALTH',
-          w - 300,
-          28
-        );
-
-        const healthSegments =
-          7;
-
-        const segmentWidth =
-          22;
-
-        const segmentGap =
-          5;
-
-        const totalWidth =
-          healthSegments *
-            segmentWidth +
-          (healthSegments - 1) *
-            segmentGap;
-
-        const healthStart =
-          w -
-          30 -
-          totalWidth;
-
-        for (
-          let i = 0;
-          i < healthSegments;
-          i++
-        ) {
-
-          const threshold =
-            ((i + 1) /
-              healthSegments) *
-            100;
-
-          const active =
-            state.health >=
-            threshold;
-
-          ctx.fillStyle =
-            active
-              ? COLORS.beige
-              : '#39332c';
-
-          ctx.beginPath();
-
-          ctx.roundRect(
-            healthStart +
-              i *
-                (
-                  segmentWidth +
-                  segmentGap
-                ),
-            40,
-            segmentWidth,
-            10,
-            3
-          );
-
-          ctx.fill();
-        }
-
-        /* =================================================
-           GAMEPLAY
-           ================================================= */
-
-        if (
-          hasStartedRef.current &&
-          !isPausedRef.current &&
-          !state.isOver
-        ) {
-
-          /*
-           * Difficulty ramps up continuously instead of
-           * becoming harder only through random luck.
-           */
-          state.elapsed += 1 / 60;
-
-          const difficulty =
-            Math.min(
-              2.15,
-              1 +
-                state.elapsed * 0.012
-            );
-
-          const speed =
-            11 + difficulty * 1.8;
-
-          /* ===============================================
-             MOVEMENT
-             ===============================================
-          */
-
-          if (
-            state.keys[
-              'ArrowLeft'
-            ] ||
-            state.keys[
-              'KeyA'
-            ] ||
-            state.keys[
-              'KeyQ'
-            ] ||
-            state.moveLeft
-          ) {
-
-            state.playerX -=
-              speed;
-          }
-
-          if (
-            state.keys[
-              'ArrowRight'
-            ] ||
-            state.keys[
-              'KeyD'
-            ] ||
-            state.moveRight
-          ) {
-
-            state.playerX +=
-              speed;
-          }
-
-          state.playerX =
-            Math.max(
-              50,
-              Math.min(
-                w - 50,
-                state.playerX
-              )
-            );
-
-          /* ===============================================
-             AUTO SHOOT
-             =============================================== */
-
-          if (
-            time -
-              state.lastShot >
-            Math.max(
-              0.135,
-              0.17 -
-                state.elapsed * 0.0008
-            )
-          ) {
-
-            state.bullets.push({
-              x:
-                state.playerX -
-                16,
-
-              y:
-                state.playerY -
-                24,
-            });
-
-            state.bullets.push({
-              x:
-                state.playerX +
-                16,
-
-              y:
-                state.playerY -
-                24,
-            });
-
-            state.lastShot =
-              time;
-          }
-
-          /* ===============================================
-             SPAWN BUGS
-             =============================================== */
-
-          /*
-           * Spawn using time rather than a per-frame random
-           * probability. This keeps the difficulty consistent
-           * across 60/90/120Hz screens.
-           */
-          const spawnInterval =
-            Math.max(
-              260,
-              760 -
-                state.elapsed * 8
-            );
-
-          if (
-            time * 1000 -
-              state.lastSpawn >
-            spawnInterval
-          ) {
-            const type =
-              bugTypes[
-                Math.floor(
-                  Math.random() *
-                    bugTypes.length
-                )
-              ];
-
-            const baseSpeed =
-              (2.8 +
-                Math.random() * 2.2) *
-              type.speed *
-              difficulty;
-
-            state.bugs.push({
-              x:
-                Math.random() *
-                  (w - 140) +
-                70,
-
-              y:
-                92,
-
-              speed:
-                baseSpeed,
-
-              vx:
-                (Math.random() * 2 - 1) *
-                type.drift *
-                difficulty,
-
-              label:
-                type.label,
-
-              radius:
-                type.radius,
-
-              rotation:
-                Math.random() *
-                Math.PI *
-                2,
-
-              phase:
-                Math.random() *
-                Math.PI *
-                2,
-            });
-
-            state.lastSpawn =
-              time * 1000;
-          }
-
-          /* ===============================================
-             BULLETS
-             =============================================== */
-
-          state.bullets.forEach(
-            (bullet) => {
-
-              bullet.y -=
-                20;
-            }
-          );
-
-          state.bullets =
-            state.bullets.filter(
-              (bullet) =>
-                bullet.y >
-                76
-            );
-
-          /* ===============================================
-             BUGS
-             =============================================== */
-
-          for (
-            let i =
-              state.bugs.length -
-              1;
-
-            i >= 0;
-
-            i--
-          ) {
-
-            const bug =
-              state.bugs[i];
-
-            /*
-             * Enemies no longer fall in a perfectly straight
-             * line: they drift, weave and gradually track the
-             * player's horizontal position.
-             */
-            bug.phase += 0.045;
-
-            const targetPull =
-              (state.playerX - bug.x) *
-              0.0009 *
-              difficulty;
-
-            bug.vx +=
-              targetPull +
-              Math.sin(bug.phase) *
-                0.025;
-
-            bug.vx *= 0.985;
-
-            const maxDrift =
-              2.8 +
-              difficulty * 0.8;
-
-            bug.vx =
-              Math.max(
-                -maxDrift,
-                Math.min(
-                  maxDrift,
-                  bug.vx
-                )
-              );
-
-            bug.x +=
-              bug.vx;
-
-            if (
-              bug.x <
-                bug.radius + 8 ||
-              bug.x >
-                w -
-                  bug.radius -
-                  8
-            ) {
-              bug.vx *=
-                -0.85;
-
-              bug.x =
-                Math.max(
-                  bug.radius + 8,
-                  Math.min(
-                    w -
-                      bug.radius -
-                      8,
-                    bug.x
-                  )
-                );
-            }
-
-            bug.y +=
-              bug.speed;
-
-            bug.rotation +=
-              0.01 +
-              bug.speed * 0.001;
-
-            /* =============================================
-               COLLISIONS
-               ============================================= */
-
-            let killed =
-              false;
-
-            for (
-              let j =
-                state.bullets.length -
-                1;
-
-              j >= 0;
-
-              j--
-            ) {
-
-              const bullet =
-                state.bullets[j];
-
-              const distance =
-                Math.hypot(
-                  bug.x -
-                    bullet.x,
-
-                  bug.y -
-                    bullet.y
-                );
-
-              if (
-                distance <
-                bug.radius +
-                  8
-              ) {
-
-                state.bugs.splice(
-                  i,
-                  1
-                );
-
-                state.bullets.splice(
-                  j,
-                  1
-                );
-
-                state.score +=
-                  100;
-
-                killed =
-                  true;
-
-                /*
-                 * Kill sound
-                 */
-
-                playKillSound();
-
-                break;
-              }
-            }
-
-            if (killed) {
-              continue;
-            }
-
-            /* =============================================
-               BUG REACHED PLAYER
-               ============================================= */
-
-            /*
-             * Real collision with the ship instead of an
-             * arbitrary bottom-line hit.
-             */
-            const playerDistance =
-              Math.hypot(
-                bug.x -
-                  state.playerX,
-                bug.y -
-                  state.playerY
-              );
-
-            if (
-              playerDistance <
-              bug.radius + 24
-            ) {
-              state.bugs.splice(
-                i,
-                1
-              );
-
-              state.health -=
-                25;
-
-              if (
-                state.health <=
-                0
-              ) {
-                state.health =
-                  0;
-
-                state.isOver =
-                  true;
-
-                setGameOver(
-                  true
-                );
-              }
-            } else if (
-              bug.y >
-              h + bug.radius
-            ) {
-              /*
-               * Missing an enemy is less punishing than
-               * taking a direct hit, but the enemy is gone.
-               */
-              state.bugs.splice(
-                i,
-                1
-              );
-
-              state.health -=
-                10;
-
-              if (
-                state.health <=
-                0
-              ) {
-                state.health =
-                  0;
-
-                state.isOver =
-                  true;
-
-                setGameOver(
-                  true
-                );
-              }
-            }
-          }
-        }
-
-        /* =================================================
-           BULLETS DRAW
-           ================================================= */
-
-        ctx.shadowColor =
-          'rgba(228, 192, 155, 0.8)';
-
-        ctx.shadowBlur =
-          8;
-
-        state.bullets.forEach(
-          (bullet) => {
-
-            ctx.fillStyle =
-              COLORS.bullet;
-
-            ctx.beginPath();
-
-            ctx.roundRect(
-              bullet.x - 2,
-              bullet.y,
-              4,
-              18,
-              2
-            );
-
-            ctx.fill();
-          }
-        );
-
-        ctx.shadowBlur =
-          0;
-
-        /* =================================================
-           PLAYER
-           ================================================= */
-
-        ctx.save();
-
-        ctx.translate(
-          state.playerX,
-          state.playerY
-        );
-
-        ctx.shadowColor =
-          'rgba(226, 193, 157, 0.5)';
-
-        ctx.shadowBlur =
-          18;
-
-        ctx.fillStyle =
-          COLORS.player;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          0,
-          -32
-        );
-
-        ctx.lineTo(
-          -30,
-          20
-        );
-
-        ctx.lineTo(
-          0,
-          8
-        );
-
-        ctx.lineTo(
-          30,
-          20
-        );
-
-        ctx.closePath();
-
-        ctx.fill();
-
-        /*
-         * Center
-         */
-
-        ctx.fillStyle =
-          '#fff8ed';
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          0,
-          -20
-        );
-
-        ctx.lineTo(
-          -8,
-          10
-        );
-
-        ctx.lineTo(
-          8,
-          10
-        );
-
-        ctx.closePath();
-
-        ctx.fill();
-
-        /*
-         * Engine
-         */
-
-        ctx.shadowBlur =
-          10;
-
-        ctx.fillStyle =
-          Math.sin(
-            time * 25
-          ) > 0
-            ? '#cba47e'
-            : '#a77d5e';
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          -9,
-          15
-        );
-
-        ctx.lineTo(
-          0,
-          34
-        );
-
-        ctx.lineTo(
-          9,
-          15
-        );
-
-        ctx.closePath();
-
-        ctx.fill();
-
-        ctx.restore();
-
-        /* =================================================
-           BUGS DRAW
-           ================================================= */
-
-        state.bugs.forEach(
-          (bug) => {
-
-            ctx.save();
-
-            ctx.translate(
-              bug.x,
-              bug.y
-            );
-
-            ctx.rotate(
-              Math.sin(
-                bug.rotation
-              ) *
-              0.08
-            );
-
-            ctx.shadowColor =
-              'rgba(201, 157, 121, 0.55)';
-
-            ctx.shadowBlur =
-              12;
-
-            /*
-             * Body
-             */
-
-            ctx.fillStyle =
-              COLORS.enemy;
-
-            ctx.strokeStyle =
-              COLORS.enemyDark;
-
-            ctx.lineWidth =
-              2;
-
-            ctx.beginPath();
-
-            ctx.arc(
-              0,
-              0,
-              bug.radius,
-              0,
-              Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.stroke();
-
-            /*
-             * Legs
-             */
-
-            ctx.shadowBlur =
-              0;
-
-            ctx.strokeStyle =
-              COLORS.enemy;
-
-            ctx.lineWidth =
-              2;
-
-            for (
-              let i = -1;
-              i <= 1;
-              i++
-            ) {
-
-              ctx.beginPath();
-
-              ctx.moveTo(
-                -bug.radius + 4,
-                i * 8
-              );
-
-              ctx.lineTo(
-                -bug.radius - 7,
-                i * 10
-              );
-
-              ctx.stroke();
-
-              ctx.beginPath();
-
-              ctx.moveTo(
-                bug.radius - 4,
-                i * 8
-              );
-
-              ctx.lineTo(
-                bug.radius + 7,
-                i * 10
-              );
-
-              ctx.stroke();
-            }
-
-            /*
-             * Eyes
-             */
-
-            ctx.fillStyle =
-              COLORS.gameBg;
-
-            ctx.beginPath();
-
-            ctx.arc(
-              -7,
-              -4,
-              3,
-              0,
-              Math.PI * 2
-            );
-
-            ctx.arc(
-              7,
-              -4,
-              3,
-              0,
-              Math.PI * 2
-            );
-
-            ctx.fill();
-
-            /*
-             * Label
-             */
-
-            ctx.fillStyle =
-              COLORS.gameBg;
-
-            ctx.font =
-              'bold 10px monospace';
-
-            ctx.textAlign =
-              'center';
-
-            ctx.textBaseline =
-              'middle';
-
-            ctx.fillText(
-              bug.label,
-              0,
-              10
-            );
-
-            ctx.restore();
-          }
-        );
-
-        /* =================================================
-           GAME OVER
-           ================================================= */
-
-        if (
-          state.isOver
-        ) {
-
-          ctx.fillStyle =
-            'rgba(18, 16, 13, 0.88)';
-
-          ctx.fillRect(
-            0,
-            0,
-            w,
-            h
-          );
-
-          ctx.fillStyle =
-            COLORS.beige;
-
-          ctx.font =
-            '500 42px Arial, sans-serif';
-
-          ctx.textAlign =
-            'center';
-
-          ctx.fillText(
-            'GAME OVER',
-            w / 2,
-            h / 2 - 30
-          );
-
-          ctx.fillStyle =
-            COLORS.muted;
-
-          ctx.font =
-            '16px monospace';
-
-          ctx.fillText(
-            `SCORE  ${state.score
-              .toString()
-              .padStart(
-                6,
-                '0'
-              )}`,
-            w / 2,
-            h / 2 + 10
-          );
-
-          ctx.textAlign =
-            'left';
-        }
-
-        /* =================================================
-           PAUSE
-           ================================================= */
-
-        if (
-          isPausedRef.current &&
-          hasStartedRef.current &&
-          !state.isOver
-        ) {
-
-          ctx.fillStyle =
-            'rgba(15, 14, 12, 0.35)';
-
-          ctx.fillRect(
-            0,
-            0,
-            w,
-            h
-          );
-        }
-      };
-
-    updateAndDrawGame(
-      0
-    );
-
-    /* =====================================================
-       TEXTURE
-       ===================================================== */
-
-    const ideTexture =
-      gl.createTexture();
-
-    gl.activeTexture(
-      gl.TEXTURE0
-    );
-
-    gl.bindTexture(
-      gl.TEXTURE_2D,
-      ideTexture
-    );
-
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      ideCanvas
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_WRAP_S,
-      gl.CLAMP_TO_EDGE
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_WRAP_T,
-      gl.CLAMP_TO_EDGE
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MIN_FILTER,
-      gl.LINEAR
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MAG_FILTER,
-      gl.LINEAR
-    );
-
-    /* =====================================================
-       SHADERS
-       ===================================================== */
-
-    const createShader = (
-      type: number,
-      source: string
-    ) => {
-
-      const shader =
-        gl.createShader(
-          type
-        );
-
-      if (!shader) {
-        return null;
-      }
-
-      gl.shaderSource(
-        shader,
-        source
-      );
-
-      gl.compileShader(
-        shader
-      );
-
-      if (
-        !gl.getShaderParameter(
-          shader,
-          gl.COMPILE_STATUS
-        )
-      ) {
-
-        console.error(
-          gl.getShaderInfoLog(
-            shader
-          )
-        );
-
-        gl.deleteShader(
-          shader
-        );
-
-        return null;
-      }
-
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const gl = canvas.getContext('webgl2', { antialias: true, alpha: false });
+    if (!gl) return;
+
+    initClouds();
+
+    const ideCanvas = document.createElement('canvas');
+    ideCanvas.width = GAME_W; ideCanvas.height = GAME_H;
+    const ctx2d = ideCanvas.getContext('2d')!;
+
+    const createShader = (type: number, src: string) => {
+      const shader = gl.createShader(type)!;
+      gl.shaderSource(shader, src); gl.compileShader(shader);
       return shader;
     };
 
-    const vertShader =
-      createShader(
-        gl.VERTEX_SHADER,
-        VERTEX_SHADER
-      );
+    const program = gl.createProgram()!;
+    gl.attachShader(program, createShader(gl.VERTEX_SHADER, VERTEX_SHADER));
+    gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
+    gl.linkProgram(program);
+    gl.useProgram(program);
 
-    const fragShader =
-      createShader(
-        gl.FRAGMENT_SHADER,
-        FRAGMENT_SHADER
-      );
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
 
-    if (
-      !vertShader ||
-      !fragShader
-    ) {
-      return;
-    }
+    const posLoc = gl.getAttribLocation(program, 'aPosition');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-    /* =====================================================
-       PROGRAM
-       ===================================================== */
+    const resLoc = gl.getUniformLocation(program, 'uResolution');
+    const mouseLoc = gl.getUniformLocation(program, 'uMouse');
+    const timeLoc = gl.getUniformLocation(program, 'uTime');
+    const bankLoc = gl.getUniformLocation(program, 'uBankAngle');
 
-    const program =
-      gl.createProgram();
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    if (!program) {
-      return;
-    }
+    const handleResize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      setIsMobile(window.innerWidth < 768);
+    };
 
-    gl.attachShader(
-      program,
-      vertShader
-    );
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current.targetX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseRef.current.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
 
-    gl.attachShader(
-      program,
-      fragShader
-    );
-
-    gl.linkProgram(
-      program
-    );
-
-    if (
-      !gl.getProgramParameter(
-        program,
-        gl.LINK_STATUS
-      )
-    ) {
-
-      console.error(
-        gl.getProgramInfoLog(
-          program
-        )
-      );
-
-      return;
-    }
-
-    /* =====================================================
-       BUFFER
-       ===================================================== */
-
-    const positionBuffer =
-      gl.createBuffer();
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      positionBuffer
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([
-        -1, -1,
-         1, -1,
-        -1,  1,
-
-        -1,  1,
-         1, -1,
-         1,  1,
-      ]),
-      gl.STATIC_DRAW
-    );
-
-    /* =====================================================
-       VAO
-       ===================================================== */
-
-    const positionAttributeLocation =
-      gl.getAttribLocation(
-        program,
-        'aPosition'
-      );
-
-    const vao =
-      gl.createVertexArray();
-
-    gl.bindVertexArray(
-      vao
-    );
-
-    gl.enableVertexAttribArray(
-      positionAttributeLocation
-    );
-
-    gl.vertexAttribPointer(
-      positionAttributeLocation,
-      2,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-    /* =====================================================
-       UNIFORMS
-       ===================================================== */
-
-    const resolutionLocation =
-      gl.getUniformLocation(
-        program,
-        'uResolution'
-      );
-
-    const mouseLocation =
-      gl.getUniformLocation(
-        program,
-        'uMouse'
-      );
-
-    const timeLocation =
-      gl.getUniformLocation(
-        program,
-        'uTime'
-      );
-
-    const isMobileLocation =
-      gl.getUniformLocation(
-        program,
-        'uIsMobile'
-      );
-
-    const ideTextureLocation =
-      gl.getUniformLocation(
-        program,
-        'uIdeTexture'
-      );
-
-    /* =====================================================
-       MOUSE
-       ===================================================== */
-
-    const handleMouseMove =
-      (e: MouseEvent) => {
-
-        targetMouseRef.current.x =
-          (
-            e.clientX /
-            window.innerWidth
-          ) *
-            2 -
-          1;
-
-        targetMouseRef.current.y =
-          -(
-            e.clientY /
-            window.innerHeight
-          ) *
-            2 +
-          1;
-      };
-
-    /* =====================================================
-       RESIZE
-       ===================================================== */
-
-    const handleResize =
-      () => {
-
-        if (!canvas) {
-          return;
-        }
-
-        const mobile =
-          window.innerWidth <
-          768;
-
-        setIsMobileDevice(
-          mobile
-        );
-
-        const dpr =
-          Math.min(
-            window.devicePixelRatio ||
-              1,
-            2.5
-          );
-
-        canvas.width =
-          window.innerWidth *
-          dpr;
-
-        canvas.height =
-          window.innerHeight *
-          dpr;
-
-        gl.viewport(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-      };
-
-    window.addEventListener(
-      'mousemove',
-      handleMouseMove
-    );
-
-    window.addEventListener(
-      'resize',
-      handleResize
-    );
-
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('mousemove', handleMouseMove);
     handleResize();
 
-    /* =====================================================
-       RENDER
-       ===================================================== */
+    let animId: number;
+    let lastTime = 0;
 
-    let animationFrameId =
-      0;
+    const render = (now: number) => {
+      const time = now * 0.001;
+      const delta = lastTime ? time - lastTime : 0.016;
+      lastTime = time;
 
-    const startTime =
-      performance.now();
+      updateAndDraw(ctx2d, delta, time);
 
-    const render =
-      (now: number) => {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ideCanvas);
 
-        const elapsedTime =
-          (
-            now -
-            startTime
-          ) *
-          0.001;
+      const m = mouseRef.current;
+      m.currentX += (m.targetX - m.currentX) * 0.08;
+      m.currentY += (m.targetY - m.currentY) * 0.08;
 
-        updateAndDrawGame(
-          elapsedTime
-        );
+      gl.uniform2f(resLoc, canvas.width, canvas.height);
+      gl.uniform2f(mouseLoc, m.currentX, m.currentY);
+      gl.uniform1f(timeLoc, time);
+      gl.uniform1f(bankLoc, game.current.playerBank);
 
-        /*
-         * Update texture
-         */
-
-        gl.activeTexture(
-          gl.TEXTURE0
-        );
-
-        gl.bindTexture(
-          gl.TEXTURE_2D,
-          ideTexture
-        );
-
-        gl.texSubImage2D(
-          gl.TEXTURE_2D,
-          0,
-          0,
-          0,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          ideCanvas
-        );
-
-        /*
-         * Smooth mouse
-         */
-
-        currentMouseRef.current.x +=
-          (
-            targetMouseRef.current.x -
-            currentMouseRef.current.x
-          ) *
-          0.1;
-
-        currentMouseRef.current.y +=
-          (
-            targetMouseRef.current.y -
-            currentMouseRef.current.y
-          ) *
-          0.1;
-
-        /*
-         * Render WebGL
-         */
-
-        gl.useProgram(
-          program
-        );
-
-        gl.bindVertexArray(
-          vao
-        );
-
-        gl.uniform2f(
-          resolutionLocation,
-          canvas.width,
-          canvas.height
-        );
-
-        gl.uniform2f(
-          mouseLocation,
-          currentMouseRef.current.x,
-          currentMouseRef.current.y
-        );
-
-        gl.uniform1f(
-          timeLocation,
-          elapsedTime
-        );
-
-        gl.uniform1i(
-          isMobileLocation,
-          isMobileDevice
-            ? 1
-            : 0
-        );
-
-        gl.uniform1i(
-          ideTextureLocation,
-          0
-        );
-
-        gl.drawArrays(
-          gl.TRIANGLES,
-          0,
-          6
-        );
-
-        animationFrameId =
-          requestAnimationFrame(
-            render
-          );
-      };
-
-    animationFrameId =
-      requestAnimationFrame(
-        render
-      );
-
-    /* =====================================================
-       CLEANUP
-       ===================================================== */
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      animId = requestAnimationFrame(render);
+    };
+    animId = requestAnimationFrame(render);
 
     return () => {
-
-      cancelAnimationFrame(
-        animationFrameId
-      );
-
-      window.removeEventListener(
-        'mousemove',
-        handleMouseMove
-      );
-
-      window.removeEventListener(
-        'resize',
-        handleResize
-      );
-
-      gl.deleteTexture(
-        ideTexture
-      );
-
-      gl.deleteProgram(
-        program
-      );
-
-      gl.deleteShader(
-        vertShader
-      );
-
-      gl.deleteShader(
-        fragShader
-      );
-
-      gl.deleteBuffer(
-        positionBuffer
-      );
-
-      gl.deleteVertexArray(
-        vao
-      );
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      gl.deleteTexture(texture);
+      gl.deleteProgram(program);
     };
+  }, [gameState.hasStarted]);
 
-  }, [isMobileDevice]);
-
-  /* =========================================================
-     MOBILE MOVEMENT
-     ========================================================= */
-
-  const startMoveLeft =
-    () => {
-      gameState.current.moveLeft =
-        true;
+  /* ---------------------------------------------------------
+     CONTROLES & ACTIONS
+     --------------------------------------------------------- */
+  const startGame = () => {
+    game.current = {
+      playerX: GAME_W / 2, playerY: GAME_H - 140,
+      playerVx: 0, playerVy: 0, playerBank: 0,
+      bullets: [], enemies: [], particles: [], starCoins: [], clouds: game.current.clouds,
+      keys: {}, screenShake: 0, lastShot: 0, lastSpawn: 0, elapsed: 0,
+      moveLeft: false, moveRight: false, moveUp: false, moveDown: false,
     };
+    setGameState({
+      hasStarted: true, isPaused: false, gameOver: false,
+      score: 0, combo: 1, health: 100, escapedEnemies: 0, maxEscaped: 15, starsCollected: 0,
+    });
+  };
 
-  const stopMoveLeft =
-    () => {
-      gameState.current.moveLeft =
-        false;
+  const togglePause = () => {
+    if (!gameState.hasStarted || gameState.gameOver) return;
+    setGameState(s => ({ ...s, isPaused: !s.isPaused }));
+  };
+
+  const quitGame = () => {
+    setGameState({
+      hasStarted: false,
+      isPaused: false,
+      gameOver: false,
+      score: 0,
+      combo: 1,
+      health: 100,
+      escapedEnemies: 0,
+      maxEscaped: 15,
+      starsCollected: 0,
+    });
+  };
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      game.current.keys[e.code] = true;
+      if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+      if (gameState.gameOver && e.code === 'Space') startGame();
     };
-
-  const startMoveRight =
-    () => {
-      gameState.current.moveRight =
-        true;
-    };
-
-  const stopMoveRight =
-    () => {
-      gameState.current.moveRight =
-        false;
-    };
-
-  /* =========================================================
-     RENDER
-     ========================================================= */
+    const up = (e: KeyboardEvent) => { game.current.keys[e.code] = false; };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, [gameState.gameOver, gameState.hasStarted]);
 
   return (
+    <main className="relative w-full h-screen overflow-hidden select-none bg-slate-950 font-sans">
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-0" />
 
-    <section
-      className={
-        `relative w-full overflow-hidden select-none touch-pan-y ${
-          hasStarted ? 'h-screen' : 'h-[50vh] md:h-screen'
-        }`
-      }
-      style={{
-        backgroundColor:
-          COLORS.cream,
-      }}
-    >
-
-      {/* ===================================================
-          CANVAS
-          pointer-events-none = le canvas ne bloque PAS
-          le scroll de la page
-          =================================================== */}
-
-      <canvas
-        ref={canvasRef}
-        className="pointer-events-none absolute inset-0 block h-full w-full"
-      />
-
-      {/* ===================================================
-          COVER
-          =================================================== */}
-
-      {!hasStarted && (
-
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden"
-          style={{
-            backgroundColor:
-              COLORS.cream,
-          }}
-        >
-
-          <img
-            src="/j.jpg"
-            alt=""
-            className="absolute inset-0 h-full w-full object-contain sm:object-cover"
-            style={{
-              /*
-               * On small screens, avoid enlarging a portrait/low-res
-               * cover image unnecessarily. Contain preserves its
-               * sharpness; the cream background fills the remaining
-               * space cleanly.
-               */
-              filter:
-                isMobileDevice
-                  ? 'brightness(1.10) contrast(1.08) saturate(1.04)'
-                  : 'brightness(1.04) contrast(1.04)',
-              objectPosition:
-                isMobileDevice
-                  ? 'center center'
-                  : 'center center',
-            }}
-          />
-
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                isMobileDevice
-                  ? 'rgba(244,236,221,0.06)'
-                  : 'rgba(244,236,221,0.12)',
-            }}
-          />
-
-          <div className="relative z-10 flex flex-col items-center text-center">
-
-            <div
-              className="mb-7 h-1.5 w-1.5 rounded-full"
-              style={{
-                backgroundColor:
-                  COLORS.brown,
-              }}
-            />
-
-            <h1
-              className="font-sans text-4xl font-light tracking-[0.38em] sm:text-6xl"
-              style={{
-                color:
-                  COLORS.brown,
-              }}
+      {/* --- UI OVERLAYS --- */}
+      <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
+        {gameState.hasStarted && (
+          <header className="w-full p-6 flex justify-between items-center pointer-events-auto">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-400" />
+              <span className="text-xs font-mono text-slate-400 tracking-widest">AERO_STRIKER</span>
+            </div>
+            <button 
+              onClick={togglePause}
+              className="px-5 py-2 rounded-full border border-slate-700 bg-slate-900/80 backdrop-blur-md text-slate-300 font-mono text-xs tracking-widest hover:bg-slate-800 transition"
             >
-              ARCADE
-            </h1>
-
-            <div
-              className="mt-7 h-1.5 w-1.5 rounded-full"
-              style={{
-                backgroundColor:
-                  COLORS.brown,
-              }}
-            />
-
-            <button
-              onClick={
-                startGame
-              }
-              className="mt-8 min-w-[190px] rounded-md px-10 py-4 font-sans text-sm font-medium tracking-[0.2em] transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                backgroundColor:
-                  COLORS.beigeDark,
-
-                color:
-                  COLORS.white,
-
-                boxShadow:
-                  '0 12px 35px rgba(114,86,67,0.12)',
-              }}
-            >
-              PLAY
+              {gameState.isPaused ? 'RESUME' : 'PAUSE'}
             </button>
+          </header>
+        )}
 
-            <p
-              className="mt-5 font-sans text-xs tracking-wide"
-              style={{
-                color:
-                  COLORS.brown,
-              }}
-            >
-              ← → to move
-            </p>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ===================================================
-          DESKTOP CONTROLS
-          =================================================== */}
-
-      {hasStarted &&
-        !isMobileDevice && (
-
-          <div
-            className="pointer-events-none absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5"
-          >
-
-            <div
-              className="font-sans text-xs tracking-[0.16em]"
-              style={{
-                color:
-                  COLORS.muted,
-              }}
-            >
-              ← →
+        {/* Écran de démarrage */}
+        {!gameState.hasStarted && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 pointer-events-auto backdrop-blur-md bg-slate-950/90">
+            <div className="text-center space-y-3">
+              <h1 className="text-5xl font-light tracking-[0.25em] text-slate-200 uppercase font-sans">
+                AERO STRIKER
+              </h1>
+              <div className="w-12 h-[1px] bg-slate-700 mx-auto" />
+              <p className="text-xs font-mono text-slate-500 tracking-[0.2em] uppercase">Tactical Arcade Aviation</p>
             </div>
-
-            <div
-              className="h-1 w-8 rounded-full"
-              style={{
-                backgroundColor:
-                  COLORS.beigeDark,
-              }}
-            />
-
-            <div className="pointer-events-auto flex items-center gap-2">
-
-              <button
-                onClick={
-                  pauseGame
-                }
-                className="flex h-9 w-9 items-center justify-center rounded-md border transition-all hover:bg-white/5"
-                style={{
-                  borderColor:
-                    'rgba(220,196,170,0.25)',
-
-                  color:
-                    COLORS.beige,
-                }}
-                aria-label={
-                  isPaused
-                    ? 'Resume'
-                    : 'Pause'
-                }
-              >
-                {isPaused
-                  ? '▶'
-                  : 'Ⅱ'}
-              </button>
-
-              <button
-                onClick={
-                  quitGame
-                }
-                className="flex h-9 items-center justify-center rounded-md border px-3 font-sans text-[10px] tracking-[0.14em] transition-all hover:bg-white/5"
-                style={{
-                  borderColor:
-                    'rgba(220,196,170,0.25)',
-
-                  color:
-                    COLORS.muted,
-                }}
-              >
-                MENU
-              </button>
-
-            </div>
-
+            <button
+              onClick={startGame}
+              className="mt-2 px-8 py-3 rounded border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs tracking-[0.2em] uppercase hover:bg-slate-800 hover:border-slate-500 transition-all duration-200"
+            >
+              START
+            </button>
           </div>
         )}
 
-      {/* ===================================================
-          CONTROLS HINT
-          =================================================== */}
-
-      {hasStarted &&
-        !isMobileDevice &&
-        showControlsHint &&
-        !isPaused && (
-
-          <div
-            className="pointer-events-none absolute bottom-7 left-1/2 z-30 -translate-x-1/2 font-sans text-xs tracking-wide"
-            style={{
-              color:
-                COLORS.muted,
-            }}
-          >
-            Use ← → to move
-          </div>
-        )}
-
-      {/* ===================================================
-          PAUSE SCREEN
-          =================================================== */}
-
-      {hasStarted &&
-        isPaused &&
-        !gameOver && (
-
-          <div
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-[5px]"
-            style={{
-              background:
-                'rgba(18,16,13,0.76)',
-            }}
-          >
-
-            <div className="flex w-[280px] flex-col items-center text-center">
-
-              <div
-                className="font-sans text-xs tracking-[0.4em]"
-                style={{
-                  color:
-                    COLORS.beige,
-                }}
-              >
-                · PAUSED ·
+        {/* Écran Game Over & Pause avec option pour QUITTER */}
+        {(gameState.isPaused || gameState.gameOver) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-auto backdrop-blur-lg bg-slate-950/90">
+            {gameState.gameOver ? (
+              <div className="text-center space-y-4">
+                <h2 className="text-3xl font-light tracking-widest text-slate-200">
+                  {gameState.escapedEnemies >= gameState.maxEscaped ? 'SECTOR DEFENSE FAILED' : 'AIRCRAFT DESTROYED'}
+                </h2>
+                <div className="space-y-1">
+                  <p className="text-xs font-mono text-slate-500 tracking-widest">FINAL SCORE</p>
+                  <p className="text-3xl font-mono text-slate-200 font-bold">{gameState.score.toString().padStart(6, '0')}</p>
+                </div>
+                <div className="flex gap-4 justify-center mt-6">
+                  <button
+                    onClick={startGame}
+                    className="px-8 py-3 rounded border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs tracking-widest hover:bg-slate-800 transition"
+                  >
+                    REPLAY [SPACE]
+                  </button>
+                  <button
+                    onClick={quitGame}
+                    className="px-8 py-3 rounded border border-rose-900/50 bg-rose-950/30 text-rose-300 font-mono text-xs tracking-widest hover:bg-rose-900/50 transition"
+                  >
+                    QUIT
+                  </button>
+                </div>
               </div>
-
-              <button
-                onClick={
-                  pauseGame
-                }
-                className="mt-8 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-                style={{
-                  backgroundColor:
-                    COLORS.cream,
-
-                  color:
-                    COLORS.brownDark,
-                }}
-              >
-                RESUME
-              </button>
-
-              <button
-                onClick={
-                  quitGame
-                }
-                className="mt-3 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-                style={{
-                  backgroundColor:
-                    COLORS.beigeDark,
-
-                  color:
-                    COLORS.white,
-                }}
-              >
-                MENU
-              </button>
-
-              <p
-                className="mt-6 font-sans text-[10px]"
-                style={{
-                  color:
-                    COLORS.muted,
-                }}
-              >
-                Press P to resume
-              </p>
-
-            </div>
-
+            ) : (
+              <div className="text-center space-y-6">
+                <h2 className="text-2xl font-mono tracking-widest text-slate-300">PAUSED</h2>
+                <div className="flex flex-col gap-3 items-center">
+                  <button
+                    onClick={togglePause}
+                    className="w-48 py-3 rounded border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs tracking-widest hover:bg-slate-800 transition"
+                  >
+                    RESUME [P]
+                  </button>
+                  <button
+                    onClick={quitGame}
+                    className="w-48 py-3 rounded border border-rose-900/50 bg-rose-950/30 text-rose-300 font-mono text-xs tracking-widest hover:bg-rose-900/50 transition"
+                  >
+                    QUIT TO MENU
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-      {/* ===================================================
-          GAME OVER
-          =================================================== */}
-
-      {gameOver && (
-
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[5px]"
-          style={{
-            background:
-              'rgba(18,16,13,0.82)',
-          }}
-        >
-
-          <div className="flex w-[280px] flex-col items-center text-center">
-
-            <div
-              className="font-sans text-xs tracking-[0.4em]"
-              style={{
-                color:
-                  COLORS.beige,
-              }}
-            >
-              · GAME OVER ·
+        {/* Contrôles Mobile : Placé à DROITE pour un confort de jeu à deux mains */}
+        {isMobile && gameState.hasStarted && !gameState.gameOver && !gameState.isPaused && (
+          <div className="absolute bottom-8 right-8 flex justify-end pointer-events-none">
+            <div className="grid grid-cols-3 gap-2 pointer-events-auto">
+              <div />
+              <button
+                onTouchStart={() => { game.current.moveUp = true; }}
+                onTouchEnd={() => { game.current.moveUp = false; }}
+                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+              >
+                ↑
+              </button>
+              <div />
+              <button
+                onTouchStart={() => { game.current.moveLeft = true; }}
+                onTouchEnd={() => { game.current.moveLeft = false; }}
+                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+              >
+                ←
+              </button>
+              <button
+                onTouchStart={() => { game.current.moveDown = true; }}
+                onTouchEnd={() => { game.current.moveDown = false; }}
+                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+              >
+                ↓
+              </button>
+              <button
+                onTouchStart={() => { game.current.moveRight = true; }}
+                onTouchEnd={() => { game.current.moveRight = false; }}
+                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+              >
+                →
+              </button>
             </div>
-
-            <div
-              className="mt-7 font-mono text-3xl"
-              style={{
-                color:
-                  COLORS.white,
-              }}
-            >
-              {gameState.current.score
-                .toString()
-                .padStart(
-                  6,
-                  '0'
-                )}
-            </div>
-
-            <div
-              className="mt-1 font-sans text-[10px] tracking-[0.2em]"
-              style={{
-                color:
-                  COLORS.muted,
-              }}
-            >
-              SCORE
-            </div>
-
-            <button
-              onClick={
-                startGame
-              }
-              className="mt-8 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                backgroundColor:
-                  COLORS.cream,
-
-                color:
-                  COLORS.brownDark,
-              }}
-            >
-              RETRY
-            </button>
-
-            <button
-              onClick={
-                quitGame
-              }
-              className="mt-3 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                backgroundColor:
-                  COLORS.beigeDark,
-
-                color:
-                  COLORS.white,
-              }}
-            >
-              MENU
-            </button>
-
-            <p
-              className="mt-6 font-sans text-[10px]"
-              style={{
-                color:
-                  COLORS.muted,
-              }}
-            >
-              Press SPACE to retry
-            </p>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ===================================================
-          MOBILE CONTROLS
-
-          IMPORTANT:
-          pointer-events-none sur le container
-          pour ne pas bloquer le scroll.
-
-          Les boutons réactivent pointer-events.
-          =================================================== */}
-
-      {isMobileDevice &&
-        hasStarted &&
-        !gameOver && (
-
-          <div
-            className="pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-0 right-0 z-30 flex items-center justify-between px-6 sm:px-7"
-          >
-
-            <button
-              onTouchStart={
-                startMoveLeft
-              }
-              onTouchEnd={
-                stopMoveLeft
-              }
-              onTouchCancel={
-                stopMoveLeft
-              }
-              className="pointer-events-auto touch-none flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
-              style={{
-                borderColor:
-                  'rgba(220,196,170,0.4)',
-
-                backgroundColor:
-                  'rgba(28,26,22,0.7)',
-
-                color:
-                  COLORS.beige,
-              }}
-            >
-              ←
-            </button>
-
-            <button
-              onClick={
-                pauseGame
-              }
-              className="pointer-events-auto touch-none flex h-11 w-11 items-center justify-center rounded-full border font-sans text-xs transition-all active:scale-90"
-              style={{
-                borderColor:
-                  'rgba(220,196,170,0.4)',
-
-                backgroundColor:
-                  'rgba(28,26,22,0.7)',
-
-                color:
-                  COLORS.beige,
-              }}
-            >
-              Ⅱ
-            </button>
-
-            <button
-              onTouchStart={
-                startMoveRight
-              }
-              onTouchEnd={
-                stopMoveRight
-              }
-              onTouchCancel={
-                stopMoveRight
-              }
-              className="pointer-events-auto touch-none flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
-              style={{
-                borderColor:
-                  'rgba(220,196,170,0.4)',
-
-                backgroundColor:
-                  'rgba(28,26,22,0.7)',
-
-                color:
-                  COLORS.beige,
-              }}
-            >
-              →
-            </button>
-
           </div>
         )}
-
-    </section>
+      </div>
+    </main>
   );
 };
 
-export default AestheticArcadeGame;
+export default AeroArcadeGame;
