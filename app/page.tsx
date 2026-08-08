@@ -265,9 +265,9 @@ export default function Home() {
             <div>
               {/* BADGE HERO MIS À JOUR */}
               <motion.div 
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -19 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)]/60 px-3.5 py-1.5 font-mono text-xs text-[var(--accent)] backdrop-blur-md mb-6"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)]/60 px-3.5 py-1.5 font-mono text-xs text-[var(--accent)] backdrop-blur-md mt-8 mb-6"
               >
                 <Activity className="h-3.5 w-3.5 animate-pulse" />
                 <span>DAKAR, SN •</span>

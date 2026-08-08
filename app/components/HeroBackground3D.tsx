@@ -443,9 +443,11 @@ export const AestheticArcadeGame = () => {
       x: number;
       y: number;
       speed: number;
+      vx: number;
       label: string;
       radius: number;
       rotation: number;
+      phase: number;
     }[],
 
     stars: Array.from(
@@ -486,6 +488,10 @@ export const AestheticArcadeGame = () => {
     isOver: false,
 
     lastShot: 0,
+
+    lastSpawn: 0,
+
+    elapsed: 0,
   });
 
   /* =======================================================
@@ -676,6 +682,12 @@ export const AestheticArcadeGame = () => {
       false;
 
     state.lastShot =
+      0;
+
+    state.lastSpawn =
+      0;
+
+    state.elapsed =
       0;
 
     setGameOver(
@@ -954,21 +966,29 @@ export const AestheticArcadeGame = () => {
       {
         label: '404',
         radius: 24,
+        speed: 1.0,
+        drift: 0.8,
       },
 
       {
         label: 'NULL',
         radius: 21,
+        speed: 1.18,
+        drift: 1.35,
       },
 
       {
         label: 'BUG',
         radius: 27,
+        speed: 0.88,
+        drift: 0.55,
       },
 
       {
         label: 'ERR',
         radius: 22,
+        speed: 1.35,
+        drift: 1.65,
       },
     ];
 
@@ -1243,12 +1263,26 @@ export const AestheticArcadeGame = () => {
           !state.isOver
         ) {
 
+          /*
+           * Difficulty ramps up continuously instead of
+           * becoming harder only through random luck.
+           */
+          state.elapsed += 1 / 60;
+
+          const difficulty =
+            Math.min(
+              2.15,
+              1 +
+                state.elapsed * 0.012
+            );
+
           const speed =
-            14;
+            11 + difficulty * 1.8;
 
           /* ===============================================
              MOVEMENT
-             =============================================== */
+             ===============================================
+          */
 
           if (
             state.keys[
@@ -1297,7 +1331,11 @@ export const AestheticArcadeGame = () => {
           if (
             time -
               state.lastShot >
-            0.11
+            Math.max(
+              0.135,
+              0.17 -
+                state.elapsed * 0.0008
+            )
           ) {
 
             state.bullets.push({
@@ -1328,11 +1366,23 @@ export const AestheticArcadeGame = () => {
              SPAWN BUGS
              =============================================== */
 
-          if (
-            Math.random() <
-            0.05
-          ) {
+          /*
+           * Spawn using time rather than a per-frame random
+           * probability. This keeps the difficulty consistent
+           * across 60/90/120Hz screens.
+           */
+          const spawnInterval =
+            Math.max(
+              260,
+              760 -
+                state.elapsed * 8
+            );
 
+          if (
+            time * 1000 -
+              state.lastSpawn >
+            spawnInterval
+          ) {
             const type =
               bugTypes[
                 Math.floor(
@@ -1341,6 +1391,12 @@ export const AestheticArcadeGame = () => {
                 )
               ];
 
+            const baseSpeed =
+              (2.8 +
+                Math.random() * 2.2) *
+              type.speed *
+              difficulty;
+
             state.bugs.push({
               x:
                 Math.random() *
@@ -1348,12 +1404,15 @@ export const AestheticArcadeGame = () => {
                 70,
 
               y:
-                100,
+                92,
 
               speed:
-                3 +
-                Math.random() *
-                  4,
+                baseSpeed,
+
+              vx:
+                (Math.random() * 2 - 1) *
+                type.drift *
+                difficulty,
 
               label:
                 type.label,
@@ -1365,7 +1424,15 @@ export const AestheticArcadeGame = () => {
                 Math.random() *
                 Math.PI *
                 2,
+
+              phase:
+                Math.random() *
+                Math.PI *
+                2,
             });
+
+            state.lastSpawn =
+              time * 1000;
           }
 
           /* ===============================================
@@ -1404,11 +1471,70 @@ export const AestheticArcadeGame = () => {
             const bug =
               state.bugs[i];
 
+            /*
+             * Enemies no longer fall in a perfectly straight
+             * line: they drift, weave and gradually track the
+             * player's horizontal position.
+             */
+            bug.phase += 0.045;
+
+            const targetPull =
+              (state.playerX - bug.x) *
+              0.0009 *
+              difficulty;
+
+            bug.vx +=
+              targetPull +
+              Math.sin(bug.phase) *
+                0.025;
+
+            bug.vx *= 0.985;
+
+            const maxDrift =
+              2.8 +
+              difficulty * 0.8;
+
+            bug.vx =
+              Math.max(
+                -maxDrift,
+                Math.min(
+                  maxDrift,
+                  bug.vx
+                )
+              );
+
+            bug.x +=
+              bug.vx;
+
+            if (
+              bug.x <
+                bug.radius + 8 ||
+              bug.x >
+                w -
+                  bug.radius -
+                  8
+            ) {
+              bug.vx *=
+                -0.85;
+
+              bug.x =
+                Math.max(
+                  bug.radius + 8,
+                  Math.min(
+                    w -
+                      bug.radius -
+                      8,
+                    bug.x
+                  )
+                );
+            }
+
             bug.y +=
               bug.speed;
 
             bug.rotation +=
-              0.01;
+              0.01 +
+              bug.speed * 0.001;
 
             /* =============================================
                COLLISIONS
@@ -1479,11 +1605,22 @@ export const AestheticArcadeGame = () => {
                BUG REACHED PLAYER
                ============================================= */
 
-            if (
-              bug.y >
-              h - 70
-            ) {
+            /*
+             * Real collision with the ship instead of an
+             * arbitrary bottom-line hit.
+             */
+            const playerDistance =
+              Math.hypot(
+                bug.x -
+                  state.playerX,
+                bug.y -
+                  state.playerY
+              );
 
+            if (
+              playerDistance <
+              bug.radius + 24
+            ) {
               state.bugs.splice(
                 i,
                 1
@@ -1496,7 +1633,36 @@ export const AestheticArcadeGame = () => {
                 state.health <=
                 0
               ) {
+                state.health =
+                  0;
 
+                state.isOver =
+                  true;
+
+                setGameOver(
+                  true
+                );
+              }
+            } else if (
+              bug.y >
+              h + bug.radius
+            ) {
+              /*
+               * Missing an enemy is less punishing than
+               * taking a direct hit, but the enemy is gone.
+               */
+              state.bugs.splice(
+                i,
+                1
+              );
+
+              state.health -=
+                10;
+
+              if (
+                state.health <=
+                0
+              ) {
                 state.health =
                   0;
 
@@ -2457,14 +2623,32 @@ export const AestheticArcadeGame = () => {
           <img
             src="/e.jpg"
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain sm:object-cover"
+            style={{
+              /*
+               * On small screens, avoid enlarging a portrait/low-res
+               * cover image unnecessarily. Contain preserves its
+               * sharpness; the cream background fills the remaining
+               * space cleanly.
+               */
+              filter:
+                isMobileDevice
+                  ? 'brightness(1.10) contrast(1.08) saturate(1.04)'
+                  : 'brightness(1.04) contrast(1.04)',
+              objectPosition:
+                isMobileDevice
+                  ? 'center center'
+                  : 'center center',
+            }}
           />
 
           <div
             className="absolute inset-0"
             style={{
               background:
-                'rgba(244,236,221,0.18)',
+                isMobileDevice
+                  ? 'rgba(244,236,221,0.06)'
+                  : 'rgba(244,236,221,0.12)',
             }}
           />
 
@@ -2813,7 +2997,7 @@ export const AestheticArcadeGame = () => {
         !gameOver && (
 
           <div
-            className="pointer-events-none absolute bottom-5 left-0 right-0 z-30 flex items-center justify-between px-7"
+            className="pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-0 right-0 z-30 flex items-center justify-between px-6 sm:px-7"
           >
 
             <button
