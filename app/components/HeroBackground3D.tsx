@@ -504,8 +504,8 @@ export const AestheticArcadeGame = () => {
     <div className="relative w-full min-h-screen bg-[#0a0705] select-none touch-pan-y font-mono">
       {/* COUVERTURE MINIMALISTE */}
       {!gameStarted && (
-        <div className="min-h-screen w-full z-50 flex items-center justify-center p-6 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0]">
-          <div className="w-full max-w-sm flex flex-col items-center justify-center space-y-10">
+        <div className="w-full z-50 flex items-center justify-center pt-0 md:pt-4 pb-4 md:pb-8 px-4 md:px-6 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0] min-h-screen">
+          <div className="w-full max-w-sm flex flex-col items-center justify-center space-y-5 md:space-y-8">
             {/* Image */}
             <div className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/30">
               <img
@@ -516,8 +516,8 @@ export const AestheticArcadeGame = () => {
             </div>
 
             {/* Contenu textuel minimaliste */}
-            <div className="space-y-5 text-center">
-              <div className="space-y-2">
+            <div className="space-y-3 md:space-y-4 text-center">
+              <div className="space-y-1 md:space-y-2">
                 <p className="text-[#8b7d72] text-xs uppercase tracking-[0.15em] font-light">
                   Escape Protocol
                 </p>
@@ -535,8 +535,8 @@ export const AestheticArcadeGame = () => {
               </button>
             </div>
 
-            {/* Conseil en bas */}
-            <p className="text-[#b3a896] text-[0.6rem] uppercase tracking-[0.15em] font-light">
+            {/* Conseil en bas - caché sur mobile */}
+            <p className="hidden md:block text-[#b3a896] text-[0.6rem] uppercase tracking-[0.15em] font-light">
               Conseil
             </p>
           </div>
