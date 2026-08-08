@@ -2596,10 +2596,6 @@ export const AestheticArcadeGame = () => {
       style={{
         backgroundColor:
           COLORS.cream,
-        height:
-          hasStarted && isMobileDevice
-            ? '100dvh'
-            : undefined,
       }}
     >
 
