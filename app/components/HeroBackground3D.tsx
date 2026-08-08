@@ -2624,13 +2624,9 @@ export const AestheticArcadeGame = () => {
           }}
         >
 
-          <video
-            src="/v.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
+          <img
+            src="/i.jpg"
+            alt=""
             className="absolute inset-0 h-full w-full object-contain sm:object-cover"
             style={{
               /*
