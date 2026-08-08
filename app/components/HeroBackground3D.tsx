@@ -69,7 +69,7 @@ vec3 getNormal(vec3 p) {
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
 
-  float camDist = uIsMobile ? -2.35 : -2.25;
+  float camDist = uIsMobile ? -2.45 : -2.25;
   vec3 ro = vec3(0.0, 0.0, camDist);
   vec3 rd = normalize(vec3(uv, 1.2));
 
@@ -120,8 +120,14 @@ export const AestheticArcadeGame = () => {
 
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [showControlsHint, setShowControlsHint] = useState(true);
+
+  const isPausedRef = useRef(isPaused);
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   const targetMouseRef = useRef({ x: 0, y: 0 });
   const currentMouseRef = useRef({ x: 0, y: 0 });
@@ -167,12 +173,28 @@ export const AestheticArcadeGame = () => {
     gameState.current.isOver = false;
     gameState.current.lastShot = 0;
     setGameOver(false);
+    setIsPaused(false);
     setGameStarted(true);
+  };
+
+  const quitGame = () => {
+    setIsPaused(false);
+    setGameOver(false);
+    setGameStarted(false);
+  };
+
+  const togglePause = () => {
+    if (gameStarted && !gameOver) {
+      setIsPaused((prev) => !prev);
+    }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       gameState.current.keys[e.code] = true;
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        togglePause();
+      }
       if (e.code === 'Space' && gameState.current.isOver) {
         resetGame();
       }
@@ -187,7 +209,7 @@ export const AestheticArcadeGame = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [gameStarted, gameOver]);
 
   useEffect(() => {
     if (!gameStarted) return;
@@ -227,8 +249,10 @@ export const AestheticArcadeGame = () => {
 
       ctx.fillStyle = '#f59e0b22';
       state.stars.forEach((star) => {
-        star.y += star.speed;
-        if (star.y > h) star.y = 0;
+        if (!isPausedRef.current) {
+          star.y += star.speed;
+          if (star.y > h) star.y = 0;
+        }
         ctx.fillRect(star.x, star.y, star.size, star.size);
       });
 
@@ -251,14 +275,14 @@ export const AestheticArcadeGame = () => {
       ctx.fillText(`SCORE: ${state.score.toString().padStart(6, '0')}`, 30, 48);
 
       ctx.fillStyle = '#26150a';
-      ctx.fillRect(w - 280, 26, 240, 26);
+      ctx.fillRect(w - 280, 25, 250, 26);
       ctx.fillStyle = state.health > 40 ? '#f59e0b' : '#ef4444';
-      ctx.fillRect(w - 280, 26, (state.health / 100) * 240, 26);
+      ctx.fillRect(w - 280, 25, (state.health / 100) * 250, 26);
       ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 2;
-      ctx.strokeRect(w - 280, 26, 240, 26);
+      ctx.strokeRect(w - 280, 25, 250, 26);
 
-      if (!state.isOver) {
+      if (!state.isOver && !isPausedRef.current) {
         const speed = 14;
         if (state.keys['ArrowLeft'] || state.keys['KeyA'] || state.keys['KeyQ'] || state.moveLeft) {
           state.playerX -= speed;
@@ -368,11 +392,11 @@ export const AestheticArcadeGame = () => {
         ctx.fillStyle = '#ef4444';
         ctx.font = 'bold 56px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('SYSTEM CRASH', w / 2, h / 2 - 30);
+        ctx.fillText('SYSTEM CRASH', w / 2, h / 2 - 20);
 
         ctx.fillStyle = '#f59e0b';
         ctx.font = '24px monospace';
-        ctx.fillText(`FINAL SCORE: ${state.score}`, w / 2, h / 2 + 30);
+        ctx.fillText(`FINAL SCORE: ${state.score}`, w / 2, h / 2 + 40);
         ctx.textAlign = 'left';
       }
     };
@@ -447,7 +471,7 @@ export const AestheticArcadeGame = () => {
       const mobile = window.innerWidth < 768;
       setIsMobileDevice(mobile);
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -495,19 +519,30 @@ export const AestheticArcadeGame = () => {
     };
   }, [isMobileDevice, gameStarted]);
 
-  const startMoveLeft = () => (gameState.current.moveLeft = true);
-  const stopMoveLeft = () => (gameState.current.moveLeft = false);
-  const startMoveRight = () => (gameState.current.moveRight = true);
-  const stopMoveRight = () => (gameState.current.moveRight = false);
+  const startMoveLeft = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    gameState.current.moveLeft = true;
+  };
+  const stopMoveLeft = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    gameState.current.moveLeft = false;
+  };
+  const startMoveRight = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    gameState.current.moveRight = true;
+  };
+  const stopMoveRight = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    gameState.current.moveRight = false;
+  };
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0a0705] select-none touch-pan-y font-mono">
-      {/* COUVERTURE MINIMALISTE */}
+    <div className="relative w-full h-[100dvh] bg-[#0a0705] select-none font-mono overflow-hidden flex items-center justify-center">
+      {/* ÉCRAN D'ACCUEIL */}
       {!gameStarted && (
-        <div className="w-full z-50 flex items-start justify-center pt-6 pb-6 px-4 md:px-6 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0] min-h-screen">
-          <div className="w-full max-w-sm flex flex-col items-center justify-start space-y-4 md:space-y-6">
-            {/* Image */}
-            <div className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/30">
+        <div className="w-full h-full flex flex-col items-center justify-between p-6 sm:p-8 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0] overflow-y-auto">
+          <div className="w-full max-w-sm my-auto flex flex-col items-center space-y-6 text-center">
+            <div className="w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/50 shadow-md">
               <img
                 src={COVER_IMAGE_URL}
                 alt="Mission"
@@ -515,31 +550,26 @@ export const AestheticArcadeGame = () => {
               />
             </div>
 
-            {/* Contenu textuel minimaliste */}
-            <div className="space-y-3 md:space-y-4 text-center">
-              <div className="space-y-1 md:space-y-2">
-                <p className="text-[#8b7d72] text-xs uppercase tracking-[0.15em] font-light">
-                  Escape Protocol
-                </p>
-                <p className="text-[#a89f94] text-xs font-light leading-relaxed max-w-xs mx-auto">
-                  Éliminez les bugs avant la détection complète
-                </p>
-              </div>
-
-              {/* Bouton Arcade Rétro */}
-              <button
-                onClick={resetGame}
-                className="relative w-full px-6 py-4 bg-[#b8b8b8] text-[#1a1a1a] text-sm font-bold uppercase tracking-wider border-4 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] hover:shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:shadow-[inset_2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-1 active:translate-y-1 transition-all duration-75 font-mono"
-              >
-                Start
-              </button>
+            <div className="w-full space-y-2">
+              <p className="text-[#8b7d72] text-xs uppercase tracking-[0.25em] font-semibold">
+                Escape Protocol
+              </p>
+              <p className="text-[#a89f94] text-xs sm:text-sm font-light leading-relaxed max-w-xs mx-auto">
+                Éliminez les bugs avant la détection complète du système.
+              </p>
             </div>
 
-            {/* Conseil en bas - caché sur mobile */}
-            <p className="hidden md:block text-[#b3a896] text-[0.6rem] uppercase tracking-[0.15em] font-light">
-              Conseil
-            </p>
+            <button
+              onClick={resetGame}
+              className="w-full py-4 bg-[#b8b8b8] text-[#1a1a1a] text-base font-extrabold uppercase tracking-widest border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.9)] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all font-mono rounded-none"
+            >
+              Start Game
+            </button>
           </div>
+
+          <p className="hidden md:block text-[#b3a896] text-[0.65rem] uppercase tracking-[0.2em] font-light pb-2">
+            Utilisez [←][→] ou [Q][D] pour déplacer | [P] ou [ECHAP] pour la Pause
+          </p>
         </div>
       )}
 
@@ -548,32 +578,89 @@ export const AestheticArcadeGame = () => {
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
       )}
 
-      {/* Indication des contrôles PC */}
-      {gameStarted && !isMobileDevice && showControlsHint && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/80 border border-amber-700/40 px-5 py-2.5 rounded-full shadow-lg backdrop-blur-md animate-bounce">
-          ⌨️ Touches <span className="text-white font-bold">[←] [→]</span> ou <span className="text-white font-bold">[Q] [D]</span>
-        </div>
-      )}
-
-      {/* Écran Game Over */}
-      {gameOver && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      {/* BOUTON PAUSE ET EN-TÊTE D'ACTION */}
+      {gameStarted && !gameOver && (
+        <div className="absolute top-4 right-4 z-30 flex items-center gap-3">
           <button
-            onClick={resetGame}
-            className="px-6 py-3 bg-amber-500 text-zinc-950 text-sm font-bold rounded-xl hover:bg-amber-400 active:scale-95 transition shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+            onClick={togglePause}
+            className="w-11 h-11 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-400 font-bold text-sm backdrop-blur-md flex items-center justify-center active:scale-95 transition shadow-lg"
+            aria-label="Pause"
           >
-            RECOUVRER LE SYSTÈME
+            {isPaused ? '▶' : '❚❚'}
           </button>
         </div>
       )}
 
-      {/* Contrôles tactiles mobile */}
-      {gameStarted && isMobileDevice && (
-        <div className="absolute bottom-6 inset-x-0 z-30 flex justify-between px-8 max-w-xs mx-auto pointer-events-auto">
+      {/* INDICATION DE SOURIS / TOUCHES SUR PC */}
+      {gameStarted && !isMobileDevice && showControlsHint && !isPaused && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 text-amber-300 text-xs bg-amber-950/90 border border-amber-700/50 px-6 py-2.5 rounded-full shadow-xl backdrop-blur-md animate-bounce">
+          ⌨️ Touches <span className="text-white font-bold">[←] [→]</span> | Pause <span className="text-white font-bold">[P]</span>
+        </div>
+      )}
+
+      {/* ÉCRAN DE PAUSE */}
+      {gameStarted && isPaused && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+          <div className="w-full max-w-xs flex flex-col items-center space-y-4 text-center">
+            <h2 className="text-amber-400 font-extrabold text-2xl tracking-widest uppercase">
+              PAUSE
+            </h2>
+
+            <button
+              onClick={togglePause}
+              className="w-full py-3.5 bg-amber-500 text-zinc-950 text-sm font-black rounded-xl active:scale-95 transition shadow-lg uppercase tracking-wider"
+            >
+              Reprendre
+            </button>
+
+            <button
+              onClick={resetGame}
+              className="w-full py-3.5 bg-zinc-900 border border-amber-500/40 text-amber-300 text-sm font-bold rounded-xl active:scale-95 transition uppercase tracking-wider"
+            >
+              Recommencer
+            </button>
+
+            <button
+              onClick={quitGame}
+              className="w-full py-3.5 bg-red-950/60 border border-red-500/40 text-red-300 text-sm font-bold rounded-xl active:scale-95 transition uppercase tracking-wider"
+            >
+              Quitter
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ÉCRAN GAME OVER */}
+      {gameOver && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md p-6">
+          <div className="w-full max-w-xs flex flex-col items-center space-y-4">
+            <button
+              onClick={resetGame}
+              className="w-full py-4 bg-amber-500 text-zinc-950 text-sm font-black rounded-2xl active:scale-95 transition shadow-[0_0_30px_rgba(245,158,11,0.5)] uppercase tracking-wider"
+            >
+              Recouvrer le système
+            </button>
+
+            <button
+              onClick={quitGame}
+              className="w-full py-3.5 bg-zinc-900 border border-amber-500/40 text-amber-300 text-sm font-bold rounded-2xl active:scale-95 transition uppercase tracking-wider"
+            >
+              Quitter
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* COMMANDES TACTILES MOBILE */}
+      {gameStarted && isMobileDevice && !isPaused && (
+        <div className="absolute bottom-10 inset-x-0 z-30 flex justify-between items-center px-8 max-w-sm mx-auto pointer-events-auto pb-safe">
           <button
             onTouchStart={startMoveLeft}
             onTouchEnd={stopMoveLeft}
-            className="w-14 h-14 rounded-full bg-amber-950/60 border border-amber-500/50 text-amber-300 font-bold text-xl backdrop-blur-sm flex items-center justify-center active:bg-amber-500/40 active:scale-90 transition-all touch-none"
+            onMouseDown={startMoveLeft}
+            onMouseUp={stopMoveLeft}
+            className="w-20 h-20 rounded-2xl bg-amber-950/80 border-2 border-amber-500/60 text-amber-300 font-black text-3xl backdrop-blur-lg flex items-center justify-center active:bg-amber-500 active:text-zinc-950 active:scale-90 transition-all touch-none shadow-2xl"
+            aria-label="Gauche"
           >
             ◄
           </button>
@@ -581,7 +668,10 @@ export const AestheticArcadeGame = () => {
           <button
             onTouchStart={startMoveRight}
             onTouchEnd={stopMoveRight}
-            className="w-14 h-14 rounded-full bg-amber-950/60 border border-amber-500/50 text-amber-300 font-bold text-xl backdrop-blur-sm flex items-center justify-center active:bg-amber-500/40 active:scale-90 transition-all touch-none"
+            onMouseDown={startMoveRight}
+            onMouseUp={stopMoveRight}
+            className="w-20 h-20 rounded-2xl bg-amber-950/80 border-2 border-amber-500/60 text-amber-300 font-black text-3xl backdrop-blur-lg flex items-center justify-center active:bg-amber-500 active:text-zinc-950 active:scale-90 transition-all touch-none shadow-2xl"
+            aria-label="Droite"
           >
             ►
           </button>
