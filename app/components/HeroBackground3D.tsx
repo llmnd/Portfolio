@@ -2588,7 +2588,11 @@ export const AestheticArcadeGame = () => {
   return (
 
     <section
-      className="relative h-[40vh] w-full overflow-hidden select-none touch-pan-y md:h-screen"
+      className={
+        `relative w-full overflow-hidden select-none touch-pan-y ${
+          hasStarted ? 'h-screen' : 'h-[50vh] md:h-screen'
+        }`
+      }
       style={{
         backgroundColor:
           COLORS.cream,
