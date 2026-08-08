@@ -2625,7 +2625,7 @@ export const AestheticArcadeGame = () => {
         >
 
           <img
-            src="/g.jpg"
+            src="/i.jpg"
             alt=""
             className="absolute inset-0 h-full w-full object-contain sm:object-cover"
             style={{
