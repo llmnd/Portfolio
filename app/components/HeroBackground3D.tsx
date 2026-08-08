@@ -504,8 +504,8 @@ export const AestheticArcadeGame = () => {
     <div className="relative w-full min-h-screen bg-[#0a0705] select-none touch-pan-y font-mono">
       {/* COUVERTURE MINIMALISTE */}
       {!gameStarted && (
-        <div className="min-h-screen w-full z-50 flex items-center justify-center p-8 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0]">
-          <div className="w-full max-w-md flex flex-col items-center justify-center space-y-16">
+        <div className="min-h-screen w-full z-50 flex items-center justify-center p-6 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0]">
+          <div className="w-full max-w-sm flex flex-col items-center justify-center space-y-10">
             {/* Image */}
             <div className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/30">
               <img
@@ -516,20 +516,20 @@ export const AestheticArcadeGame = () => {
             </div>
 
             {/* Contenu textuel minimaliste */}
-            <div className="space-y-8 text-center">
-              <div className="space-y-3">
+            <div className="space-y-5 text-center">
+              <div className="space-y-2">
                 <p className="text-[#8b7d72] text-xs uppercase tracking-[0.15em] font-light">
                   Escape Protocol
                 </p>
-                <p className="text-[#a89f94] text-sm font-light leading-relaxed max-w-xs mx-auto">
+                <p className="text-[#a89f94] text-xs font-light leading-relaxed max-w-xs mx-auto">
                   Éliminez les bugs avant la détection complète
                 </p>
               </div>
 
-              {/* Bouton épuré */}
+              {/* Bouton Arcade Rétro */}
               <button
                 onClick={resetGame}
-                className="px-10 py-4 border border-[#c9bfb3] text-[#8b7d72] text-xs uppercase tracking-[0.12em] font-light hover:border-[#8b7d72] hover:text-[#6b6359] active:scale-95 transition-all duration-300 bg-transparent hover:bg-[#f5f1eb]/40"
+                className="relative w-full px-6 py-4 bg-[#b8b8b8] text-[#1a1a1a] text-sm font-bold uppercase tracking-wider border-4 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] hover:shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:shadow-[inset_2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-1 active:translate-y-1 transition-all duration-75 font-mono"
               >
                 Start
               </button>
