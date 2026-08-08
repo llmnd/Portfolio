@@ -502,43 +502,48 @@ export const AestheticArcadeGame = () => {
 
   return (
     <div className="relative w-full min-h-screen bg-[#0a0705] select-none touch-pan-y font-mono">
-      {/* 1. Couverture Minimaliste Flat 2D */}
+      {/* COUVERTURE MINIMALISTE */}
       {!gameStarted && (
-        <div className="min-h-screen w-full z-50 flex items-center justify-center p-4 bg-[#0a0705]">
-          <div className="w-full max-w-sm rounded-2xl bg-[#140d07] border border-amber-900/40 p-6 shadow-2xl flex flex-col items-center text-center space-y-5 my-auto">
-            <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-amber-800/30 bg-[#070503]">
+        <div className="min-h-screen w-full z-50 flex items-center justify-center p-8 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0]">
+          <div className="w-full max-w-md flex flex-col items-center justify-center space-y-16">
+            {/* Image */}
+            <div className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/30">
               <img
                 src={COVER_IMAGE_URL}
-                alt="Mission Cover"
-                className="w-full h-full object-cover"
+                alt="Mission"
+                className="w-full h-full object-cover opacity-90"
               />
             </div>
 
-            <div className="space-y-2">
-              <p className="text-amber-100 text-sm font-medium leading-relaxed">
-                Après le succès de la mission de sabotage, vous êtes resté bloqué en ligne ennemie.
-              </p>
-              <p className="text-amber-500/80 text-xs">
-                Trouvez la sortie de la base avant la détection totale.
-              </p>
+            {/* Contenu textuel minimaliste */}
+            <div className="space-y-8 text-center">
+              <div className="space-y-3">
+                <p className="text-[#8b7d72] text-xs uppercase tracking-[0.15em] font-light">
+                  Escape Protocol
+                </p>
+                <p className="text-[#a89f94] text-sm font-light leading-relaxed max-w-xs mx-auto">
+                  Éliminez les bugs avant la détection complète
+                </p>
+              </div>
+
+              {/* Bouton épuré */}
+              <button
+                onClick={resetGame}
+                className="px-10 py-4 border border-[#c9bfb3] text-[#8b7d72] text-xs uppercase tracking-[0.12em] font-light hover:border-[#8b7d72] hover:text-[#6b6359] active:scale-95 transition-all duration-300 bg-transparent hover:bg-[#f5f1eb]/40"
+              >
+                Start
+              </button>
             </div>
 
-            <div className="w-full py-2 px-3 rounded-lg bg-amber-950/30 border border-amber-800/20 text-xs text-amber-400/90 text-left space-y-1">
-              <div>• Sortir de la base ennemie</div>
-              <div>• Bonus : Éliminer tous les bugs</div>
-            </div>
-
-            <button
-              onClick={resetGame}
-              className="w-full py-3 bg-amber-500 hover:bg-amber-400 active:scale-98 text-zinc-950 font-bold text-sm rounded-xl transition shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-            >
-              PRESS TO START
-            </button>
+            {/* Conseil en bas */}
+            <p className="text-[#b3a896] text-[0.6rem] uppercase tracking-[0.15em] font-light">
+              Conseil
+            </p>
           </div>
         </div>
       )}
 
-      {/* 2. Écran WebGL 3D en position absolue pour défiler */}
+      {/* Canvas WebGL */}
       {gameStarted && (
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
       )}
