@@ -438,7 +438,6 @@ export const AeroArcadeGame = () => {
     ctx.fillStyle = COLORS.gameBg;
     ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-    // VRAI PAUSE : Si en pause, on ne met pas à jour la position des éléments
     const paused = isPausedRef.current;
 
     // Nuages
@@ -903,7 +902,7 @@ export const AeroArcadeGame = () => {
           </div>
         )}
 
-        {/* Écran Game Over & Pause avec option pour QUITTER */}
+        {/* Écran Game Over & Pause */}
         {(gameState.isPaused || gameState.gameOver) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-auto backdrop-blur-lg bg-slate-950/90">
             {gameState.gameOver ? (
@@ -952,40 +951,52 @@ export const AeroArcadeGame = () => {
           </div>
         )}
 
-        {/* Contrôles Mobile : Placé à DROITE pour un confort de jeu à deux mains */}
+        {/* Contrôles Mobile : DPad Centré & Designer Arcade/Néon */}
         {isMobile && gameState.hasStarted && !gameState.gameOver && !gameState.isPaused && (
-          <div className="absolute bottom-8 right-8 flex justify-end pointer-events-none">
-            <div className="grid grid-cols-3 gap-2 pointer-events-auto">
-              <div />
+          <div className="absolute bottom-6 inset-x-0 flex justify-center items-center pointer-events-none">
+            <div className="relative w-48 h-48 rounded-full bg-slate-950/40 backdrop-blur-md border border-cyan-500/20 shadow-[0_0_25px_rgba(0,243,255,0.1)] p-2 pointer-events-auto flex items-center justify-center">
+              
+              {/* Bouton HAUT */}
               <button
                 onTouchStart={() => { game.current.moveUp = true; }}
                 onTouchEnd={() => { game.current.moveUp = false; }}
-                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+                className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
               >
-                ↑
+                ▲
               </button>
-              <div />
-              <button
-                onTouchStart={() => { game.current.moveLeft = true; }}
-                onTouchEnd={() => { game.current.moveLeft = false; }}
-                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
-              >
-                ←
-              </button>
+
+              {/* Bouton BAS */}
               <button
                 onTouchStart={() => { game.current.moveDown = true; }}
                 onTouchEnd={() => { game.current.moveDown = false; }}
-                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
               >
-                ↓
+                ▼
               </button>
+
+              {/* Bouton GAUCHE */}
+              <button
+                onTouchStart={() => { game.current.moveLeft = true; }}
+                onTouchEnd={() => { game.current.moveLeft = false; }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
+              >
+                ◀
+              </button>
+
+              {/* Bouton DROITE */}
               <button
                 onTouchStart={() => { game.current.moveRight = true; }}
                 onTouchEnd={() => { game.current.moveRight = false; }}
-                className="w-14 h-14 rounded border border-slate-700 bg-slate-900/80 text-slate-300 flex items-center justify-center text-xl active:bg-slate-800"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
               >
-                →
+                ▶
               </button>
+
+              {/* Décoration centrale */}
+              <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              </div>
+
             </div>
           </div>
         )}
