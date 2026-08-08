@@ -1,2895 +1,2067 @@
 ﻿'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-/* =========================================================
-   PALETTE
-   ========================================================= */
-
-const COLORS = {
-  cream: '#f4ecdd',
-  creamSoft: '#eee3d1',
-  beige: '#dcc4aa',
-  beigeDark: '#c9a88b',
-  brown: '#9b765d',
-  brownDark: '#725643',
-
-  gameBg: '#151411',
-  gamePanel: '#1c1a16',
-  gameGrid: '#332d26',
-  gameLine: '#4a4035',
-
-  white: '#f8f2e8',
-  muted: '#b9aa98',
-
-  enemy: '#c99d79',
-  enemyDark: '#8d6b52',
-
-  player: '#ead5bc',
-  bullet: '#e4c09b',
+type TrafficCar = {
+  lane: number;
+  z: number;
+  speed: number;
+  color: string;
 };
 
-/* =========================================================
-   WEBGL VERTEX SHADER
-   ========================================================= */
-
-const VERTEX_SHADER = `#version 300 es
-
-in vec2 aPosition;
-
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-}
-`;
-
-/* =========================================================
-   WEBGL FRAGMENT SHADER
-   ========================================================= */
-
-const FRAGMENT_SHADER = `#version 300 es
-
-precision highp float;
-
-out vec4 fragColor;
-
-uniform vec2 uResolution;
-uniform vec2 uMouse;
-uniform float uTime;
-uniform bool uIsMobile;
-uniform sampler2D uIdeTexture;
-
-#define SURF_DIST 0.001
-#define MAX_DIST 20.0
-
-mat2 rot2D(float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
-
-  return mat2(
-    c, -s,
-    s, c
-  );
-}
-
-float sdRoundedBox(
-  vec3 p,
-  vec3 b,
-  float r
-) {
-  vec3 q = abs(p) - b;
-
-  return length(max(q, 0.0))
-    + min(
-        max(q.x, max(q.y, q.z)),
-        0.0
-      )
-    - r;
-}
-
-float map(
-  vec3 p,
-  out float matID,
-  out vec2 texCoord
-) {
-
-  if (!uIsMobile) {
-
-    p.xz *= rot2D(
-      uMouse.x * 0.12
-    );
-
-    p.yz *= rot2D(
-      uMouse.y * 0.08
-    );
-  }
-
-  vec3 pScreen = p;
-
-  float dDisplay = sdRoundedBox(
-    pScreen,
-    vec3(0.9, 0.9, 0.015),
-    0.03
-  );
-
-  matID = 2.0;
-
-  texCoord = vec2(
-    (pScreen.x / 0.9) * 0.5 + 0.5,
-    1.0 -
-      (
-        (pScreen.y / 0.9) * 0.5 +
-        0.5
-      )
-  );
-
-  return dDisplay;
-}
-
-float mapDistOnly(vec3 p) {
-
-  float dummyMat;
-  vec2 dummyUv;
-
-  return map(
-    p,
-    dummyMat,
-    dummyUv
-  );
-}
-
-vec3 getNormal(vec3 p) {
-
-  float d = mapDistOnly(p);
-
-  vec2 e = vec2(
-    0.001,
-    0.0
-  );
-
-  vec3 n =
-    d -
-    vec3(
-      mapDistOnly(
-        p - e.xyy
-      ),
-
-      mapDistOnly(
-        p - e.yxy
-      ),
-
-      mapDistOnly(
-        p - e.yyx
-      )
-    );
-
-  return normalize(n);
-}
-
-void main() {
-
-  vec2 uv =
-    (
-      gl_FragCoord.xy -
-      0.5 * uResolution.xy
-    )
-    /
-    min(
-      uResolution.x,
-      uResolution.y
-    );
-
-  float camDist =
-    uIsMobile
-      ? -2.35
-      : -2.25;
-
-  vec3 ro = vec3(
-    0.0,
-    0.0,
-    camDist
-  );
-
-  vec3 rd = normalize(
-    vec3(
-      uv,
-      1.2
-    )
-  );
-
-  int maxSteps =
-    uIsMobile
-      ? 50
-      : 70;
-
-  float dO = 0.0;
-
-  vec2 hitTexCoord =
-    vec2(0.0);
-
-  for (
-    int i = 0;
-    i < 70;
-    i++
-  ) {
-
-    if (i >= maxSteps) {
-      break;
-    }
-
-    vec3 p =
-      ro + rd * dO;
-
-    float currentMat;
-    vec2 currentTexCoord;
-
-    float dS =
-      map(
-        p,
-        currentMat,
-        currentTexCoord
-      );
-
-    dO += dS;
-
-    if (
-      dS <
-      SURF_DIST
-    ) {
-
-      hitTexCoord =
-        currentTexCoord;
-
-      break;
-    }
-
-    if (
-      dO >
-      MAX_DIST
-    ) {
-      break;
-    }
-  }
-
-  /*
-   * Warm dark background
-   */
-
-  vec3 color =
-    vec3(
-      0.055,
-      0.05,
-      0.043
-    );
-
-  if (
-    dO <
-    MAX_DIST
-  ) {
-
-    vec3 p =
-      ro + rd * dO;
-
-    vec3 n =
-      getNormal(p);
-
-    /*
-     * Warm light
-     */
-
-    vec3 lightPos =
-      vec3(
-        uMouse.x * 2.0,
-        2.5,
-        -2.0
-      );
-
-    vec3 l =
-      normalize(
-        lightPos - p
-      );
-
-    vec3 ref =
-      reflect(
-        rd,
-        n
-      );
-
-    float spec =
-      pow(
-        max(
-          0.0,
-          dot(
-            ref,
-            l
-          )
-        ),
-        32.0
-      );
-
-    float fresnel =
-      pow(
-        1.0 -
-        max(
-          0.0,
-          dot(
-            -rd,
-            n
-          )
-        ),
-        3.0
-      );
-
-    vec4 gameSample =
-      texture(
-        uIdeTexture,
-        hitTexCoord
-      );
-
-    color =
-      gameSample.rgb
-      +
-      spec *
-      vec3(
-        0.25,
-        0.19,
-        0.14
-      )
-      +
-      fresnel *
-      vec3(
-        0.32,
-        0.22,
-        0.15
-      ) *
-      0.35;
-  }
-
-  /*
-   * Subtle warm vignette
-   */
-
-  float radialDist =
-    length(uv);
-
-  color +=
-    vec3(
-      0.12,
-      0.08,
-      0.05
-    )
-    *
-    (
-      0.035 /
-      (radialDist + 0.4)
-    );
-
-  fragColor =
-    vec4(
-      color,
-      1.0
-    );
-}
-`;
-
-/* =========================================================
-   COMPONENT
-   ========================================================= */
-
-export const AestheticArcadeGame = () => {
-
-  const canvasRef =
-    useRef<HTMLCanvasElement | null>(
-      null
-    );
-
-  const audioContextRef =
-    useRef<AudioContext | null>(
-      null
-    );
-
-  const [isMobileDevice, setIsMobileDevice] =
-    useState(false);
-
-  const [gameOver, setGameOver] =
-    useState(false);
-
-  const [hasStarted, setHasStarted] =
-    useState(false);
-
-  const [isPaused, setIsPaused] =
-    useState(false);
-
-  const [showControlsHint, setShowControlsHint] =
-    useState(true);
-
-  const hasStartedRef =
-    useRef(false);
-
-  const isPausedRef =
-    useRef(false);
-
-  const targetMouseRef =
-    useRef({
-      x: 0,
-      y: 0,
-    });
-
-  const currentMouseRef =
-    useRef({
-      x: 0,
-      y: 0,
-    });
-
-  /* =======================================================
-     GAME STATE
-     ======================================================= */
-
-  const gameState = useRef({
-
-    playerX: 512,
-
-    playerY: 880,
-
-    moveLeft: false,
-
-    moveRight: false,
-
-    bullets: [] as {
-      x: number;
-      y: number;
-    }[],
-
-    bugs: [] as {
-      x: number;
-      y: number;
-      speed: number;
-      label: string;
-      radius: number;
-      rotation: number;
-    }[],
-
-    stars: Array.from(
-      {
-        length: 55,
-      },
-      () => ({
-        x:
-          Math.random() *
-          1024,
-
-        y:
-          Math.random() *
-          1024,
-
-        size:
-          Math.random() *
-            1.8 +
-          0.5,
-
-        speed:
-          Math.random() *
-            1.5 +
-          0.4,
-      })
-    ),
-
-    keys:
-      {} as Record<
-        string,
-        boolean
-      >,
-
-    score: 0,
-
-    health: 100,
-
-    isOver: false,
-
-    lastShot: 0,
+type Particle = {
+  x: number;
+  y: number;
+  life: number;
+  speed: number;
+};
+
+const COLORS = {
+  skyTop: '#080a0e',
+  skyBottom: '#17181b',
+  road: '#171719',
+  roadLight: '#242427',
+  line: '#d5c4aa',
+  cream: '#f1e8d8',
+  beige: '#d8c2a6',
+  muted: '#8d887f',
+  car: '#c9b49a',
+  carDark: '#716455',
+  red: '#b86659',
+  white: '#fff4dc',
+};
+
+const LANES = [-1, 0, 1];
+
+export default function NightDrive() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const keys = useRef({
+    left: false,
+    right: false,
   });
 
-  /* =======================================================
-     KILL SOUND
-     ======================================================= */
+  const game = useRef({
+    running: false,
+    paused: false,
+    over: false,
 
-  const playKillSound = () => {
+    playerX: 0,
+    targetX: 0,
 
-    try {
+    speed: 0,
+    distance: 0,
 
-      let audio =
-        audioContextRef.current;
+    roadOffset: 0,
 
-      if (!audio) {
+    traffic: [] as TrafficCar[],
+    particles: [] as Particle[],
 
-        audio =
-          new AudioContext();
+    lastTime: 0,
+    spawnTimer: 0,
 
-        audioContextRef.current =
-          audio;
-      }
+    audio: null as AudioContext | null,
+  });
 
-      if (
-        audio.state ===
-        'suspended'
-      ) {
-        audio.resume();
-      }
+  const [started, setStarted] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [distance, setDistance] = useState(0);
 
-      const now =
-        audio.currentTime;
+  /*
+   * ---------------------------------------------------------
+   * AUDIO
+   * ---------------------------------------------------------
+   */
 
-      /*
-       * Main short tone
-       */
+  const ensureAudio = useCallback(() => {
+    const state = game.current;
 
-      const oscillator =
-        audio.createOscillator();
-
-      const gain =
-        audio.createGain();
-
-      oscillator.type =
-        'sine';
-
-      oscillator.frequency.setValueAtTime(
-        420,
-        now
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        760,
-        now + 0.055
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        280,
-        now + 0.13
-      );
-
-      gain.gain.setValueAtTime(
-        0.0001,
-        now
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.055,
-        now + 0.008
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + 0.14
-      );
-
-      oscillator.connect(
-        gain
-      );
-
-      gain.connect(
-        audio.destination
-      );
-
-      oscillator.start(
-        now
-      );
-
-      oscillator.stop(
-        now + 0.15
-      );
-
-      /*
-       * Tiny second layer
-       */
-
-      const secondOscillator =
-        audio.createOscillator();
-
-      const secondGain =
-        audio.createGain();
-
-      secondOscillator.type =
-        'triangle';
-
-      secondOscillator.frequency.setValueAtTime(
-        920,
-        now
-      );
-
-      secondOscillator.frequency.exponentialRampToValueAtTime(
-        540,
-        now + 0.08
-      );
-
-      secondGain.gain.setValueAtTime(
-        0.0001,
-        now
-      );
-
-      secondGain.gain.exponentialRampToValueAtTime(
-        0.025,
-        now + 0.005
-      );
-
-      secondGain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + 0.09
-      );
-
-      secondOscillator.connect(
-        secondGain
-      );
-
-      secondGain.connect(
-        audio.destination
-      );
-
-      secondOscillator.start(
-        now
-      );
-
-      secondOscillator.stop(
-        now + 0.1
-      );
-
-    } catch {
-      /*
-       * Audio is optional.
-       * Never let sound break the game.
-       */
+    if (!state.audio) {
+      state.audio = new AudioContext();
     }
-  };
 
-  /* =======================================================
-     RESET
-     ======================================================= */
-
-  const resetGame = () => {
-
-    const state =
-      gameState.current;
-
-    state.playerX =
-      512;
-
-    state.playerY =
-      880;
-
-    state.moveLeft =
-      false;
-
-    state.moveRight =
-      false;
-
-    state.bullets =
-      [];
-
-    state.bugs =
-      [];
-
-    state.score =
-      0;
-
-    state.health =
-      100;
-
-    state.isOver =
-      false;
-
-    state.lastShot =
-      0;
-
-    setGameOver(
-      false
-    );
-
-    setIsPaused(
-      false
-    );
-
-    isPausedRef.current =
-      false;
-  };
-
-  /* =======================================================
-     START
-     ======================================================= */
-
-  const startGame = () => {
-
-    /*
-     * Unlock Web Audio after user gesture
-     */
-
-    try {
-
-      if (
-        !audioContextRef.current
-      ) {
-
-        audioContextRef.current =
-          new AudioContext();
-      }
-
-      if (
-        audioContextRef.current
-          .state ===
-        'suspended'
-      ) {
-
-        audioContextRef.current.resume();
-      }
-
-    } catch {
-      // Audio remains optional.
+    if (state.audio.state === 'suspended') {
+      state.audio.resume();
     }
+
+    return state.audio;
+  }, []);
+
+  const playSound = useCallback(
+    (
+      type: 'start' | 'collision' | 'pass'
+    ) => {
+      try {
+        const audio = ensureAudio();
+
+        const now = audio.currentTime;
+
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
+
+        if (type === 'start') {
+          oscillator.type = 'sine';
+
+          oscillator.frequency.setValueAtTime(
+            180,
+            now
+          );
+
+          oscillator.frequency.exponentialRampToValueAtTime(
+            520,
+            now + 0.25
+          );
+
+          gain.gain.setValueAtTime(
+            0.0001,
+            now
+          );
+
+          gain.gain.exponentialRampToValueAtTime(
+            0.08,
+            now + 0.02
+          );
+
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            now + 0.3
+          );
+
+          oscillator.start(now);
+          oscillator.stop(now + 0.32);
+        }
+
+        if (type === 'pass') {
+          oscillator.type = 'triangle';
+
+          oscillator.frequency.setValueAtTime(
+            700,
+            now
+          );
+
+          oscillator.frequency.exponentialRampToValueAtTime(
+            300,
+            now + 0.1
+          );
+
+          gain.gain.setValueAtTime(
+            0.0001,
+            now
+          );
+
+          gain.gain.exponentialRampToValueAtTime(
+            0.025,
+            now + 0.01
+          );
+
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            now + 0.12
+          );
+
+          oscillator.start(now);
+          oscillator.stop(now + 0.13);
+        }
+
+        if (type === 'collision') {
+          oscillator.type = 'sawtooth';
+
+          oscillator.frequency.setValueAtTime(
+            130,
+            now
+          );
+
+          oscillator.frequency.exponentialRampToValueAtTime(
+            40,
+            now + 0.4
+          );
+
+          gain.gain.setValueAtTime(
+            0.0001,
+            now
+          );
+
+          gain.gain.exponentialRampToValueAtTime(
+            0.14,
+            now + 0.01
+          );
+
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            now + 0.42
+          );
+
+          oscillator.start(now);
+          oscillator.stop(now + 0.45);
+        }
+      } catch {
+        // Audio is optional.
+      }
+    },
+    [ensureAudio]
+  );
+
+  /*
+   * ---------------------------------------------------------
+   * RESET
+   * ---------------------------------------------------------
+   */
+
+  const resetGame = useCallback(() => {
+    const state = game.current;
+
+    state.running = true;
+    state.paused = false;
+    state.over = false;
+
+    state.playerX = 0;
+    state.targetX = 0;
+
+    state.speed = 0;
+    state.distance = 0;
+
+    state.roadOffset = 0;
+
+    state.traffic = [];
+    state.particles = [];
+
+    state.lastTime = 0;
+    state.spawnTimer = 0;
+
+    setDistance(0);
+    setPaused(false);
+    setGameOver(false);
+  }, []);
+
+  const startGame = useCallback(() => {
+    ensureAudio();
 
     resetGame();
 
-    hasStartedRef.current =
-      true;
+    setStarted(true);
 
-    isPausedRef.current =
-      false;
+    playSound('start');
+  }, [ensureAudio, resetGame, playSound]);
 
-    setHasStarted(
-      true
-    );
+  const restartGame = useCallback(() => {
+    startGame();
+  }, [startGame]);
 
-    setIsPaused(
-      false
-    );
+  const togglePause = useCallback(() => {
+    const state = game.current;
 
-    setShowControlsHint(
-      true
-    );
-
-    window.setTimeout(
-      () => {
-
-        setShowControlsHint(
-          false
-        );
-
-      },
-      4500
-    );
-  };
-
-  /* =======================================================
-     PAUSE
-     ======================================================= */
-
-  const pauseGame = () => {
-
-    if (
-      !hasStartedRef.current ||
-      gameState.current.isOver
-    ) {
+    if (!state.running || state.over) {
       return;
     }
 
-    const next =
-      !isPausedRef.current;
+    state.paused = !state.paused;
 
-    isPausedRef.current =
-      next;
+    setPaused(state.paused);
+  }, []);
 
-    setIsPaused(
-      next
-    );
-
-    gameState.current.moveLeft =
-      false;
-
-    gameState.current.moveRight =
-      false;
-  };
-
-  /* =======================================================
-     QUIT
-     ======================================================= */
-
-  const quitGame = () => {
-
-    hasStartedRef.current =
-      false;
-
-    isPausedRef.current =
-      false;
-
-    setIsPaused(
-      false
-    );
-
-    setGameOver(
-      false
-    );
-
-    setHasStarted(
-      false
-    );
-
-    resetGame();
-  };
-
-  /* =======================================================
-     KEYBOARD
-     ======================================================= */
+  /*
+   * ---------------------------------------------------------
+   * CONTROLS
+   * ---------------------------------------------------------
+   */
 
   useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      if (
+        event.code === 'ArrowLeft' ||
+        event.code === 'KeyA' ||
+        event.code === 'KeyQ'
+      ) {
+        event.preventDefault();
+        keys.current.left = true;
+      }
 
-    const handleKeyDown =
-      (e: KeyboardEvent) => {
+      if (
+        event.code === 'ArrowRight' ||
+        event.code === 'KeyD'
+      ) {
+        event.preventDefault();
+        keys.current.right = true;
+      }
 
-        gameState.current.keys[
-          e.code
-        ] = true;
+      if (
+        event.code === 'Space' &&
+        game.current.over
+      ) {
+        event.preventDefault();
+        restartGame();
+      }
 
-        /*
-         * Pause
-         */
+      if (
+        event.code === 'KeyP' ||
+        event.code === 'Escape'
+      ) {
+        event.preventDefault();
+        togglePause();
+      }
+    };
 
-        if (
-          e.code ===
-            'Escape' ||
-          e.code ===
-            'KeyP'
-        ) {
+    const up = (event: KeyboardEvent) => {
+      if (
+        event.code === 'ArrowLeft' ||
+        event.code === 'KeyA' ||
+        event.code === 'KeyQ'
+      ) {
+        keys.current.left = false;
+      }
 
-          e.preventDefault();
+      if (
+        event.code === 'ArrowRight' ||
+        event.code === 'KeyD'
+      ) {
+        keys.current.right = false;
+      }
+    };
 
-          pauseGame();
-
-          return;
-        }
-
-        /*
-         * Restart
-         */
-
-        if (
-          e.code ===
-            'Space' &&
-          gameState.current.isOver
-        ) {
-
-          e.preventDefault();
-
-          startGame();
-        }
-      };
-
-    const handleKeyUp =
-      (e: KeyboardEvent) => {
-
-        gameState.current.keys[
-          e.code
-        ] = false;
-      };
-
-    window.addEventListener(
-      'keydown',
-      handleKeyDown
-    );
-
-    window.addEventListener(
-      'keyup',
-      handleKeyUp
-    );
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
 
     return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+  }, [restartGame, togglePause]);
 
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown
+  /*
+   * ---------------------------------------------------------
+   * CANVAS GAME
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    let animationFrame = 0;
+
+    const resize = () => {
+      const dpr = Math.min(
+        window.devicePixelRatio || 1,
+        2
       );
 
-      window.removeEventListener(
-        'keyup',
-        handleKeyUp
+      canvas.width =
+        window.innerWidth * dpr;
+
+      canvas.height =
+        window.innerHeight * dpr;
+
+      canvas.style.width =
+        `${window.innerWidth}px`;
+
+      canvas.style.height =
+        `${window.innerHeight}px`;
+
+      ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
       );
     };
 
-  }, []);
+    resize();
 
-  /* =======================================================
-     WEBGL + GAME LOOP
-     ======================================================= */
+    window.addEventListener(
+      'resize',
+      resize
+    );
 
-  useEffect(() => {
+    /*
+     * -------------------------------------------------------
+     * HELPERS
+     * -------------------------------------------------------
+     */
 
-    const canvas =
-      canvasRef.current;
-
-    if (!canvas) {
-      return;
-    }
-
-    const gl =
-      canvas.getContext(
-        'webgl2',
-        {
-          powerPreference:
-            'high-performance',
-
-          antialias: true,
-
-          alpha: false,
-        }
+    const random = (
+      min: number,
+      max: number
+    ) => {
+      return (
+        Math.random() *
+          (max - min) +
+        min
       );
+    };
 
-    if (!gl) {
-      return;
-    }
+    const roadWidthAt = (
+      y: number,
+      height: number,
+      width: number
+    ) => {
+      const horizon =
+        height * 0.38;
 
-    /* =====================================================
-       INTERNAL GAME CANVAS
-       ===================================================== */
-
-    const ideCanvas =
-      document.createElement(
-        'canvas'
-      );
-
-    ideCanvas.width =
-      1024;
-
-    ideCanvas.height =
-      1024;
-
-    const ctx =
-      ideCanvas.getContext(
-        '2d'
-      );
-
-    if (!ctx) {
-      return;
-    }
-
-    /* =====================================================
-       BUG TYPES
-       ===================================================== */
-
-    const bugTypes = [
-      {
-        label: '404',
-        radius: 24,
-      },
-
-      {
-        label: 'NULL',
-        radius: 21,
-      },
-
-      {
-        label: 'BUG',
-        radius: 27,
-      },
-
-      {
-        label: 'ERR',
-        radius: 22,
-      },
-    ];
-
-    /* =====================================================
-       DRAW GAME
-       ===================================================== */
-
-    const updateAndDrawGame =
-      (time: number) => {
-
-        const w =
-          ideCanvas.width;
-
-        const h =
-          ideCanvas.height;
-
-        const state =
-          gameState.current;
-
-        /* =================================================
-           BACKGROUND
-           ================================================= */
-
-        ctx.fillStyle =
-          COLORS.gameBg;
-
-        ctx.fillRect(
+      const progress =
+        Math.max(
           0,
-          0,
-          w,
-          h
+          Math.min(
+            1,
+            (y - horizon) /
+              (height - horizon)
+          )
         );
 
-        /* =================================================
-           STARS
-           ================================================= */
+      const bottomWidth =
+        Math.min(
+          width * 0.94,
+          1000
+        );
 
-        ctx.fillStyle =
-          'rgba(238, 224, 205, 0.55)';
+      return (
+        80 +
+        progress *
+          (bottomWidth - 80)
+      );
+    };
 
-        state.stars.forEach(
-          (star) => {
+    const roadCenterAt = (
+      y: number,
+      height: number,
+      width: number
+    ) => {
+      const horizon =
+        height * 0.38;
 
-            if (
-              hasStartedRef.current &&
-              !isPausedRef.current &&
-              !state.isOver
-            ) {
+      const progress =
+        Math.max(
+          0,
+          Math.min(
+            1,
+            (y - horizon) /
+              (height - horizon)
+          )
+        );
 
-              star.y +=
-                star.speed;
-            }
+      return (
+        width / 2 +
+        Math.sin(
+          game.current.roadOffset +
+            progress * 2.5
+        ) *
+          70 *
+          progress
+      );
+    };
 
-            if (
-              star.y >
-              h
-            ) {
+    /*
+     * -------------------------------------------------------
+     * DRAW SKY
+     * -------------------------------------------------------
+     */
 
-              star.y =
-                76;
-            }
+    const drawSky = (
+      width: number,
+      height: number
+    ) => {
+      const gradient =
+        ctx.createLinearGradient(
+          0,
+          0,
+          0,
+          height * 0.55
+        );
 
-            ctx.fillRect(
-              star.x,
-              star.y,
-              star.size,
-              star.size
+      gradient.addColorStop(
+        0,
+        COLORS.skyTop
+      );
+
+      gradient.addColorStop(
+        1,
+        COLORS.skyBottom
+      );
+
+      ctx.fillStyle =
+        gradient;
+
+      ctx.fillRect(
+        0,
+        0,
+        width,
+        height
+      );
+
+      /*
+       * Moon
+       */
+
+      ctx.beginPath();
+
+      ctx.arc(
+        width * 0.78,
+        height * 0.19,
+        30,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle =
+        'rgba(241,232,216,0.75)';
+
+      ctx.fill();
+
+      /*
+       * Stars
+       */
+
+      ctx.fillStyle =
+        'rgba(241,232,216,0.42)';
+
+      for (
+        let i = 0;
+        i < 90;
+        i++
+      ) {
+        const x =
+          (i * 97) %
+          width;
+
+        const y =
+          (i * 43) %
+          (height * 0.34);
+
+        const size =
+          i % 5 === 0
+            ? 1.5
+            : 0.7;
+
+        ctx.fillRect(
+          x,
+          y,
+          size,
+          size
+        );
+      }
+
+      /*
+       * Distant city
+       */
+
+      ctx.fillStyle =
+        'rgba(20,20,22,0.9)';
+
+      const horizon =
+        height * 0.39;
+
+      for (
+        let i = 0;
+        i < 35;
+        i++
+      ) {
+        const buildingWidth =
+          15 + (i % 4) * 7;
+
+        const buildingHeight =
+          20 + (i % 7) * 9;
+
+        const x =
+          i * 45 -
+          10;
+
+        ctx.fillRect(
+          x,
+          horizon -
+            buildingHeight,
+          buildingWidth,
+          buildingHeight
+        );
+      }
+    };
+
+    /*
+     * -------------------------------------------------------
+     * DRAW ROAD
+     * -------------------------------------------------------
+     */
+
+    const drawRoad = (
+      width: number,
+      height: number
+    ) => {
+      const horizon =
+        height * 0.38;
+
+      const bottom =
+        height;
+
+      const topCenter =
+        roadCenterAt(
+          horizon,
+          height,
+          width
+        );
+
+      const bottomCenter =
+        roadCenterAt(
+          bottom,
+          height,
+          width
+        );
+
+      const topRoadWidth =
+        roadWidthAt(
+          horizon,
+          height,
+          width
+        );
+
+      const bottomRoadWidth =
+        roadWidthAt(
+          bottom,
+          height,
+          width
+        );
+
+      /*
+       * Road
+       */
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        topCenter -
+          topRoadWidth / 2,
+        horizon
+      );
+
+      ctx.lineTo(
+        bottomCenter -
+          bottomRoadWidth / 2,
+        bottom
+      );
+
+      ctx.lineTo(
+        bottomCenter +
+          bottomRoadWidth / 2,
+        bottom
+      );
+
+      ctx.lineTo(
+        topCenter +
+          topRoadWidth / 2,
+        horizon
+      );
+
+      ctx.closePath();
+
+      ctx.fillStyle =
+        COLORS.road;
+
+      ctx.fill();
+
+      /*
+       * Road glow
+       */
+
+      ctx.strokeStyle =
+        'rgba(216,194,166,0.08)';
+
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        topCenter -
+          topRoadWidth / 2,
+        horizon
+      );
+
+      ctx.lineTo(
+        bottomCenter -
+          bottomRoadWidth / 2,
+        bottom
+      );
+
+      ctx.stroke();
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        topCenter +
+          topRoadWidth / 2,
+        horizon
+      );
+
+      ctx.lineTo(
+        bottomCenter +
+          bottomRoadWidth / 2,
+        bottom
+      );
+
+      ctx.stroke();
+
+      /*
+       * Lane markings
+       */
+
+      const laneLines =
+        [-0.333, 0.333];
+
+      laneLines.forEach(
+        (lane) => {
+          for (
+            let i = 0;
+            i < 14;
+            i++
+          ) {
+            const p =
+              (
+                i / 14 +
+                game.current.roadOffset *
+                  0.045
+              ) % 1;
+
+            const y =
+              horizon +
+              Math.pow(
+                p,
+                1.75
+              ) *
+                (height -
+                  horizon);
+
+            const nextP =
+              Math.min(
+                p + 0.055,
+                1
+              );
+
+            const nextY =
+              horizon +
+              Math.pow(
+                nextP,
+                1.75
+              ) *
+                (height -
+                  horizon);
+
+            const roadW =
+              roadWidthAt(
+                y,
+                height,
+                width
+              );
+
+            const center =
+              roadCenterAt(
+                y,
+                height,
+                width
+              );
+
+            const nextRoadW =
+              roadWidthAt(
+                nextY,
+                height,
+                width
+              );
+
+            const nextCenter =
+              roadCenterAt(
+                nextY,
+                height,
+                width
+              );
+
+            const x =
+              center +
+              roadW *
+                lane;
+
+            const nextX =
+              nextCenter +
+              nextRoadW *
+                lane;
+
+            ctx.strokeStyle =
+              'rgba(216,194,166,0.32)';
+
+            ctx.lineWidth =
+              1 +
+              p * 4;
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+              x,
+              y
             );
+
+            ctx.lineTo(
+              nextX,
+              nextY
+            );
+
+            ctx.stroke();
           }
-        );
+        }
+      );
 
-        /* =================================================
-           GRID
-           ================================================= */
+      /*
+       * Street lights
+       */
+
+      for (
+        let i = 0;
+        i < 10;
+        i++
+      ) {
+        const p =
+          (
+            i / 10 +
+            game.current.roadOffset *
+              0.025
+          ) % 1;
+
+        const y =
+          horizon +
+          Math.pow(
+            p,
+            1.8
+          ) *
+            (height -
+              horizon);
+
+        if (p < 0.1) continue;
+
+        const roadW =
+          roadWidthAt(
+            y,
+            height,
+            width
+          );
+
+        const center =
+          roadCenterAt(
+            y,
+            height,
+            width
+          );
+
+        const side =
+          i % 2 === 0
+            ? -1
+            : 1;
+
+        const x =
+          center +
+          side *
+            (roadW / 2 +
+              35 +
+              p * 80);
+
+        const lampHeight =
+          30 +
+          p * 110;
 
         ctx.strokeStyle =
-          'rgba(220, 196, 170, 0.065)';
+          'rgba(216,194,166,0.35)';
 
         ctx.lineWidth =
-          1;
-
-        for (
-          let x = 0;
-          x < w;
-          x += 64
-        ) {
-
-          ctx.beginPath();
-
-          ctx.moveTo(
-            x,
-            76
-          );
-
-          ctx.lineTo(
-            x,
-            h
-          );
-
-          ctx.stroke();
-        }
-
-        for (
-          let y = 140;
-          y < h;
-          y += 64
-        ) {
-
-          ctx.beginPath();
-
-          ctx.moveTo(
-            0,
-            y
-          );
-
-          ctx.lineTo(
-            w,
-            y
-          );
-
-          ctx.stroke();
-        }
-
-        /* =================================================
-           HUD
-           ================================================= */
-
-        ctx.fillStyle =
-          'rgba(27, 25, 21, 0.96)';
-
-        ctx.fillRect(
-          0,
-          0,
-          w,
-          76
-        );
-
-        ctx.strokeStyle =
-          'rgba(220, 196, 170, 0.24)';
-
-        ctx.lineWidth =
-          1;
+          1 +
+          p * 2;
 
         ctx.beginPath();
 
         ctx.moveTo(
-          0,
-          75.5
+          x,
+          y
         );
 
         ctx.lineTo(
-          w,
-          75.5
+          x,
+          y -
+            lampHeight
         );
 
         ctx.stroke();
 
-        /* =================================================
-           SCORE
-           ================================================= */
-
-        ctx.font =
-          '11px Arial, sans-serif';
-
         ctx.fillStyle =
-          COLORS.muted;
-
-        ctx.fillText(
-          'SCORE',
-          30,
-          28
-        );
-
-        ctx.font =
-          '20px monospace';
-
-        ctx.fillStyle =
-          COLORS.white;
-
-        ctx.fillText(
-          state.score
-            .toString()
-            .padStart(
-              6,
-              '0'
-            ),
-          30,
-          52
-        );
-
-        /* =================================================
-           HEALTH
-           ================================================= */
-
-        ctx.font =
-          '11px Arial, sans-serif';
-
-        ctx.fillStyle =
-          COLORS.muted;
-
-        ctx.fillText(
-          'HEALTH',
-          w - 300,
-          28
-        );
-
-        const healthSegments =
-          7;
-
-        const segmentWidth =
-          22;
-
-        const segmentGap =
-          5;
-
-        const totalWidth =
-          healthSegments *
-            segmentWidth +
-          (healthSegments - 1) *
-            segmentGap;
-
-        const healthStart =
-          w -
-          30 -
-          totalWidth;
-
-        for (
-          let i = 0;
-          i < healthSegments;
-          i++
-        ) {
-
-          const threshold =
-            ((i + 1) /
-              healthSegments) *
-            100;
-
-          const active =
-            state.health >=
-            threshold;
-
-          ctx.fillStyle =
-            active
-              ? COLORS.beige
-              : '#39332c';
-
-          ctx.beginPath();
-
-          ctx.roundRect(
-            healthStart +
-              i *
-                (
-                  segmentWidth +
-                  segmentGap
-                ),
-            40,
-            segmentWidth,
-            10,
-            3
-          );
-
-          ctx.fill();
-        }
-
-        /* =================================================
-           GAMEPLAY
-           ================================================= */
-
-        if (
-          hasStartedRef.current &&
-          !isPausedRef.current &&
-          !state.isOver
-        ) {
-
-          const speed =
-            14;
-
-          /* ===============================================
-             MOVEMENT
-             =============================================== */
-
-          if (
-            state.keys[
-              'ArrowLeft'
-            ] ||
-            state.keys[
-              'KeyA'
-            ] ||
-            state.keys[
-              'KeyQ'
-            ] ||
-            state.moveLeft
-          ) {
-
-            state.playerX -=
-              speed;
-          }
-
-          if (
-            state.keys[
-              'ArrowRight'
-            ] ||
-            state.keys[
-              'KeyD'
-            ] ||
-            state.moveRight
-          ) {
-
-            state.playerX +=
-              speed;
-          }
-
-          state.playerX =
-            Math.max(
-              50,
-              Math.min(
-                w - 50,
-                state.playerX
-              )
-            );
-
-          /* ===============================================
-             AUTO SHOOT
-             =============================================== */
-
-          if (
-            time -
-              state.lastShot >
-            0.11
-          ) {
-
-            state.bullets.push({
-              x:
-                state.playerX -
-                16,
-
-              y:
-                state.playerY -
-                24,
-            });
-
-            state.bullets.push({
-              x:
-                state.playerX +
-                16,
-
-              y:
-                state.playerY -
-                24,
-            });
-
-            state.lastShot =
-              time;
-          }
-
-          /* ===============================================
-             SPAWN BUGS
-             =============================================== */
-
-          if (
-            Math.random() <
-            0.05
-          ) {
-
-            const type =
-              bugTypes[
-                Math.floor(
-                  Math.random() *
-                    bugTypes.length
-                )
-              ];
-
-            state.bugs.push({
-              x:
-                Math.random() *
-                  (w - 140) +
-                70,
-
-              y:
-                100,
-
-              speed:
-                3 +
-                Math.random() *
-                  4,
-
-              label:
-                type.label,
-
-              radius:
-                type.radius,
-
-              rotation:
-                Math.random() *
-                Math.PI *
-                2,
-            });
-          }
-
-          /* ===============================================
-             BULLETS
-             =============================================== */
-
-          state.bullets.forEach(
-            (bullet) => {
-
-              bullet.y -=
-                20;
-            }
-          );
-
-          state.bullets =
-            state.bullets.filter(
-              (bullet) =>
-                bullet.y >
-                76
-            );
-
-          /* ===============================================
-             BUGS
-             =============================================== */
-
-          for (
-            let i =
-              state.bugs.length -
-              1;
-
-            i >= 0;
-
-            i--
-          ) {
-
-            const bug =
-              state.bugs[i];
-
-            bug.y +=
-              bug.speed;
-
-            bug.rotation +=
-              0.01;
-
-            /* =============================================
-               COLLISIONS
-               ============================================= */
-
-            let killed =
-              false;
-
-            for (
-              let j =
-                state.bullets.length -
-                1;
-
-              j >= 0;
-
-              j--
-            ) {
-
-              const bullet =
-                state.bullets[j];
-
-              const distance =
-                Math.hypot(
-                  bug.x -
-                    bullet.x,
-
-                  bug.y -
-                    bullet.y
-                );
-
-              if (
-                distance <
-                bug.radius +
-                  8
-              ) {
-
-                state.bugs.splice(
-                  i,
-                  1
-                );
-
-                state.bullets.splice(
-                  j,
-                  1
-                );
-
-                state.score +=
-                  100;
-
-                killed =
-                  true;
-
-                /*
-                 * Kill sound
-                 */
-
-                playKillSound();
-
-                break;
-              }
-            }
-
-            if (killed) {
-              continue;
-            }
-
-            /* =============================================
-               BUG REACHED PLAYER
-               ============================================= */
-
-            if (
-              bug.y >
-              h - 70
-            ) {
-
-              state.bugs.splice(
-                i,
-                1
-              );
-
-              state.health -=
-                25;
-
-              if (
-                state.health <=
-                0
-              ) {
-
-                state.health =
-                  0;
-
-                state.isOver =
-                  true;
-
-                setGameOver(
-                  true
-                );
-              }
-            }
-          }
-        }
-
-        /* =================================================
-           BULLETS DRAW
-           ================================================= */
-
-        ctx.shadowColor =
-          'rgba(228, 192, 155, 0.8)';
-
-        ctx.shadowBlur =
-          8;
-
-        state.bullets.forEach(
-          (bullet) => {
-
-            ctx.fillStyle =
-              COLORS.bullet;
-
-            ctx.beginPath();
-
-            ctx.roundRect(
-              bullet.x - 2,
-              bullet.y,
-              4,
-              18,
-              2
-            );
-
-            ctx.fill();
-          }
-        );
-
-        ctx.shadowBlur =
-          0;
-
-        /* =================================================
-           PLAYER
-           ================================================= */
-
-        ctx.save();
-
-        ctx.translate(
-          state.playerX,
-          state.playerY
-        );
-
-        ctx.shadowColor =
-          'rgba(226, 193, 157, 0.5)';
-
-        ctx.shadowBlur =
-          18;
-
-        ctx.fillStyle =
-          COLORS.player;
+          'rgba(255,241,210,0.7)';
 
         ctx.beginPath();
 
-        ctx.moveTo(
+        ctx.arc(
+          x,
+          y -
+            lampHeight,
+          2 +
+            p * 4,
           0,
-          -32
+          Math.PI * 2
         );
-
-        ctx.lineTo(
-          -30,
-          20
-        );
-
-        ctx.lineTo(
-          0,
-          8
-        );
-
-        ctx.lineTo(
-          30,
-          20
-        );
-
-        ctx.closePath();
 
         ctx.fill();
 
         /*
-         * Center
+         * Glow
          */
 
+        const gradient =
+          ctx.createRadialGradient(
+            x,
+            y -
+              lampHeight,
+            0,
+            x,
+            y -
+              lampHeight,
+            35 +
+              p * 40
+          );
+
+        gradient.addColorStop(
+          0,
+          'rgba(255,235,190,0.12)'
+        );
+
+        gradient.addColorStop(
+          1,
+          'rgba(255,235,190,0)'
+        );
+
         ctx.fillStyle =
-          '#fff8ed';
+          gradient;
 
         ctx.beginPath();
 
-        ctx.moveTo(
+        ctx.arc(
+          x,
+          y -
+            lampHeight,
+          40 +
+            p * 40,
           0,
-          -20
+          Math.PI * 2
         );
-
-        ctx.lineTo(
-          -8,
-          10
-        );
-
-        ctx.lineTo(
-          8,
-          10
-        );
-
-        ctx.closePath();
 
         ctx.fill();
-
-        /*
-         * Engine
-         */
-
-        ctx.shadowBlur =
-          10;
-
-        ctx.fillStyle =
-          Math.sin(
-            time * 25
-          ) > 0
-            ? '#cba47e'
-            : '#a77d5e';
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          -9,
-          15
-        );
-
-        ctx.lineTo(
-          0,
-          34
-        );
-
-        ctx.lineTo(
-          9,
-          15
-        );
-
-        ctx.closePath();
-
-        ctx.fill();
-
-        ctx.restore();
-
-        /* =================================================
-           BUGS DRAW
-           ================================================= */
-
-        state.bugs.forEach(
-          (bug) => {
-
-            ctx.save();
-
-            ctx.translate(
-              bug.x,
-              bug.y
-            );
-
-            ctx.rotate(
-              Math.sin(
-                bug.rotation
-              ) *
-              0.08
-            );
-
-            ctx.shadowColor =
-              'rgba(201, 157, 121, 0.55)';
-
-            ctx.shadowBlur =
-              12;
-
-            /*
-             * Body
-             */
-
-            ctx.fillStyle =
-              COLORS.enemy;
-
-            ctx.strokeStyle =
-              COLORS.enemyDark;
-
-            ctx.lineWidth =
-              2;
-
-            ctx.beginPath();
-
-            ctx.arc(
-              0,
-              0,
-              bug.radius,
-              0,
-              Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.stroke();
-
-            /*
-             * Legs
-             */
-
-            ctx.shadowBlur =
-              0;
-
-            ctx.strokeStyle =
-              COLORS.enemy;
-
-            ctx.lineWidth =
-              2;
-
-            for (
-              let i = -1;
-              i <= 1;
-              i++
-            ) {
-
-              ctx.beginPath();
-
-              ctx.moveTo(
-                -bug.radius + 4,
-                i * 8
-              );
-
-              ctx.lineTo(
-                -bug.radius - 7,
-                i * 10
-              );
-
-              ctx.stroke();
-
-              ctx.beginPath();
-
-              ctx.moveTo(
-                bug.radius - 4,
-                i * 8
-              );
-
-              ctx.lineTo(
-                bug.radius + 7,
-                i * 10
-              );
-
-              ctx.stroke();
-            }
-
-            /*
-             * Eyes
-             */
-
-            ctx.fillStyle =
-              COLORS.gameBg;
-
-            ctx.beginPath();
-
-            ctx.arc(
-              -7,
-              -4,
-              3,
-              0,
-              Math.PI * 2
-            );
-
-            ctx.arc(
-              7,
-              -4,
-              3,
-              0,
-              Math.PI * 2
-            );
-
-            ctx.fill();
-
-            /*
-             * Label
-             */
-
-            ctx.fillStyle =
-              COLORS.gameBg;
-
-            ctx.font =
-              'bold 10px monospace';
-
-            ctx.textAlign =
-              'center';
-
-            ctx.textBaseline =
-              'middle';
-
-            ctx.fillText(
-              bug.label,
-              0,
-              10
-            );
-
-            ctx.restore();
-          }
-        );
-
-        /* =================================================
-           GAME OVER
-           ================================================= */
-
-        if (
-          state.isOver
-        ) {
-
-          ctx.fillStyle =
-            'rgba(18, 16, 13, 0.88)';
-
-          ctx.fillRect(
-            0,
-            0,
-            w,
-            h
-          );
-
-          ctx.fillStyle =
-            COLORS.beige;
-
-          ctx.font =
-            '500 42px Arial, sans-serif';
-
-          ctx.textAlign =
-            'center';
-
-          ctx.fillText(
-            'GAME OVER',
-            w / 2,
-            h / 2 - 30
-          );
-
-          ctx.fillStyle =
-            COLORS.muted;
-
-          ctx.font =
-            '16px monospace';
-
-          ctx.fillText(
-            `SCORE  ${state.score
-              .toString()
-              .padStart(
-                6,
-                '0'
-              )}`,
-            w / 2,
-            h / 2 + 10
-          );
-
-          ctx.textAlign =
-            'left';
-        }
-
-        /* =================================================
-           PAUSE
-           ================================================= */
-
-        if (
-          isPausedRef.current &&
-          hasStartedRef.current &&
-          !state.isOver
-        ) {
-
-          ctx.fillStyle =
-            'rgba(15, 14, 12, 0.35)';
-
-          ctx.fillRect(
-            0,
-            0,
-            w,
-            h
-          );
-        }
-      };
-
-    updateAndDrawGame(
-      0
-    );
-
-    /* =====================================================
-       TEXTURE
-       ===================================================== */
-
-    const ideTexture =
-      gl.createTexture();
-
-    gl.activeTexture(
-      gl.TEXTURE0
-    );
-
-    gl.bindTexture(
-      gl.TEXTURE_2D,
-      ideTexture
-    );
-
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      ideCanvas
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_WRAP_S,
-      gl.CLAMP_TO_EDGE
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_WRAP_T,
-      gl.CLAMP_TO_EDGE
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MIN_FILTER,
-      gl.LINEAR
-    );
-
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MAG_FILTER,
-      gl.LINEAR
-    );
-
-    /* =====================================================
-       SHADERS
-       ===================================================== */
-
-    const createShader = (
-      type: number,
-      source: string
-    ) => {
-
-      const shader =
-        gl.createShader(
-          type
-        );
-
-      if (!shader) {
-        return null;
       }
+    };
 
-      gl.shaderSource(
-        shader,
-        source
-      );
+    /*
+     * -------------------------------------------------------
+     * DRAW TRAFFIC CAR
+     * -------------------------------------------------------
+     */
 
-      gl.compileShader(
-        shader
-      );
+    const drawTrafficCar = (
+      car: TrafficCar,
+      width: number,
+      height: number
+    ) => {
+      const horizon =
+        height * 0.38;
 
-      if (
-        !gl.getShaderParameter(
-          shader,
-          gl.COMPILE_STATUS
-        )
-      ) {
-
-        console.error(
-          gl.getShaderInfoLog(
-            shader
+      const progress =
+        Math.max(
+          0,
+          Math.min(
+            1,
+            car.z
           )
         );
 
-        gl.deleteShader(
-          shader
+      const y =
+        horizon +
+        Math.pow(
+          progress,
+          1.8
+        ) *
+          (height -
+            horizon);
+
+      const roadW =
+        roadWidthAt(
+          y,
+          height,
+          width
         );
 
-        return null;
-      }
+      const center =
+        roadCenterAt(
+          y,
+          height,
+          width
+        );
 
-      return shader;
+      const x =
+        center +
+        car.lane *
+          roadW *
+          0.28;
+
+      const carWidth =
+        18 +
+        progress * 95;
+
+      const carHeight =
+        carWidth * 1.45;
+
+      ctx.save();
+
+      ctx.translate(
+        x,
+        y
+      );
+
+      /*
+       * Shadow
+       */
+
+      ctx.fillStyle =
+        'rgba(0,0,0,0.45)';
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        0,
+        5,
+        carWidth * 0.7,
+        carHeight * 0.28,
+        0,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      /*
+       * Body
+       */
+
+      ctx.fillStyle =
+        car.color;
+
+      ctx.beginPath();
+
+      ctx.roundRect(
+        -carWidth / 2,
+        -carHeight / 2,
+        carWidth,
+        carHeight,
+        carWidth * 0.18
+      );
+
+      ctx.fill();
+
+      /*
+       * Rear window
+       */
+
+      ctx.fillStyle =
+        'rgba(7,9,12,0.8)';
+
+      ctx.beginPath();
+
+      ctx.roundRect(
+        -carWidth * 0.34,
+        -carHeight * 0.25,
+        carWidth * 0.68,
+        carHeight * 0.28,
+        carWidth * 0.08
+      );
+
+      ctx.fill();
+
+      /*
+       * Tail lights
+       */
+
+      ctx.fillStyle =
+        COLORS.red;
+
+      ctx.shadowColor =
+        'rgba(184,102,89,0.65)';
+
+      ctx.shadowBlur =
+        8 +
+        progress * 15;
+
+      ctx.fillRect(
+        -carWidth * 0.37,
+        carHeight * 0.25,
+        carWidth * 0.2,
+        carHeight * 0.08
+      );
+
+      ctx.fillRect(
+        carWidth * 0.17,
+        carHeight * 0.25,
+        carWidth * 0.2,
+        carHeight * 0.08
+      );
+
+      ctx.restore();
     };
 
-    const vertShader =
-      createShader(
-        gl.VERTEX_SHADER,
-        VERTEX_SHADER
+    /*
+     * -------------------------------------------------------
+     * DRAW PLAYER
+     * -------------------------------------------------------
+     */
+
+    const drawPlayer = (
+      width: number,
+      height: number
+    ) => {
+      const center =
+        roadCenterAt(
+          height,
+          height,
+          width
+        );
+
+      const roadW =
+        roadWidthAt(
+          height,
+          height,
+          width
+        );
+
+      const x =
+        center +
+        game.current.playerX *
+          roadW *
+          0.32;
+
+      const y =
+        height * 0.83;
+
+      const carWidth =
+        Math.min(
+          100,
+          width * 0.13
+        );
+
+      const carHeight =
+        carWidth * 1.5;
+
+      ctx.save();
+
+      ctx.translate(
+        x,
+        y
       );
 
-    const fragShader =
-      createShader(
-        gl.FRAGMENT_SHADER,
-        FRAGMENT_SHADER
+      /*
+       * Headlight glow
+       */
+
+      const glow =
+        ctx.createRadialGradient(
+          0,
+          -carHeight * 0.45,
+          0,
+          0,
+          -carHeight * 0.45,
+          180
+        );
+
+      glow.addColorStop(
+        0,
+        'rgba(255,243,213,0.18)'
       );
 
-    if (
-      !vertShader ||
-      !fragShader
-    ) {
-      return;
-    }
-
-    /* =====================================================
-       PROGRAM
-       ===================================================== */
-
-    const program =
-      gl.createProgram();
-
-    if (!program) {
-      return;
-    }
-
-    gl.attachShader(
-      program,
-      vertShader
-    );
-
-    gl.attachShader(
-      program,
-      fragShader
-    );
-
-    gl.linkProgram(
-      program
-    );
-
-    if (
-      !gl.getProgramParameter(
-        program,
-        gl.LINK_STATUS
-      )
-    ) {
-
-      console.error(
-        gl.getProgramInfoLog(
-          program
-        )
+      glow.addColorStop(
+        1,
+        'rgba(255,243,213,0)'
       );
 
-      return;
-    }
+      ctx.fillStyle =
+        glow;
 
-    /* =====================================================
-       BUFFER
-       ===================================================== */
+      ctx.beginPath();
 
-    const positionBuffer =
-      gl.createBuffer();
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      positionBuffer
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([
-        -1, -1,
-         1, -1,
-        -1,  1,
-
-        -1,  1,
-         1, -1,
-         1,  1,
-      ]),
-      gl.STATIC_DRAW
-    );
-
-    /* =====================================================
-       VAO
-       ===================================================== */
-
-    const positionAttributeLocation =
-      gl.getAttribLocation(
-        program,
-        'aPosition'
+      ctx.arc(
+        0,
+        -carHeight * 0.4,
+        180,
+        0,
+        Math.PI * 2
       );
 
-    const vao =
-      gl.createVertexArray();
+      ctx.fill();
 
-    gl.bindVertexArray(
-      vao
-    );
+      /*
+       * Shadow
+       */
 
-    gl.enableVertexAttribArray(
-      positionAttributeLocation
-    );
+      ctx.fillStyle =
+        'rgba(0,0,0,0.65)';
 
-    gl.vertexAttribPointer(
-      positionAttributeLocation,
-      2,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
+      ctx.beginPath();
 
-    /* =====================================================
-       UNIFORMS
-       ===================================================== */
-
-    const resolutionLocation =
-      gl.getUniformLocation(
-        program,
-        'uResolution'
+      ctx.ellipse(
+        0,
+        12,
+        carWidth * 0.7,
+        carWidth * 0.22,
+        0,
+        0,
+        Math.PI * 2
       );
 
-    const mouseLocation =
-      gl.getUniformLocation(
-        program,
-        'uMouse'
+      ctx.fill();
+
+      /*
+       * Main body
+       */
+
+      ctx.fillStyle =
+        COLORS.car;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        0,
+        -carHeight / 2
       );
 
-    const timeLocation =
-      gl.getUniformLocation(
-        program,
-        'uTime'
+      ctx.lineTo(
+        -carWidth * 0.46,
+        carHeight * 0.32
       );
 
-    const isMobileLocation =
-      gl.getUniformLocation(
-        program,
-        'uIsMobile'
+      ctx.quadraticCurveTo(
+        -carWidth * 0.5,
+        carHeight * 0.48,
+        -carWidth * 0.28,
+        carHeight * 0.5
       );
 
-    const ideTextureLocation =
-      gl.getUniformLocation(
-        program,
-        'uIdeTexture'
+      ctx.lineTo(
+        carWidth * 0.28,
+        carHeight * 0.5
       );
 
-    /* =====================================================
-       MOUSE
-       ===================================================== */
+      ctx.quadraticCurveTo(
+        carWidth * 0.5,
+        carHeight * 0.48,
+        carWidth * 0.46,
+        carHeight * 0.32
+      );
 
-    const handleMouseMove =
-      (e: MouseEvent) => {
+      ctx.closePath();
 
-        targetMouseRef.current.x =
+      ctx.fill();
+
+      /*
+       * Windshield
+       */
+
+      ctx.fillStyle =
+        'rgba(12,15,19,0.88)';
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        0,
+        -carHeight * 0.35
+      );
+
+      ctx.lineTo(
+        -carWidth * 0.3,
+        carHeight * 0.03
+      );
+
+      ctx.lineTo(
+        carWidth * 0.3,
+        carHeight * 0.03
+      );
+
+      ctx.closePath();
+
+      ctx.fill();
+
+      /*
+       * Headlights
+       */
+
+      ctx.fillStyle =
+        COLORS.white;
+
+      ctx.shadowColor =
+        COLORS.white;
+
+      ctx.shadowBlur =
+        14;
+
+      ctx.beginPath();
+
+      ctx.roundRect(
+        -carWidth * 0.38,
+        carHeight * 0.25,
+        carWidth * 0.22,
+        carHeight * 0.1,
+        3
+      );
+
+      ctx.roundRect(
+        carWidth * 0.16,
+        carHeight * 0.25,
+        carWidth * 0.22,
+        carHeight * 0.1,
+        3
+      );
+
+      ctx.fill();
+
+      ctx.restore();
+    };
+
+    /*
+     * -------------------------------------------------------
+     * SPAWN TRAFFIC
+     * -------------------------------------------------------
+     */
+
+    const spawnTraffic = () => {
+      const state =
+        game.current;
+
+      const lane =
+        LANES[
+          Math.floor(
+            Math.random() *
+              LANES.length
+          )
+        ];
+
+      const colors = [
+        '#a88f76',
+        '#706f72',
+        '#8e7564',
+        '#b1a18c',
+        '#54575c',
+      ];
+
+      state.traffic.push({
+        lane,
+        z: 0.02,
+        speed:
+          random(
+            0.14,
+            0.24
+          ),
+        color:
+          colors[
+            Math.floor(
+              Math.random() *
+                colors.length
+            )
+          ],
+      });
+    };
+
+    /*
+     * -------------------------------------------------------
+     * PARTICLES
+     * -------------------------------------------------------
+     */
+
+    const updateParticles = (
+      width: number,
+      height: number,
+      dt: number
+    ) => {
+      const state =
+        game.current;
+
+      if (
+        Math.random() <
+        0.4
+      ) {
+        state.particles.push({
+          x:
+            width / 2 +
+            random(
+              -width * 0.35,
+              width * 0.35
+            ),
+
+          y:
+            height * 0.7,
+
+          life: 1,
+
+          speed:
+            random(
+              40,
+              130
+            ),
+        });
+      }
+
+      state.particles.forEach(
+        (particle) => {
+          particle.y +=
+            particle.speed *
+            dt;
+
+          particle.life -=
+            dt * 0.8;
+        }
+      );
+
+      state.particles =
+        state.particles.filter(
+          (particle) =>
+            particle.life > 0 &&
+            particle.y <
+              height
+        );
+
+      ctx.fillStyle =
+        'rgba(216,194,166,0.13)';
+
+      state.particles.forEach(
+        (particle) => {
+          ctx.globalAlpha =
+            particle.life;
+
+          ctx.fillRect(
+            particle.x,
+            particle.y,
+            1,
+            1
+          );
+        }
+      );
+
+      ctx.globalAlpha = 1;
+    };
+
+    /*
+     * -------------------------------------------------------
+     * COLLISION
+     * -------------------------------------------------------
+     */
+
+    const checkCollision = (
+      car: TrafficCar
+    ) => {
+      const state =
+        game.current;
+
+      const laneDistance =
+        Math.abs(
+          car.lane -
+            state.playerX / 0.32
+        );
+
+      return (
+        car.z > 0.78 &&
+        laneDistance <
+          0.62
+      );
+    };
+
+    /*
+     * -------------------------------------------------------
+     * UPDATE
+     * -------------------------------------------------------
+     */
+
+    const update = (
+      dt: number
+    ) => {
+      const state =
+        game.current;
+
+      if (
+        !state.running ||
+        state.paused ||
+        state.over
+      ) {
+        return;
+      }
+
+      /*
+       * Speed
+       */
+
+      state.speed +=
+        (1 -
+          state.speed) *
+        dt *
+        0.4;
+
+      /*
+       * Difficulty
+       */
+
+      const difficulty =
+        Math.min(
+          1,
+          state.distance /
+            5000
+        );
+
+      /*
+       * Player
+       */
+
+      const direction =
+        (keys.current.right
+          ? 1
+          : 0) -
+        (keys.current.left
+          ? 1
+          : 0);
+
+      state.targetX +=
+        direction *
+        dt *
+        2.5;
+
+      state.targetX =
+        Math.max(
+          -1,
+          Math.min(
+            1,
+            state.targetX
+          )
+        );
+
+      state.playerX +=
+        (
+          state.targetX -
+          state.playerX
+        ) *
+        dt *
+        8;
+
+      /*
+       * Road
+       */
+
+      state.roadOffset +=
+        dt *
+        (
+          0.35 +
+          state.speed *
+            0.7
+        );
+
+      /*
+       * Distance
+       */
+
+      state.distance +=
+        dt *
+        (
+          55 +
+          state.speed *
+            80
+        );
+
+      /*
+       * UI update
+       */
+
+      setDistance(
+        Math.floor(
+          state.distance / 100
+        ) / 10
+      );
+
+      /*
+       * Spawn
+       */
+
+      state.spawnTimer -=
+        dt;
+
+      const spawnRate =
+        Math.max(
+          0.38,
+          0.9 -
+            difficulty *
+              0.35
+        );
+
+      if (
+        state.spawnTimer <= 0
+      ) {
+        spawnTraffic();
+
+        state.spawnTimer =
+          spawnRate *
+          random(
+            0.75,
+            1.25
+          );
+      }
+
+      /*
+       * Traffic
+       */
+
+      for (
+        let i =
+          state.traffic.length -
+          1;
+
+        i >= 0;
+
+        i--
+      ) {
+        const car =
+          state.traffic[i];
+
+        car.z +=
+          dt *
           (
-            e.clientX /
-            window.innerWidth
-          ) *
-            2 -
-          1;
+            0.2 +
+            state.speed *
+              0.5 +
+            car.speed *
+              0.25
+          );
 
-        targetMouseRef.current.y =
-          -(
-            e.clientY /
-            window.innerHeight
-          ) *
-            2 +
-          1;
-      };
+        /*
+         * Collision
+         */
 
-    /* =====================================================
-       RESIZE
-       ===================================================== */
+        if (
+          checkCollision(
+            car
+          )
+        ) {
+          state.over = true;
+          state.running = false;
 
-    const handleResize =
-      () => {
+          setGameOver(true);
 
-        if (!canvas) {
-          return;
+          playSound(
+            'collision'
+          );
+
+          /*
+           * Collision particles
+           */
+
+          for (
+            let j = 0;
+            j < 35;
+            j++
+          ) {
+            state.particles.push({
+              x:
+                window.innerWidth /
+                  2 +
+                random(
+                  -40,
+                  40
+                ),
+
+              y:
+                window.innerHeight *
+                  0.82 +
+                random(
+                  -20,
+                  20
+                ),
+
+              life: 1,
+
+              speed:
+                random(
+                  50,
+                  220
+                ),
+            });
+          }
+
+          continue;
         }
 
-        const mobile =
-          window.innerWidth <
-          768;
+        /*
+         * Passed
+         */
 
-        setIsMobileDevice(
-          mobile
-        );
-
-        const dpr =
-          Math.min(
-            window.devicePixelRatio ||
-              1,
-            2.5
+        if (
+          car.z > 1.08
+        ) {
+          state.traffic.splice(
+            i,
+            1
           );
 
-        canvas.width =
-          window.innerWidth *
-          dpr;
+          playSound('pass');
+        }
+      }
+    };
 
-        canvas.height =
-          window.innerHeight *
-          dpr;
+    /*
+     * -------------------------------------------------------
+     * LOOP
+     * -------------------------------------------------------
+     */
 
-        gl.viewport(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-      };
+    const render = (
+      time: number
+    ) => {
+      const width =
+        window.innerWidth;
 
-    window.addEventListener(
-      'mousemove',
-      handleMouseMove
-    );
+      const height =
+        window.innerHeight;
 
-    window.addEventListener(
-      'resize',
-      handleResize
-    );
+      const state =
+        game.current;
 
-    handleResize();
+      if (
+        state.lastTime === 0
+      ) {
+        state.lastTime =
+          time;
+      }
 
-    /* =====================================================
-       RENDER
-       ===================================================== */
-
-    let animationFrameId =
-      0;
-
-    const startTime =
-      performance.now();
-
-    const render =
-      (now: number) => {
-
-        const elapsedTime =
+      const dt =
+        Math.min(
           (
-            now -
-            startTime
-          ) *
-          0.001;
-
-        updateAndDrawGame(
-          elapsedTime
+            time -
+            state.lastTime
+          ) / 1000,
+          0.04
         );
 
-        /*
-         * Update texture
-         */
+      state.lastTime =
+        time;
 
-        gl.activeTexture(
-          gl.TEXTURE0
+      update(dt);
+
+      /*
+       * Background
+       */
+
+      drawSky(
+        width,
+        height
+      );
+
+      /*
+       * Road
+       */
+
+      drawRoad(
+        width,
+        height
+      );
+
+      /*
+       * Particles
+       */
+
+      updateParticles(
+        width,
+        height,
+        dt
+      );
+
+      /*
+       * Traffic sorted by depth
+       */
+
+      const cars =
+        [...state.traffic].sort(
+          (a, b) =>
+            a.z - b.z
         );
 
-        gl.bindTexture(
-          gl.TEXTURE_2D,
-          ideTexture
+      cars.forEach(
+        (car) =>
+          drawTrafficCar(
+            car,
+            width,
+            height
+          )
+      );
+
+      /*
+       * Player
+       */
+
+      drawPlayer(
+        width,
+        height
+      );
+
+      animationFrame =
+        requestAnimationFrame(
+          render
         );
+    };
 
-        gl.texSubImage2D(
-          gl.TEXTURE_2D,
-          0,
-          0,
-          0,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          ideCanvas
-        );
-
-        /*
-         * Smooth mouse
-         */
-
-        currentMouseRef.current.x +=
-          (
-            targetMouseRef.current.x -
-            currentMouseRef.current.x
-          ) *
-          0.1;
-
-        currentMouseRef.current.y +=
-          (
-            targetMouseRef.current.y -
-            currentMouseRef.current.y
-          ) *
-          0.1;
-
-        /*
-         * Render WebGL
-         */
-
-        gl.useProgram(
-          program
-        );
-
-        gl.bindVertexArray(
-          vao
-        );
-
-        gl.uniform2f(
-          resolutionLocation,
-          canvas.width,
-          canvas.height
-        );
-
-        gl.uniform2f(
-          mouseLocation,
-          currentMouseRef.current.x,
-          currentMouseRef.current.y
-        );
-
-        gl.uniform1f(
-          timeLocation,
-          elapsedTime
-        );
-
-        gl.uniform1i(
-          isMobileLocation,
-          isMobileDevice
-            ? 1
-            : 0
-        );
-
-        gl.uniform1i(
-          ideTextureLocation,
-          0
-        );
-
-        gl.drawArrays(
-          gl.TRIANGLES,
-          0,
-          6
-        );
-
-        animationFrameId =
-          requestAnimationFrame(
-            render
-          );
-      };
-
-    animationFrameId =
+    animationFrame =
       requestAnimationFrame(
         render
       );
 
-    /* =====================================================
-       CLEANUP
-       ===================================================== */
-
     return () => {
-
       cancelAnimationFrame(
-        animationFrameId
-      );
-
-      window.removeEventListener(
-        'mousemove',
-        handleMouseMove
+        animationFrame
       );
 
       window.removeEventListener(
         'resize',
-        handleResize
-      );
-
-      gl.deleteTexture(
-        ideTexture
-      );
-
-      gl.deleteProgram(
-        program
-      );
-
-      gl.deleteShader(
-        vertShader
-      );
-
-      gl.deleteShader(
-        fragShader
-      );
-
-      gl.deleteBuffer(
-        positionBuffer
-      );
-
-      gl.deleteVertexArray(
-        vao
+        resize
       );
     };
+  }, [playSound]);
 
-  }, [isMobileDevice]);
+  /*
+   * ---------------------------------------------------------
+   * MOBILE CONTROL HELPERS
+   * ---------------------------------------------------------
+   */
 
-  /* =========================================================
-     MOBILE MOVEMENT
-     ========================================================= */
+  const pressLeft = () => {
+    keys.current.left = true;
+  };
 
-  const startMoveLeft =
-    () => {
-      gameState.current.moveLeft =
-        true;
-    };
+  const releaseLeft = () => {
+    keys.current.left = false;
+  };
 
-  const stopMoveLeft =
-    () => {
-      gameState.current.moveLeft =
-        false;
-    };
+  const pressRight = () => {
+    keys.current.right = true;
+  };
 
-  const startMoveRight =
-    () => {
-      gameState.current.moveRight =
-        true;
-    };
+  const releaseRight = () => {
+    keys.current.right = false;
+  };
 
-  const stopMoveRight =
-    () => {
-      gameState.current.moveRight =
-        false;
-    };
-
-  /* =========================================================
-     RENDER
-     ========================================================= */
+  /*
+   * ---------------------------------------------------------
+   * UI
+   * ---------------------------------------------------------
+   */
 
   return (
-
     <section
-      className="relative h-screen w-full overflow-hidden select-none touch-pan-y"
-      style={{
-        backgroundColor:
-          COLORS.cream,
-      }}
+      className="relative h-screen min-h-[620px] w-full overflow-hidden bg-[#080a0e] select-none touch-pan-y"
     >
-
-      {/* ===================================================
-          CANVAS
-          pointer-events-none = le canvas ne bloque PAS
-          le scroll de la page
-          =================================================== */}
+      {/*
+       * Canvas DOES NOT capture pointer events.
+       * Therefore the page can still scroll vertically.
+       */}
 
       <canvas
         ref={canvasRef}
-        className="pointer-events-none absolute inset-0 block h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full"
       />
 
       {/* ===================================================
           COVER
           =================================================== */}
 
-      {!hasStarted && (
-
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden"
-          style={{
-            backgroundColor:
-              COLORS.cream,
-          }}
-        >
-
-          <img
-            src="/e.jpg"
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'rgba(244,236,221,0.18)',
-            }}
-          />
-
+      {!started && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#080a0e]">
           <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="mb-6 h-px w-12 bg-[#d8c2a6]/50" />
 
-            <div
-              className="mb-7 h-1.5 w-1.5 rounded-full"
-              style={{
-                backgroundColor:
-                  COLORS.brown,
-              }}
-            />
-
-            <h1
-              className="font-sans text-4xl font-light tracking-[0.38em] sm:text-6xl"
-              style={{
-                color:
-                  COLORS.brown,
-              }}
-            >
-              ARCADE
-            </h1>
-
-            <div
-              className="mt-7 h-1.5 w-1.5 rounded-full"
-              style={{
-                backgroundColor:
-                  COLORS.brown,
-              }}
-            />
-
-            <button
-              onClick={
-                startGame
-              }
-              className="mt-8 min-w-[190px] rounded-md px-10 py-4 font-sans text-sm font-medium tracking-[0.2em] transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                backgroundColor:
-                  COLORS.beigeDark,
-
-                color:
-                  COLORS.white,
-
-                boxShadow:
-                  '0 12px 35px rgba(114,86,67,0.12)',
-              }}
-            >
-              PLAY
-            </button>
-
-            <p
-              className="mt-5 font-sans text-xs tracking-wide"
-              style={{
-                color:
-                  COLORS.brown,
-              }}
-            >
-              ← → to move
+            <p className="mb-4 text-[10px] tracking-[0.5em] text-[#8d887f]">
+              INTERACTIVE EXPERIMENT
             </p>
 
+            <h1 className="text-5xl font-light tracking-[0.28em] text-[#f1e8d8] sm:text-7xl">
+              NIGHT DRIVE
+            </h1>
+
+            <p className="mt-5 text-xs tracking-[0.18em] text-[#8d887f]">
+              DRIVE INTO THE NIGHT
+            </p>
+
+            <button
+              onClick={startGame}
+              className="mt-10 rounded-full border border-[#d8c2a6]/40 bg-[#d8c2a6]/10 px-10 py-3 text-xs tracking-[0.3em] text-[#f1e8d8] backdrop-blur-md transition-all hover:bg-[#d8c2a6]/20 active:scale-95"
+            >
+              START
+            </button>
+
+            <div className="mt-7 flex gap-5 text-[10px] tracking-[0.16em] text-[#8d887f]">
+              <span>← →</span>
+              <span>TO STEER</span>
+            </div>
           </div>
 
+          {/* Decorative lights */}
+
+          <div className="absolute left-[12%] top-[25%] h-1 w-1 rounded-full bg-[#f1e8d8]/50 shadow-[0_0_30px_10px_rgba(241,232,216,0.08)]" />
+
+          <div className="absolute right-[17%] top-[35%] h-1 w-1 rounded-full bg-[#d8c2a6]/40 shadow-[0_0_40px_15px_rgba(216,194,166,0.08)]" />
         </div>
       )}
 
       {/* ===================================================
-          DESKTOP CONTROLS
+          HUD
           =================================================== */}
 
-      {hasStarted &&
-        !isMobileDevice && (
+      {started && (
+        <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between p-6 sm:p-8">
+          <div>
+            <p className="text-[9px] tracking-[0.35em] text-[#8d887f]">
+              NIGHT DRIVE
+            </p>
 
-          <div
-            className="pointer-events-none absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5"
-          >
+            <p className="mt-2 font-mono text-lg text-[#f1e8d8]">
+              {distance.toFixed(1)}
+              <span className="ml-1 text-[10px] text-[#8d887f]">
+                KM
+              </span>
+            </p>
+          </div>
 
-            <div
-              className="font-sans text-xs tracking-[0.16em]"
-              style={{
-                color:
-                  COLORS.muted,
-              }}
+          <div className="pointer-events-auto flex gap-2">
+            <button
+              onClick={togglePause}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8c2a6]/20 bg-[#080a0e]/40 text-xs text-[#d8c2a6] backdrop-blur-md"
             >
-              ← →
-            </div>
+              {paused ? '▶' : 'Ⅱ'}
+            </button>
 
-            <div
-              className="h-1 w-8 rounded-full"
-              style={{
-                backgroundColor:
-                  COLORS.beigeDark,
+            <button
+              onClick={() => {
+                setStarted(false);
+                game.current.running = false;
               }}
-            />
-
-            <div className="pointer-events-auto flex items-center gap-2">
-
-              <button
-                onClick={
-                  pauseGame
-                }
-                className="flex h-9 w-9 items-center justify-center rounded-md border transition-all hover:bg-white/5"
-                style={{
-                  borderColor:
-                    'rgba(220,196,170,0.25)',
-
-                  color:
-                    COLORS.beige,
-                }}
-                aria-label={
-                  isPaused
-                    ? 'Resume'
-                    : 'Pause'
-                }
-              >
-                {isPaused
-                  ? '▶'
-                  : 'Ⅱ'}
-              </button>
-
-              <button
-                onClick={
-                  quitGame
-                }
-                className="flex h-9 items-center justify-center rounded-md border px-3 font-sans text-[10px] tracking-[0.14em] transition-all hover:bg-white/5"
-                style={{
-                  borderColor:
-                    'rgba(220,196,170,0.25)',
-
-                  color:
-                    COLORS.muted,
-                }}
-              >
-                MENU
-              </button>
-
-            </div>
-
+              className="rounded-full border border-[#d8c2a6]/20 bg-[#080a0e]/40 px-4 text-[9px] tracking-[0.2em] text-[#8d887f] backdrop-blur-md"
+            >
+              EXIT
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
       {/* ===================================================
-          CONTROLS HINT
+          PAUSE
           =================================================== */}
 
-      {hasStarted &&
-        !isMobileDevice &&
-        showControlsHint &&
-        !isPaused && (
+      {paused && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#080a0e]/70 backdrop-blur-sm">
+          <div className="text-center">
+            <p className="text-xs tracking-[0.4em] text-[#d8c2a6]">
+              PAUSED
+            </p>
 
-          <div
-            className="pointer-events-none absolute bottom-7 left-1/2 z-30 -translate-x-1/2 font-sans text-xs tracking-wide"
-            style={{
-              color:
-                COLORS.muted,
-            }}
-          >
-            Use ← → to move
+            <button
+              onClick={togglePause}
+              className="mt-7 rounded-full border border-[#d8c2a6]/30 px-8 py-3 text-[10px] tracking-[0.25em] text-[#f1e8d8]"
+            >
+              CONTINUE
+            </button>
           </div>
-        )}
-
-      {/* ===================================================
-          PAUSE SCREEN
-          =================================================== */}
-
-      {hasStarted &&
-        isPaused &&
-        !gameOver && (
-
-          <div
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-[5px]"
-            style={{
-              background:
-                'rgba(18,16,13,0.76)',
-            }}
-          >
-
-            <div className="flex w-[280px] flex-col items-center text-center">
-
-              <div
-                className="font-sans text-xs tracking-[0.4em]"
-                style={{
-                  color:
-                    COLORS.beige,
-                }}
-              >
-                · PAUSED ·
-              </div>
-
-              <button
-                onClick={
-                  pauseGame
-                }
-                className="mt-8 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-                style={{
-                  backgroundColor:
-                    COLORS.cream,
-
-                  color:
-                    COLORS.brownDark,
-                }}
-              >
-                RESUME
-              </button>
-
-              <button
-                onClick={
-                  quitGame
-                }
-                className="mt-3 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-                style={{
-                  backgroundColor:
-                    COLORS.beigeDark,
-
-                  color:
-                    COLORS.white,
-                }}
-              >
-                MENU
-              </button>
-
-              <p
-                className="mt-6 font-sans text-[10px]"
-                style={{
-                  color:
-                    COLORS.muted,
-                }}
-              >
-                Press P to resume
-              </p>
-
-            </div>
-
-          </div>
-        )}
+        </div>
+      )}
 
       {/* ===================================================
           GAME OVER
           =================================================== */}
 
       {gameOver && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#080a0e]/80 backdrop-blur-md">
+          <div className="w-[280px] text-center">
+            <p className="text-[10px] tracking-[0.45em] text-[#d8c2a6]">
+              THE NIGHT ENDS
+            </p>
 
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[5px]"
-          style={{
-            background:
-              'rgba(18,16,13,0.82)',
-          }}
-        >
+            <h2 className="mt-6 text-4xl font-light tracking-[0.15em] text-[#f1e8d8]">
+              {distance.toFixed(1)}
+              <span className="ml-2 text-xs text-[#8d887f]">
+                KM
+              </span>
+            </h2>
 
-          <div className="flex w-[280px] flex-col items-center text-center">
-
-            <div
-              className="font-sans text-xs tracking-[0.4em]"
-              style={{
-                color:
-                  COLORS.beige,
-              }}
-            >
-              · GAME OVER ·
-            </div>
-
-            <div
-              className="mt-7 font-mono text-3xl"
-              style={{
-                color:
-                  COLORS.white,
-              }}
-            >
-              {gameState.current.score
-                .toString()
-                .padStart(
-                  6,
-                  '0'
-                )}
-            </div>
-
-            <div
-              className="mt-1 font-sans text-[10px] tracking-[0.2em]"
-              style={{
-                color:
-                  COLORS.muted,
-              }}
-            >
-              SCORE
-            </div>
+            <p className="mt-2 text-[9px] tracking-[0.3em] text-[#8d887f]">
+              DISTANCE
+            </p>
 
             <button
-              onClick={
-                startGame
-              }
-              className="mt-8 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                backgroundColor:
-                  COLORS.cream,
-
-                color:
-                  COLORS.brownDark,
-              }}
+              onClick={restartGame}
+              className="mt-9 w-full rounded-full bg-[#d8c2a6] py-3 text-[10px] tracking-[0.3em] text-[#111214] transition-transform active:scale-95"
             >
-              RETRY
+              DRIVE AGAIN
             </button>
 
             <button
-              onClick={
-                quitGame
-              }
-              className="mt-3 w-full rounded-md py-3 font-sans text-xs font-medium tracking-[0.2em] transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-              style={{
-                backgroundColor:
-                  COLORS.beigeDark,
-
-                color:
-                  COLORS.white,
+              onClick={() => {
+                setStarted(false);
+                setGameOver(false);
+                game.current.running = false;
               }}
+              className="mt-3 w-full rounded-full border border-[#d8c2a6]/25 py-3 text-[10px] tracking-[0.3em] text-[#8d887f]"
             >
               MENU
             </button>
-
-            <p
-              className="mt-6 font-sans text-[10px]"
-              style={{
-                color:
-                  COLORS.muted,
-              }}
-            >
-              Press SPACE to retry
-            </p>
-
           </div>
-
         </div>
       )}
 
       {/* ===================================================
           MOBILE CONTROLS
-
-          IMPORTANT:
-          pointer-events-none sur le container
-          pour ne pas bloquer le scroll.
-
-          Les boutons réactivent pointer-events.
           =================================================== */}
 
-      {isMobileDevice &&
-        hasStarted &&
+      {started &&
         !gameOver && (
-
-          <div
-            className="pointer-events-none absolute bottom-5 left-0 right-0 z-30 flex items-center justify-between px-7"
-          >
-
+          <div className="pointer-events-none absolute bottom-6 left-0 right-0 z-20 flex items-center justify-between px-7 sm:hidden">
             <button
-              onTouchStart={
-                startMoveLeft
-              }
-              onTouchEnd={
-                stopMoveLeft
-              }
-              onTouchCancel={
-                stopMoveLeft
-              }
-              className="pointer-events-auto touch-none flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
-              style={{
-                borderColor:
-                  'rgba(220,196,170,0.4)',
-
-                backgroundColor:
-                  'rgba(28,26,22,0.7)',
-
-                color:
-                  COLORS.beige,
-              }}
+              onTouchStart={pressLeft}
+              onTouchEnd={releaseLeft}
+              onTouchCancel={releaseLeft}
+              className="pointer-events-auto touch-none flex h-16 w-16 items-center justify-center rounded-full border border-[#d8c2a6]/30 bg-[#080a0e]/50 text-xl text-[#d8c2a6] backdrop-blur-md active:scale-90"
             >
               ←
             </button>
 
             <button
-              onClick={
-                pauseGame
-              }
-              className="pointer-events-auto touch-none flex h-11 w-11 items-center justify-center rounded-full border font-sans text-xs transition-all active:scale-90"
-              style={{
-                borderColor:
-                  'rgba(220,196,170,0.4)',
-
-                backgroundColor:
-                  'rgba(28,26,22,0.7)',
-
-                color:
-                  COLORS.beige,
-              }}
+              onClick={togglePause}
+              className="pointer-events-auto touch-none flex h-11 w-11 items-center justify-center rounded-full border border-[#d8c2a6]/20 bg-[#080a0e]/50 text-xs text-[#d8c2a6] backdrop-blur-md"
             >
               Ⅱ
             </button>
 
             <button
-              onTouchStart={
-                startMoveRight
-              }
-              onTouchEnd={
-                stopMoveRight
-              }
-              onTouchCancel={
-                stopMoveRight
-              }
-              className="pointer-events-auto touch-none flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
-              style={{
-                borderColor:
-                  'rgba(220,196,170,0.4)',
-
-                backgroundColor:
-                  'rgba(28,26,22,0.7)',
-
-                color:
-                  COLORS.beige,
-              }}
+              onTouchStart={pressRight}
+              onTouchEnd={releaseRight}
+              onTouchCancel={releaseRight}
+              className="pointer-events-auto touch-none flex h-16 w-16 items-center justify-center rounded-full border border-[#d8c2a6]/30 bg-[#080a0e]/50 text-xl text-[#d8c2a6] backdrop-blur-md active:scale-90"
             >
               →
             </button>
-
           </div>
         )}
 
+      {/* ===================================================
+          BOTTOM HINT
+          =================================================== */}
+
+      {started &&
+        !gameOver &&
+        !paused && (
+          <div className="pointer-events-none absolute bottom-7 left-1/2 hidden -translate-x-1/2 text-[9px] tracking-[0.3em] text-[#8d887f] sm:block">
+            ← → &nbsp; STEER
+          </div>
+        )}
     </section>
   );
-};
-
-export default AestheticArcadeGame;
+}
