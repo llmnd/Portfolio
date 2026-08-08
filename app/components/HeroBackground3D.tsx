@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 /* =========================================================
-   COLORS
+   PALETTE
    ========================================================= */
 
 const COLORS = {
@@ -27,12 +27,10 @@ const COLORS = {
 
   player: '#ead5bc',
   bullet: '#e4c09b',
-
-  danger: '#c8876d',
 };
 
 /* =========================================================
-   WEBGL SHADERS
+   WEBGL VERTEX SHADER
    ========================================================= */
 
 const VERTEX_SHADER = `#version 300 es
@@ -43,6 +41,10 @@ void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }
 `;
+
+/* =========================================================
+   WEBGL FRAGMENT SHADER
+   ========================================================= */
 
 const FRAGMENT_SHADER = `#version 300 es
 
@@ -115,8 +117,7 @@ float map(
     (pScreen.x / 0.9) * 0.5 + 0.5,
     1.0 -
       (
-        (pScreen.y / 0.9) *
-          0.5 +
+        (pScreen.y / 0.9) * 0.5 +
         0.5
       )
   );
@@ -219,7 +220,6 @@ void main() {
       ro + rd * dO;
 
     float currentMat;
-
     vec2 currentTexCoord;
 
     float dS =
@@ -251,8 +251,8 @@ void main() {
   }
 
   /*
-    Warm dark background.
-  */
+   * Warm dark background
+   */
 
   vec3 color =
     vec3(
@@ -273,8 +273,8 @@ void main() {
       getNormal(p);
 
     /*
-      Warm directional light.
-    */
+     * Warm light
+     */
 
     vec3 lightPos =
       vec3(
@@ -325,10 +325,6 @@ void main() {
         hitTexCoord
       );
 
-    /*
-      Warm highlight instead of cyan.
-    */
-
     color =
       gameSample.rgb
       +
@@ -349,8 +345,8 @@ void main() {
   }
 
   /*
-    Very subtle warm vignette.
-  */
+   * Subtle warm vignette
+   */
 
   float radialDist =
     length(uv);
@@ -376,13 +372,18 @@ void main() {
 `;
 
 /* =========================================================
-   GAME
+   COMPONENT
    ========================================================= */
 
 export const AestheticArcadeGame = () => {
 
   const canvasRef =
     useRef<HTMLCanvasElement | null>(
+      null
+    );
+
+  const audioContextRef =
+    useRef<AudioContext | null>(
       null
     );
 
@@ -419,11 +420,9 @@ export const AestheticArcadeGame = () => {
       y: 0,
     });
 
-  /*
-   * =======================================================
-   * GAME STATE
-   * =======================================================
-   */
+  /* =======================================================
+     GAME STATE
+     ======================================================= */
 
   const gameState = useRef({
 
@@ -489,18 +488,171 @@ export const AestheticArcadeGame = () => {
     lastShot: 0,
   });
 
-  /* =========================================================
-     START / RESET
-     ========================================================= */
+  /* =======================================================
+     KILL SOUND
+     ======================================================= */
+
+  const playKillSound = () => {
+
+    try {
+
+      let audio =
+        audioContextRef.current;
+
+      if (!audio) {
+
+        audio =
+          new AudioContext();
+
+        audioContextRef.current =
+          audio;
+      }
+
+      if (
+        audio.state ===
+        'suspended'
+      ) {
+        audio.resume();
+      }
+
+      const now =
+        audio.currentTime;
+
+      /*
+       * Main short tone
+       */
+
+      const oscillator =
+        audio.createOscillator();
+
+      const gain =
+        audio.createGain();
+
+      oscillator.type =
+        'sine';
+
+      oscillator.frequency.setValueAtTime(
+        420,
+        now
+      );
+
+      oscillator.frequency.exponentialRampToValueAtTime(
+        760,
+        now + 0.055
+      );
+
+      oscillator.frequency.exponentialRampToValueAtTime(
+        280,
+        now + 0.13
+      );
+
+      gain.gain.setValueAtTime(
+        0.0001,
+        now
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.055,
+        now + 0.008
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.14
+      );
+
+      oscillator.connect(
+        gain
+      );
+
+      gain.connect(
+        audio.destination
+      );
+
+      oscillator.start(
+        now
+      );
+
+      oscillator.stop(
+        now + 0.15
+      );
+
+      /*
+       * Tiny second layer
+       */
+
+      const secondOscillator =
+        audio.createOscillator();
+
+      const secondGain =
+        audio.createGain();
+
+      secondOscillator.type =
+        'triangle';
+
+      secondOscillator.frequency.setValueAtTime(
+        920,
+        now
+      );
+
+      secondOscillator.frequency.exponentialRampToValueAtTime(
+        540,
+        now + 0.08
+      );
+
+      secondGain.gain.setValueAtTime(
+        0.0001,
+        now
+      );
+
+      secondGain.gain.exponentialRampToValueAtTime(
+        0.025,
+        now + 0.005
+      );
+
+      secondGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.09
+      );
+
+      secondOscillator.connect(
+        secondGain
+      );
+
+      secondGain.connect(
+        audio.destination
+      );
+
+      secondOscillator.start(
+        now
+      );
+
+      secondOscillator.stop(
+        now + 0.1
+      );
+
+    } catch {
+      /*
+       * Audio is optional.
+       * Never let sound break the game.
+       */
+    }
+  };
+
+  /* =======================================================
+     RESET
+     ======================================================= */
 
   const resetGame = () => {
 
     const state =
       gameState.current;
 
-    state.playerX = 512;
+    state.playerX =
+      512;
 
-    state.playerY = 880;
+    state.playerY =
+      880;
 
     state.moveLeft =
       false;
@@ -508,27 +660,68 @@ export const AestheticArcadeGame = () => {
     state.moveRight =
       false;
 
-    state.bullets = [];
+    state.bullets =
+      [];
 
-    state.bugs = [];
+    state.bugs =
+      [];
 
-    state.score = 0;
+    state.score =
+      0;
 
-    state.health = 100;
+    state.health =
+      100;
 
-    state.isOver = false;
+    state.isOver =
+      false;
 
-    state.lastShot = 0;
+    state.lastShot =
+      0;
 
-    setGameOver(false);
+    setGameOver(
+      false
+    );
 
-    setIsPaused(false);
+    setIsPaused(
+      false
+    );
 
     isPausedRef.current =
       false;
   };
 
+  /* =======================================================
+     START
+     ======================================================= */
+
   const startGame = () => {
+
+    /*
+     * Unlock Web Audio after user gesture
+     */
+
+    try {
+
+      if (
+        !audioContextRef.current
+      ) {
+
+        audioContextRef.current =
+          new AudioContext();
+      }
+
+      if (
+        audioContextRef.current
+          .state ===
+        'suspended'
+      ) {
+
+        audioContextRef.current.resume();
+      }
+
+    } catch {
+      // Audio remains optional.
+    }
 
     resetGame();
 
@@ -538,9 +731,13 @@ export const AestheticArcadeGame = () => {
     isPausedRef.current =
       false;
 
-    setHasStarted(true);
+    setHasStarted(
+      true
+    );
 
-    setIsPaused(false);
+    setIsPaused(
+      false
+    );
 
     setShowControlsHint(
       true
@@ -548,13 +745,19 @@ export const AestheticArcadeGame = () => {
 
     window.setTimeout(
       () => {
+
         setShowControlsHint(
           false
         );
+
       },
       4500
     );
   };
+
+  /* =======================================================
+     PAUSE
+     ======================================================= */
 
   const pauseGame = () => {
 
@@ -571,7 +774,9 @@ export const AestheticArcadeGame = () => {
     isPausedRef.current =
       next;
 
-    setIsPaused(next);
+    setIsPaused(
+      next
+    );
 
     gameState.current.moveLeft =
       false;
@@ -579,6 +784,10 @@ export const AestheticArcadeGame = () => {
     gameState.current.moveRight =
       false;
   };
+
+  /* =======================================================
+     QUIT
+     ======================================================= */
 
   const quitGame = () => {
 
@@ -588,18 +797,24 @@ export const AestheticArcadeGame = () => {
     isPausedRef.current =
       false;
 
-    setIsPaused(false);
+    setIsPaused(
+      false
+    );
 
-    setGameOver(false);
+    setGameOver(
+      false
+    );
 
-    setHasStarted(false);
+    setHasStarted(
+      false
+    );
 
     resetGame();
   };
 
-  /* =========================================================
+  /* =======================================================
      KEYBOARD
-     ========================================================= */
+     ======================================================= */
 
   useEffect(() => {
 
@@ -615,8 +830,10 @@ export const AestheticArcadeGame = () => {
          */
 
         if (
-          e.code === 'Escape' ||
-          e.code === 'KeyP'
+          e.code ===
+            'Escape' ||
+          e.code ===
+            'KeyP'
         ) {
 
           e.preventDefault();
@@ -631,7 +848,8 @@ export const AestheticArcadeGame = () => {
          */
 
         if (
-          e.code === 'Space' &&
+          e.code ===
+            'Space' &&
           gameState.current.isOver
         ) {
 
@@ -674,9 +892,9 @@ export const AestheticArcadeGame = () => {
 
   }, []);
 
-  /* =========================================================
+  /* =======================================================
      WEBGL + GAME LOOP
-     ========================================================= */
+     ======================================================= */
 
   useEffect(() => {
 
@@ -704,20 +922,20 @@ export const AestheticArcadeGame = () => {
       return;
     }
 
-    /*
-     * =======================================================
-     * INTERNAL CANVAS
-     * =======================================================
-     */
+    /* =====================================================
+       INTERNAL GAME CANVAS
+       ===================================================== */
 
     const ideCanvas =
       document.createElement(
         'canvas'
       );
 
-    ideCanvas.width = 1024;
+    ideCanvas.width =
+      1024;
 
-    ideCanvas.height = 1024;
+    ideCanvas.height =
+      1024;
 
     const ctx =
       ideCanvas.getContext(
@@ -728,11 +946,9 @@ export const AestheticArcadeGame = () => {
       return;
     }
 
-    /*
-     * =======================================================
-     * BUG TYPES
-     * =======================================================
-     */
+    /* =====================================================
+       BUG TYPES
+       ===================================================== */
 
     const bugTypes = [
       {
@@ -756,11 +972,9 @@ export const AestheticArcadeGame = () => {
       },
     ];
 
-    /*
-     * =======================================================
-     * DRAW GAME
-     * =======================================================
-     */
+    /* =====================================================
+       DRAW GAME
+       ===================================================== */
 
     const updateAndDrawGame =
       (time: number) => {
@@ -774,9 +988,9 @@ export const AestheticArcadeGame = () => {
         const state =
           gameState.current;
 
-        /*
-         * BACKGROUND
-         */
+        /* =================================================
+           BACKGROUND
+           ================================================= */
 
         ctx.fillStyle =
           COLORS.gameBg;
@@ -788,11 +1002,9 @@ export const AestheticArcadeGame = () => {
           h
         );
 
-        /*
-         * ===================================================
-         * STARS
-         * ===================================================
-         */
+        /* =================================================
+           STARS
+           ================================================= */
 
         ctx.fillStyle =
           'rgba(238, 224, 205, 0.55)';
@@ -815,7 +1027,8 @@ export const AestheticArcadeGame = () => {
               h
             ) {
 
-              star.y = 76;
+              star.y =
+                76;
             }
 
             ctx.fillRect(
@@ -827,16 +1040,15 @@ export const AestheticArcadeGame = () => {
           }
         );
 
-        /*
-         * ===================================================
-         * GRID
-         * ===================================================
-         */
+        /* =================================================
+           GRID
+           ================================================= */
 
         ctx.strokeStyle =
           'rgba(220, 196, 170, 0.065)';
 
-        ctx.lineWidth = 1;
+        ctx.lineWidth =
+          1;
 
         for (
           let x = 0;
@@ -880,11 +1092,9 @@ export const AestheticArcadeGame = () => {
           ctx.stroke();
         }
 
-        /*
-         * ===================================================
-         * TOP HUD
-         * ===================================================
-         */
+        /* =================================================
+           HUD
+           ================================================= */
 
         ctx.fillStyle =
           'rgba(27, 25, 21, 0.96)';
@@ -896,14 +1106,11 @@ export const AestheticArcadeGame = () => {
           76
         );
 
-        /*
-         * Bottom HUD border
-         */
-
         ctx.strokeStyle =
           'rgba(220, 196, 170, 0.24)';
 
-        ctx.lineWidth = 1;
+        ctx.lineWidth =
+          1;
 
         ctx.beginPath();
 
@@ -919,9 +1126,9 @@ export const AestheticArcadeGame = () => {
 
         ctx.stroke();
 
-        /*
-         * SCORE LABEL
-         */
+        /* =================================================
+           SCORE
+           ================================================= */
 
         ctx.font =
           '11px Arial, sans-serif';
@@ -929,18 +1136,11 @@ export const AestheticArcadeGame = () => {
         ctx.fillStyle =
           COLORS.muted;
 
-        ctx.letterSpacing =
-          '2px';
-
         ctx.fillText(
           'SCORE',
           30,
           28
         );
-
-        /*
-         * SCORE
-         */
 
         ctx.font =
           '20px monospace';
@@ -959,9 +1159,9 @@ export const AestheticArcadeGame = () => {
           52
         );
 
-        /*
-         * HEALTH LABEL
-         */
+        /* =================================================
+           HEALTH
+           ================================================= */
 
         ctx.font =
           '11px Arial, sans-serif';
@@ -975,16 +1175,14 @@ export const AestheticArcadeGame = () => {
           28
         );
 
-        /*
-         * HEALTH BAR
-         */
-
         const healthSegments =
           7;
 
-        const segmentWidth = 22;
+        const segmentWidth =
+          22;
 
-        const segmentGap = 5;
+        const segmentGap =
+          5;
 
         const totalWidth =
           healthSegments *
@@ -1035,11 +1233,9 @@ export const AestheticArcadeGame = () => {
           ctx.fill();
         }
 
-        /*
-         * ===================================================
-         * GAMEPLAY
-         * ===================================================
-         */
+        /* =================================================
+           GAMEPLAY
+           ================================================= */
 
         if (
           hasStartedRef.current &&
@@ -1047,16 +1243,12 @@ export const AestheticArcadeGame = () => {
           !state.isOver
         ) {
 
-          /*
-           * PLAYER SPEED
-           */
-
           const speed =
             14;
 
-          /*
-           * MOVE LEFT
-           */
+          /* ===============================================
+             MOVEMENT
+             =============================================== */
 
           if (
             state.keys[
@@ -1075,10 +1267,6 @@ export const AestheticArcadeGame = () => {
               speed;
           }
 
-          /*
-           * MOVE RIGHT
-           */
-
           if (
             state.keys[
               'ArrowRight'
@@ -1093,10 +1281,6 @@ export const AestheticArcadeGame = () => {
               speed;
           }
 
-          /*
-           * LIMIT PLAYER
-           */
-
           state.playerX =
             Math.max(
               50,
@@ -1106,11 +1290,9 @@ export const AestheticArcadeGame = () => {
               )
             );
 
-          /*
-           * =================================================
-           * AUTO SHOOT
-           * =================================================
-           */
+          /* ===============================================
+             AUTO SHOOT
+             =============================================== */
 
           if (
             time -
@@ -1142,11 +1324,9 @@ export const AestheticArcadeGame = () => {
               time;
           }
 
-          /*
-           * =================================================
-           * SPAWN BUG
-           * =================================================
-           */
+          /* ===============================================
+             SPAWN BUGS
+             =============================================== */
 
           if (
             Math.random() <
@@ -1167,7 +1347,8 @@ export const AestheticArcadeGame = () => {
                   (w - 140) +
                 70,
 
-              y: 100,
+              y:
+                100,
 
               speed:
                 3 +
@@ -1187,11 +1368,9 @@ export const AestheticArcadeGame = () => {
             });
           }
 
-          /*
-           * =================================================
-           * BULLETS UPDATE
-           * =================================================
-           */
+          /* ===============================================
+             BULLETS
+             =============================================== */
 
           state.bullets.forEach(
             (bullet) => {
@@ -1204,14 +1383,13 @@ export const AestheticArcadeGame = () => {
           state.bullets =
             state.bullets.filter(
               (bullet) =>
-                bullet.y > 76
+                bullet.y >
+                76
             );
 
-          /*
-           * =================================================
-           * BUG UPDATE
-           * =================================================
-           */
+          /* ===============================================
+             BUGS
+             =============================================== */
 
           for (
             let i =
@@ -1232,9 +1410,12 @@ export const AestheticArcadeGame = () => {
             bug.rotation +=
               0.01;
 
-            /*
-             * COLLISIONS
-             */
+            /* =============================================
+               COLLISIONS
+               ============================================= */
+
+            let killed =
+              false;
 
             for (
               let j =
@@ -1277,13 +1458,26 @@ export const AestheticArcadeGame = () => {
                 state.score +=
                   100;
 
+                killed =
+                  true;
+
+                /*
+                 * Kill sound
+                 */
+
+                playKillSound();
+
                 break;
               }
             }
 
-            /*
-             * BUG REACHED BOTTOM
-             */
+            if (killed) {
+              continue;
+            }
+
+            /* =============================================
+               BUG REACHED PLAYER
+               ============================================= */
 
             if (
               bug.y >
@@ -1317,16 +1511,15 @@ export const AestheticArcadeGame = () => {
           }
         }
 
-        /*
-         * ===================================================
-         * BULLETS DRAW
-         * ===================================================
-         */
+        /* =================================================
+           BULLETS DRAW
+           ================================================= */
 
         ctx.shadowColor =
           'rgba(228, 192, 155, 0.8)';
 
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur =
+          8;
 
         state.bullets.forEach(
           (bullet) => {
@@ -1348,13 +1541,12 @@ export const AestheticArcadeGame = () => {
           }
         );
 
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur =
+          0;
 
-        /*
-         * ===================================================
-         * PLAYER
-         * ===================================================
-         */
+        /* =================================================
+           PLAYER
+           ================================================= */
 
         ctx.save();
 
@@ -1363,18 +1555,11 @@ export const AestheticArcadeGame = () => {
           state.playerY
         );
 
-        /*
-         * Soft shadow
-         */
-
         ctx.shadowColor =
           'rgba(226, 193, 157, 0.5)';
 
-        ctx.shadowBlur = 18;
-
-        /*
-         * Ship
-         */
+        ctx.shadowBlur =
+          18;
 
         ctx.fillStyle =
           COLORS.player;
@@ -1406,7 +1591,7 @@ export const AestheticArcadeGame = () => {
         ctx.fill();
 
         /*
-         * Ship center
+         * Center
          */
 
         ctx.fillStyle =
@@ -1437,7 +1622,8 @@ export const AestheticArcadeGame = () => {
          * Engine
          */
 
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur =
+          10;
 
         ctx.fillStyle =
           Math.sin(
@@ -1469,11 +1655,9 @@ export const AestheticArcadeGame = () => {
 
         ctx.restore();
 
-        /*
-         * ===================================================
-         * BUGS DRAW
-         * ===================================================
-         */
+        /* =================================================
+           BUGS DRAW
+           ================================================= */
 
         state.bugs.forEach(
           (bug) => {
@@ -1488,17 +1672,15 @@ export const AestheticArcadeGame = () => {
             ctx.rotate(
               Math.sin(
                 bug.rotation
-              ) * 0.08
+              ) *
+              0.08
             );
-
-            /*
-             * Soft glow
-             */
 
             ctx.shadowColor =
               'rgba(201, 157, 121, 0.55)';
 
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur =
+              12;
 
             /*
              * Body
@@ -1510,7 +1692,8 @@ export const AestheticArcadeGame = () => {
             ctx.strokeStyle =
               COLORS.enemyDark;
 
-            ctx.lineWidth = 2;
+            ctx.lineWidth =
+              2;
 
             ctx.beginPath();
 
@@ -1527,15 +1710,17 @@ export const AestheticArcadeGame = () => {
             ctx.stroke();
 
             /*
-             * Tiny legs
+             * Legs
              */
 
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur =
+              0;
 
             ctx.strokeStyle =
               COLORS.enemy;
 
-            ctx.lineWidth = 2;
+            ctx.lineWidth =
+              2;
 
             for (
               let i = -1;
@@ -1551,8 +1736,7 @@ export const AestheticArcadeGame = () => {
               );
 
               ctx.lineTo(
-                -bug.radius -
-                  7,
+                -bug.radius - 7,
                 i * 10
               );
 
@@ -1626,11 +1810,9 @@ export const AestheticArcadeGame = () => {
           }
         );
 
-        /*
-         * ===================================================
-         * GAME OVER
-         * ===================================================
-         */
+        /* =================================================
+           GAME OVER
+           ================================================= */
 
         if (
           state.isOver
@@ -1682,11 +1864,9 @@ export const AestheticArcadeGame = () => {
             'left';
         }
 
-        /*
-         * ===================================================
-         * PAUSE DARKEN
-         * ===================================================
-         */
+        /* =================================================
+           PAUSE
+           ================================================= */
 
         if (
           isPausedRef.current &&
@@ -1706,19 +1886,13 @@ export const AestheticArcadeGame = () => {
         }
       };
 
-    /*
-     * INITIAL
-     */
-
     updateAndDrawGame(
       0
     );
 
-    /*
-     * =======================================================
-     * TEXTURE
-     * =======================================================
-     */
+    /* =====================================================
+       TEXTURE
+       ===================================================== */
 
     const ideTexture =
       gl.createTexture();
@@ -1765,11 +1939,9 @@ export const AestheticArcadeGame = () => {
       gl.LINEAR
     );
 
-    /*
-     * =======================================================
-     * SHADERS
-     * =======================================================
-     */
+    /* =====================================================
+       SHADERS
+       ===================================================== */
 
     const createShader = (
       type: number,
@@ -1836,11 +2008,9 @@ export const AestheticArcadeGame = () => {
       return;
     }
 
-    /*
-     * =======================================================
-     * PROGRAM
-     * =======================================================
-     */
+    /* =====================================================
+       PROGRAM
+       ===================================================== */
 
     const program =
       gl.createProgram();
@@ -1879,11 +2049,9 @@ export const AestheticArcadeGame = () => {
       return;
     }
 
-    /*
-     * =======================================================
-     * BUFFER
-     * =======================================================
-     */
+    /* =====================================================
+       BUFFER
+       ===================================================== */
 
     const positionBuffer =
       gl.createBuffer();
@@ -1907,11 +2075,9 @@ export const AestheticArcadeGame = () => {
       gl.STATIC_DRAW
     );
 
-    /*
-     * =======================================================
-     * VAO
-     * =======================================================
-     */
+    /* =====================================================
+       VAO
+       ===================================================== */
 
     const positionAttributeLocation =
       gl.getAttribLocation(
@@ -1939,11 +2105,9 @@ export const AestheticArcadeGame = () => {
       0
     );
 
-    /*
-     * =======================================================
-     * UNIFORMS
-     * =======================================================
-     */
+    /* =====================================================
+       UNIFORMS
+       ===================================================== */
 
     const resolutionLocation =
       gl.getUniformLocation(
@@ -1975,11 +2139,9 @@ export const AestheticArcadeGame = () => {
         'uIdeTexture'
       );
 
-    /*
-     * =======================================================
-     * MOUSE
-     * =======================================================
-     */
+    /* =====================================================
+       MOUSE
+       ===================================================== */
 
     const handleMouseMove =
       (e: MouseEvent) => {
@@ -2001,11 +2163,9 @@ export const AestheticArcadeGame = () => {
           1;
       };
 
-    /*
-     * =======================================================
-     * RESIZE
-     * =======================================================
-     */
+    /* =====================================================
+       RESIZE
+       ===================================================== */
 
     const handleResize =
       () => {
@@ -2057,11 +2217,9 @@ export const AestheticArcadeGame = () => {
 
     handleResize();
 
-    /*
-     * =======================================================
-     * RENDER LOOP
-     * =======================================================
-     */
+    /* =====================================================
+       RENDER
+       ===================================================== */
 
     let animationFrameId =
       0;
@@ -2125,7 +2283,7 @@ export const AestheticArcadeGame = () => {
           0.1;
 
         /*
-         * WebGL render
+         * Render WebGL
          */
 
         gl.useProgram(
@@ -2182,11 +2340,9 @@ export const AestheticArcadeGame = () => {
         render
       );
 
-    /*
-     * =======================================================
-     * CLEANUP
-     * =======================================================
-     */
+    /* =====================================================
+       CLEANUP
+       ===================================================== */
 
     return () => {
 
@@ -2232,7 +2388,7 @@ export const AestheticArcadeGame = () => {
   }, [isMobileDevice]);
 
   /* =========================================================
-     TOUCH CONTROLS
+     MOBILE MOVEMENT
      ========================================================= */
 
   const startMoveLeft =
@@ -2260,31 +2416,33 @@ export const AestheticArcadeGame = () => {
     };
 
   /* =========================================================
-     UI
+     RENDER
      ========================================================= */
 
   return (
 
-    <div
-      className="absolute inset-0 h-full w-full overflow-hidden select-none touch-none"
+    <section
+      className="relative h-screen w-full overflow-hidden select-none touch-pan-y"
       style={{
         backgroundColor:
           COLORS.cream,
       }}
     >
 
-      {/* =====================================================
-          GAME CANVAS
-          ===================================================== */}
+      {/* ===================================================
+          CANVAS
+          pointer-events-none = le canvas ne bloque PAS
+          le scroll de la page
+          =================================================== */}
 
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 block h-full w-full"
+        className="pointer-events-none absolute inset-0 block h-full w-full"
       />
 
-      {/* =====================================================
-          START COVER
-          ===================================================== */}
+      {/* ===================================================
+          COVER
+          =================================================== */}
 
       {!hasStarted && (
 
@@ -2296,15 +2454,11 @@ export const AestheticArcadeGame = () => {
           }}
         >
 
-          {/* IMAGE */}
-
           <img
             src="/e.jpg"
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
-
-          {/* VERY LIGHT OVERLAY */}
 
           <div
             className="absolute inset-0"
@@ -2314,11 +2468,7 @@ export const AestheticArcadeGame = () => {
             }}
           />
 
-          {/* CONTENT */}
-
           <div className="relative z-10 flex flex-col items-center text-center">
-
-            {/* small dot */}
 
             <div
               className="mb-7 h-1.5 w-1.5 rounded-full"
@@ -2327,8 +2477,6 @@ export const AestheticArcadeGame = () => {
                   COLORS.brown,
               }}
             />
-
-            {/* TITLE */}
 
             <h1
               className="font-sans text-4xl font-light tracking-[0.38em] sm:text-6xl"
@@ -2340,8 +2488,6 @@ export const AestheticArcadeGame = () => {
               ARCADE
             </h1>
 
-            {/* DOT */}
-
             <div
               className="mt-7 h-1.5 w-1.5 rounded-full"
               style={{
@@ -2350,10 +2496,10 @@ export const AestheticArcadeGame = () => {
               }}
             />
 
-            {/* PLAY */}
-
             <button
-              onClick={startGame}
+              onClick={
+                startGame
+              }
               className="mt-8 min-w-[190px] rounded-md px-10 py-4 font-sans text-sm font-medium tracking-[0.2em] transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]"
               style={{
                 backgroundColor:
@@ -2368,8 +2514,6 @@ export const AestheticArcadeGame = () => {
             >
               PLAY
             </button>
-
-            {/* CONTROLS */}
 
             <p
               className="mt-5 font-sans text-xs tracking-wide"
@@ -2386,16 +2530,16 @@ export const AestheticArcadeGame = () => {
         </div>
       )}
 
-      {/* =====================================================
-          DESKTOP TOP CONTROLS
-          ===================================================== */}
+      {/* ===================================================
+          DESKTOP CONTROLS
+          =================================================== */}
 
       {hasStarted &&
         !isMobileDevice && (
 
-          <div className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5">
-
-            {/* LEFT */}
+          <div
+            className="pointer-events-none absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5"
+          >
 
             <div
               className="font-sans text-xs tracking-[0.16em]"
@@ -2407,8 +2551,6 @@ export const AestheticArcadeGame = () => {
               ← →
             </div>
 
-            {/* CENTER */}
-
             <div
               className="h-1 w-8 rounded-full"
               style={{
@@ -2417,9 +2559,7 @@ export const AestheticArcadeGame = () => {
               }}
             />
 
-            {/* RIGHT */}
-
-            <div className="flex items-center gap-2">
+            <div className="pointer-events-auto flex items-center gap-2">
 
               <button
                 onClick={
@@ -2465,9 +2605,9 @@ export const AestheticArcadeGame = () => {
           </div>
         )}
 
-      {/* =====================================================
-          CONTROL HINT
-          ===================================================== */}
+      {/* ===================================================
+          CONTROLS HINT
+          =================================================== */}
 
       {hasStarted &&
         !isMobileDevice &&
@@ -2475,7 +2615,7 @@ export const AestheticArcadeGame = () => {
         !isPaused && (
 
           <div
-            className="absolute bottom-7 left-1/2 z-30 -translate-x-1/2 font-sans text-xs tracking-wide"
+            className="pointer-events-none absolute bottom-7 left-1/2 z-30 -translate-x-1/2 font-sans text-xs tracking-wide"
             style={{
               color:
                 COLORS.muted,
@@ -2485,9 +2625,9 @@ export const AestheticArcadeGame = () => {
           </div>
         )}
 
-      {/* =====================================================
-          PAUSE
-          ===================================================== */}
+      {/* ===================================================
+          PAUSE SCREEN
+          =================================================== */}
 
       {hasStarted &&
         isPaused &&
@@ -2503,8 +2643,6 @@ export const AestheticArcadeGame = () => {
 
             <div className="flex w-[280px] flex-col items-center text-center">
 
-              {/* DOT TITLE */}
-
               <div
                 className="font-sans text-xs tracking-[0.4em]"
                 style={{
@@ -2514,8 +2652,6 @@ export const AestheticArcadeGame = () => {
               >
                 · PAUSED ·
               </div>
-
-              {/* RESUME */}
 
               <button
                 onClick={
@@ -2533,8 +2669,6 @@ export const AestheticArcadeGame = () => {
                 RESUME
               </button>
 
-              {/* MENU */}
-
               <button
                 onClick={
                   quitGame
@@ -2551,8 +2685,6 @@ export const AestheticArcadeGame = () => {
                 MENU
               </button>
 
-              {/* SHORTCUT */}
-
               <p
                 className="mt-6 font-sans text-[10px]"
                 style={{
@@ -2568,9 +2700,9 @@ export const AestheticArcadeGame = () => {
           </div>
         )}
 
-      {/* =====================================================
+      {/* ===================================================
           GAME OVER
-          ===================================================== */}
+          =================================================== */}
 
       {gameOver && (
 
@@ -2593,8 +2725,6 @@ export const AestheticArcadeGame = () => {
             >
               · GAME OVER ·
             </div>
-
-            {/* SCORE */}
 
             <div
               className="mt-7 font-mono text-3xl"
@@ -2621,8 +2751,6 @@ export const AestheticArcadeGame = () => {
               SCORE
             </div>
 
-            {/* RETRY */}
-
             <button
               onClick={
                 startGame
@@ -2638,8 +2766,6 @@ export const AestheticArcadeGame = () => {
             >
               RETRY
             </button>
-
-            {/* MENU */}
 
             <button
               onClick={
@@ -2672,17 +2798,23 @@ export const AestheticArcadeGame = () => {
         </div>
       )}
 
-      {/* =====================================================
+      {/* ===================================================
           MOBILE CONTROLS
-          ===================================================== */}
+
+          IMPORTANT:
+          pointer-events-none sur le container
+          pour ne pas bloquer le scroll.
+
+          Les boutons réactivent pointer-events.
+          =================================================== */}
 
       {isMobileDevice &&
         hasStarted &&
         !gameOver && (
 
-          <div className="absolute bottom-5 left-0 right-0 z-30 flex items-center justify-between px-7">
-
-            {/* LEFT */}
+          <div
+            className="pointer-events-none absolute bottom-5 left-0 right-0 z-30 flex items-center justify-between px-7"
+          >
 
             <button
               onTouchStart={
@@ -2694,7 +2826,7 @@ export const AestheticArcadeGame = () => {
               onTouchCancel={
                 stopMoveLeft
               }
-              className="flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
+              className="pointer-events-auto touch-none flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
               style={{
                 borderColor:
                   'rgba(220,196,170,0.4)',
@@ -2709,13 +2841,11 @@ export const AestheticArcadeGame = () => {
               ←
             </button>
 
-            {/* PAUSE */}
-
             <button
               onClick={
                 pauseGame
               }
-              className="flex h-11 w-11 items-center justify-center rounded-full border font-sans text-xs transition-all active:scale-90"
+              className="pointer-events-auto touch-none flex h-11 w-11 items-center justify-center rounded-full border font-sans text-xs transition-all active:scale-90"
               style={{
                 borderColor:
                   'rgba(220,196,170,0.4)',
@@ -2730,8 +2860,6 @@ export const AestheticArcadeGame = () => {
               Ⅱ
             </button>
 
-            {/* RIGHT */}
-
             <button
               onTouchStart={
                 startMoveRight
@@ -2742,7 +2870,7 @@ export const AestheticArcadeGame = () => {
               onTouchCancel={
                 stopMoveRight
               }
-              className="flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
+              className="pointer-events-auto touch-none flex h-14 w-14 items-center justify-center rounded-full border font-sans text-lg transition-all active:scale-90"
               style={{
                 borderColor:
                   'rgba(220,196,170,0.4)',
@@ -2760,7 +2888,7 @@ export const AestheticArcadeGame = () => {
           </div>
         )}
 
-    </div>
+    </section>
   );
 };
 

@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 
 import NeuralExhibit from './NeuralExhibit';
-import HeroExhibit from './HeroExhibit';
 import ThreeExperience from './ThreeExperience';
 import HeroBackground3D from './components/HeroBackground3D';
 import { ProjectCard3D } from './components/ProjectCard3D';
@@ -276,7 +275,6 @@ export default function Home() {
             </div>
 
             <div className="flex justify-center">
-              <HeroExhibit />
             </div>
           </div>
         </div>
