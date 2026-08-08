@@ -501,11 +501,11 @@ export const AestheticArcadeGame = () => {
   const stopMoveRight = () => (gameState.current.moveRight = false);
 
   return (
-    <div className="relative w-full bg-[#0a0705] select-none touch-pan-y font-mono">
+    <div className="relative w-full min-h-screen bg-[#0a0705] select-none touch-pan-y font-mono">
       {/* COUVERTURE MINIMALISTE */}
       {!gameStarted && (
-        <div className="w-full z-50 flex items-center justify-center px-4 md:px-6 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0] min-h-screen">
-          <div className="w-full max-w-sm flex flex-col items-center justify-center space-y-4 md:space-y-6">
+        <div className="w-full z-50 flex items-center justify-center pt-0 md:pt-4 pb-4 md:pb-8 px-4 md:px-6 bg-gradient-to-b from-[#f5f1eb] via-[#f2ede5] to-[#ede8e0] min-h-screen">
+          <div className="w-full max-w-sm flex flex-col items-center justify-center space-y-5 md:space-y-8">
             {/* Image */}
             <div className="w-full aspect-[16/10] rounded-lg overflow-hidden bg-[#e8dcd3] border border-[#d4c9be]/30">
               <img
