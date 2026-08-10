@@ -290,7 +290,7 @@ export default function Home() {
             <ArrowRight className="h-4 w-4" />
           </a>
           <a
-            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786362658/gkwdcyz6xbwizxtthsju.pdf"
+            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786368720/r2ehute4a7dtnkipi9bf.pdf"
             download="Lamine_NDIAYE_CV.pdf"
             className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-colors"
           >
