@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: 'Portfolio | Full Stack Developer',
-  description: 'Portfolio professionnel d un développeur Full Stack. Expertise Next.js, TypeScript, Python, Django et API SaaS.',
+  description: 'Portfolio professionnel d un développeur Full Stack. Expertise Next.js, Angular, TypeScript, Python, Django et API SaaS.',
   metadataBase: new URL('https://your-portfolio.vercel.app'),
   openGraph: {
     title: 'Portfolio | Full Stack Developer',

@@ -39,7 +39,7 @@ interface Service {
 // DATA CONFIGURATION
 // ============================================
 
-const STACK = ['React', 'Next.js', 'Django', 'PostgreSQL', 'Docker', 'Tailwind CSS', 'Flutter', 'Git'];
+const STACK = ['React', 'Next.js', 'Angular', 'Django', 'PostgreSQL', 'Docker', 'Tailwind CSS', 'Flutter', 'Git'];
 
 const PROJECTS: Project[] = [
   {
@@ -290,7 +290,7 @@ export default function Home() {
             <ArrowRight className="h-4 w-4" />
           </a>
           <a
-            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/fl_attachment/v1775085940/fisafi/brochures/rraqn8hdzxqswwqccnre.pdf"
+            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786362658/gkwdcyz6xbwizxtthsju.pdf"
             download="Lamine_NDIAYE_CV.pdf"
             className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-colors"
           >
