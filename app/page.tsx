@@ -132,8 +132,8 @@ export default function Home() {
     <main className="bg-[var(--bg)] text-[var(--ink)] min-h-screen font-sans selection:bg-[var(--accent)] selection:text-black overflow-x-hidden">
       
       {/* HEADER MINIMALISTE */}
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-6">
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
           <a href="#" className="flex items-center gap-2 font-mono text-sm tracking-tight font-medium">
             <Terminal className="h-4 w-4 text-[var(--accent)]" />
             <span>LAMINE<span className="text-[var(--accent)]">.SYS</span></span>
@@ -170,7 +170,7 @@ export default function Home() {
       {/* NAVIGATION MOBILE OVERLAY PLEIN ÉCRAN - OPAQUE BLANC/CLAIR AVEC LISIBILITÉ OPTIMISÉE */}
       {navOpen && (
         <div
-          className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-8 overflow-y-auto"
+          className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-5 overflow-y-auto"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
             {/* EN-TÊTE DU MENU MOBILE */}
@@ -189,7 +189,7 @@ export default function Home() {
             </div>
 
             {/* LIENS DE NAVIGATION */}
-            <nav className="flex flex-col space-y-6 font-mono text-lg font-semibold uppercase tracking-wider py-8">
+            <nav className="flex flex-col space-y-4 font-mono text-base font-semibold uppercase tracking-wider py-6">
               <a 
                 href="#work" 
                 onClick={() => setNavOpen(false)} 
@@ -242,7 +242,7 @@ export default function Home() {
       )}
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-0 pb-20 border-b border-[var(--line)] min-h-[70vh] md:min-h-[78vh] xl:min-h-[88vh]">
+      <section className="relative overflow-hidden pt-0 pb-12 md:pb-20 border-b border-[var(--line)] min-h-[60vh] md:min-h-[78vh] xl:min-h-[88vh]">
         <HeroBackground3D />
         <div className="container mx-auto px-6 relative z-10">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -262,7 +262,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-10">
+      <section className="py-8 md:py-10">
         <div className="container mx-auto px-6 flex flex-wrap justify-center gap-4">
           <a
             href="#contact"
@@ -283,7 +283,7 @@ export default function Home() {
       </section>
 
       {/* TECH STACK 3D SHOWCASE */}
-      <section className="py-20 border-b border-[var(--line)] bg-[var(--surface)]/20">
+      <section className="py-16 md:py-20 border-b border-[var(--line)] bg-[var(--surface)]/20">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
@@ -301,14 +301,14 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[#030712]">
+          <div className="h-[260px] md:h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[#030712]">
             <ThreeExperience techs={STACK} />
           </div>
         </div>
       </section>
 
       {/* PROJETS SÉLECTIONNÉS */}
-      <section id="work" className="py-24 border-b border-[var(--line)]">
+      <section id="work" className="py-16 md:py-24 border-b border-[var(--line)]">
         <div className="container mx-auto px-6">
           <div className="mb-12">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PORTFOLIO</span>
@@ -355,7 +355,7 @@ export default function Home() {
       </section>
 
       {/* SERVICES */}
-      <section id="services" className="py-24 border-b border-[var(--line)] bg-[var(--surface)]/30">
+      <section id="services" className="py-16 md:py-24 border-b border-[var(--line)] bg-[var(--surface)]/30">
         <div className="container mx-auto px-6">
           <div className="mb-12 text-center max-w-xl mx-auto">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// EXPERTISE</span>
@@ -394,14 +394,14 @@ export default function Home() {
       </section>
 
       {/* NEURAL EXHIBIT */}
-      <section className="py-16 border-b border-[var(--line)]">
+      <section className="py-12 md:py-16 border-b border-[var(--line)]">
         <div className="container mx-auto px-6">
           <NeuralExhibit />
         </div>
       </section>
 
       {/* CONTACT */}
-      <section id="contact" className="py-24">
+      <section id="contact" className="py-16 md:py-24">
         <div className="container mx-auto px-6 max-w-4xl">
           <div className="grid gap-12 md:grid-cols-2">
             <div>

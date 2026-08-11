@@ -1,52 +1,28 @@
 ﻿'use client';
 
-import { useState, useRef, useEffect, useId } from 'react';
+import { useState, useId } from 'react';
 
 interface TechStackVizProps {
-  techs: string[];
-  onTechClick?: (tech: string) => void;
+  readonly techs: readonly string[];
+  readonly onTechClick?: (tech: string) => void;
 }
 
 export default function TechStackViz({ techs, onTechClick }: TechStackVizProps) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const filterId = useId();
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && setVisible(true),
-      { threshold: 0.1 }
-    );
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
 
   const accentGlow = '#f97316';  // Bright Orange Glow
   const muteColor = '#a1a1aa';
 
   return (
-    <div ref={ref} className="py-6 w-full max-w-5xl mx-auto px-4">
-      <style>{`
-        .ts-fade { 
-          opacity: 0; 
-          transform: translateY(12px); 
-          transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
-        }
-        .ts-fade.on { 
-          opacity: 1; 
-          transform: translateY(0); 
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .ts-fade { transition: none !important; opacity: 1 !important; transform: none !important; }
-        }
-      `}</style>
+    <div className="w-full h-full mx-auto px-2 sm:px-4">
 
       {/* RÉSEAU VISUEL SVG */}
-      <div className={`ts-fade${visible ? ' on' : ''} flex justify-center`}>
+      <div className="flex justify-center items-center w-full h-full">
         <svg
-          viewBox="0 0 800 220"
-          className="w-full max-w-4xl h-auto"
+          viewBox="0 25 800 170"
+          preserveAspectRatio="xMidYMid meet"
+          className="w-full h-full min-h-[180px]"
           aria-hidden="true"
         >
           <defs>
@@ -59,8 +35,8 @@ export default function TechStackViz({ techs, onTechClick }: TechStackVizProps) 
           {/* Lignes du réseau (Centrées à Y = 110) */}
           <path
             d="M 120 110 L 300 55 M 120 110 L 300 165 M 300 55 L 500 110 M 300 165 L 500 110 M 500 110 L 680 110"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="1.5"
+            stroke="rgba(255,255,255,0.14)"
+            strokeWidth="1.6"
             fill="none"
           />
 
@@ -80,6 +56,8 @@ export default function TechStackViz({ techs, onTechClick }: TechStackVizProps) 
                       key={tech}
                       onMouseEnter={() => setHovered(tech)}
                       onMouseLeave={() => setHovered(null)}
+                      onTouchStart={() => setHovered(tech)}
+                      onTouchEnd={() => setHovered(null)}
                       onClick={() => onTechClick?.(tech)}
                       className="cursor-pointer group"
                     >
