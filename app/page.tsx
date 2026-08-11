@@ -265,13 +265,6 @@ export default function Home() {
       <section className="py-8 md:py-10">
         <div className="container mx-auto px-6 flex flex-wrap justify-center gap-4">
           <a
-            href="#contact"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 font-mono text-xs font-bold text-black transition-transform hover:scale-105"
-          >
-            <span>Lancer un projet</span>
-            <ArrowRight className="h-4 w-4" />
-          </a>
-          <a
             href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786368720/r2ehute4a7dtnkipi9bf.pdf"
             download="Lamine_NDIAYE_CV.pdf"
             className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-colors"

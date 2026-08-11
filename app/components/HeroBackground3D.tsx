@@ -857,7 +857,7 @@ export const AeroArcadeGame = () => {
   }, [gameState.gameOver, gameState.hasStarted]);
 
   return (
-    <main className="relative w-full h-screen overflow-hidden select-none bg-slate-950 font-sans">
+    <main className="relative w-full h-screen overflow-hidden select-none bg-zinc-950 font-sans">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-0" />
 
       {/* --- UI OVERLAYS --- */}
@@ -865,79 +865,94 @@ export const AeroArcadeGame = () => {
         {gameState.hasStarted && (
           <header className="w-full p-6 flex justify-between items-center pointer-events-auto">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
-              <span className="text-xs font-mono text-slate-400 tracking-widest">AERO_STRIKER</span>
+              <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-xs font-mono text-zinc-400 tracking-widest">MINI_JEUX_3D</span>
             </div>
             <button 
               onClick={togglePause}
-              className="px-5 py-2 rounded-full border border-slate-700 bg-slate-900/80 backdrop-blur-md text-slate-300 font-mono text-xs tracking-widest hover:bg-slate-800 transition"
+              className="px-5 py-2 rounded-full border border-zinc-800 bg-zinc-900/80 backdrop-blur-md text-zinc-300 font-mono text-xs tracking-widest hover:bg-zinc-800 transition"
             >
               {gameState.isPaused ? 'RESUME' : 'PAUSE'}
             </button>
           </header>
         )}
 
-        {/* Écran de démarrage */}
+        {/* Écran de démarrage avec cover GIF Pinterest */}
         {!gameState.hasStarted && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 pointer-events-auto backdrop-blur-md bg-slate-950/90">
-            <div className="text-center space-y-3">
-              <h1 className="text-5xl font-light tracking-[0.25em] text-slate-200 uppercase font-sans">
-                AERO STRIKER
-              </h1>
-              <div className="w-12 h-[1px] bg-slate-700 mx-auto" />
-              <p className="text-xs font-mono text-slate-500 tracking-[0.2em] uppercase">Tactical Arcade Aviation</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-auto backdrop-blur-md bg-zinc-950/85 p-6 text-center">
+            
+            {/* Conteneur GIF Pinterest au centre */}
+            <div className="relative group rounded-2xl overflow-hidden border border-zinc-800/80 shadow-2xl shadow-orange-500/10 transition-transform duration-500 hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent z-10 opacity-60" />
+              <img 
+                src="https://i.pinimg.com/originals/c9/a9/ec/c9a9ec753b18ad7b14eeffa94aa25130.gif" 
+                alt="3D Arcade Cover" 
+                className="max-w-[280px] sm:max-w-[340px] w-full h-auto object-cover rounded-2xl block"
+              />
             </div>
+
+            {/* Titre & Description */}
+            <div className="space-y-2">
+              <h1 className="text-3xl sm:text-4xl font-extralight tracking-[0.2em] text-zinc-100 uppercase font-sans">
+                MINI JEUX 3D
+              </h1>
+              <p className="text-xs font-mono text-zinc-500 tracking-[0.25em] uppercase">
+                Next.js &amp; WebGL Arcade
+              </p>
+            </div>
+
+            {/* Bouton Start */}
             <button
               onClick={startGame}
-              className="mt-2 px-8 py-3 rounded border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs tracking-[0.2em] uppercase hover:bg-slate-800 hover:border-slate-500 transition-all duration-200"
+              className="mt-2 px-8 py-3 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-400 font-mono text-xs tracking-[0.2em] uppercase hover:bg-orange-500/20 hover:border-orange-500 transition-all duration-300 shadow-lg shadow-orange-500/10"
             >
-              START
+              JOUER
             </button>
           </div>
         )}
 
         {/* Écran Game Over & Pause */}
         {(gameState.isPaused || gameState.gameOver) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-auto backdrop-blur-lg bg-slate-950/90">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-auto backdrop-blur-lg bg-zinc-950/90">
             {gameState.gameOver ? (
               <div className="text-center space-y-4">
-                <h2 className="text-3xl font-light tracking-widest text-slate-200">
-                  {gameState.escapedEnemies >= gameState.maxEscaped ? 'SECTOR DEFENSE FAILED' : 'AIRCRAFT DESTROYED'}
+                <h2 className="text-2xl font-light tracking-widest text-zinc-200">
+                  {gameState.escapedEnemies >= gameState.maxEscaped ? 'MISSION ÉCHOUÉE' : 'APPAREIL DÉTRUIT'}
                 </h2>
                 <div className="space-y-1">
-                  <p className="text-xs font-mono text-slate-500 tracking-widest">FINAL SCORE</p>
-                  <p className="text-3xl font-mono text-slate-200 font-bold">{gameState.score.toString().padStart(6, '0')}</p>
+                  <p className="text-xs font-mono text-zinc-500 tracking-widest">SCORE FINAL</p>
+                  <p className="text-3xl font-mono text-zinc-100 font-bold">{gameState.score.toString().padStart(6, '0')}</p>
                 </div>
                 <div className="flex gap-4 justify-center mt-6">
                   <button
                     onClick={startGame}
-                    className="px-8 py-3 rounded border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs tracking-widest hover:bg-slate-800 transition"
+                    className="px-8 py-3 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-400 font-mono text-xs tracking-widest hover:bg-orange-500/20 transition"
                   >
-                    REPLAY [SPACE]
+                    REJOUER [ESPACE]
                   </button>
                   <button
                     onClick={quitGame}
-                    className="px-8 py-3 rounded border border-rose-900/50 bg-rose-950/30 text-rose-300 font-mono text-xs tracking-widest hover:bg-rose-900/50 transition"
+                    className="px-8 py-3 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 font-mono text-xs tracking-widest hover:bg-zinc-800 transition"
                   >
-                    QUIT
+                    QUITTER
                   </button>
                 </div>
               </div>
             ) : (
               <div className="text-center space-y-6">
-                <h2 className="text-2xl font-mono tracking-widest text-slate-300">PAUSED</h2>
+                <h2 className="text-2xl font-mono tracking-widest text-zinc-300">PAUSE</h2>
                 <div className="flex flex-col gap-3 items-center">
                   <button
                     onClick={togglePause}
-                    className="w-48 py-3 rounded border border-slate-700 bg-slate-900 text-slate-200 font-mono text-xs tracking-widest hover:bg-slate-800 transition"
+                    className="w-48 py-3 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-400 font-mono text-xs tracking-widest hover:bg-orange-500/20 transition"
                   >
-                    RESUME [P]
+                    REPRENDRE [P]
                   </button>
                   <button
                     onClick={quitGame}
-                    className="w-48 py-3 rounded border border-rose-900/50 bg-rose-950/30 text-rose-300 font-mono text-xs tracking-widest hover:bg-rose-900/50 transition"
+                    className="w-48 py-3 rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 font-mono text-xs tracking-widest hover:bg-zinc-800 transition"
                   >
-                    QUIT TO MENU
+                    MENU PRINCIPAL
                   </button>
                 </div>
               </div>
@@ -948,13 +963,13 @@ export const AeroArcadeGame = () => {
         {/* Contrôles Mobile */}
         {isMobile && gameState.hasStarted && !gameState.gameOver && !gameState.isPaused && (
           <div className="absolute bottom-6 inset-x-0 flex justify-center items-center pointer-events-none">
-            <div className="relative w-48 h-48 rounded-full bg-slate-950/40 backdrop-blur-md border border-cyan-500/20 shadow-[0_0_25px_rgba(0,243,255,0.1)] p-2 pointer-events-auto flex items-center justify-center">
+            <div className="relative w-48 h-48 rounded-full bg-zinc-950/40 backdrop-blur-md border border-orange-500/20 shadow-[0_0_25px_rgba(249,115,22,0.1)] p-2 pointer-events-auto flex items-center justify-center">
               
               {/* Bouton HAUT */}
               <button
                 onTouchStart={() => { game.current.moveUp = true; }}
                 onTouchEnd={() => { game.current.moveUp = false; }}
-                className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
+                className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-zinc-900/80 border border-orange-500/40 text-orange-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-orange-500/20 active:border-orange-400 transition-all duration-75"
               >
                 ▲
               </button>
@@ -963,7 +978,7 @@ export const AeroArcadeGame = () => {
               <button
                 onTouchStart={() => { game.current.moveDown = true; }}
                 onTouchEnd={() => { game.current.moveDown = false; }}
-                className="absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-zinc-900/80 border border-orange-500/40 text-orange-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-orange-500/20 active:border-orange-400 transition-all duration-75"
               >
                 ▼
               </button>
@@ -972,7 +987,7 @@ export const AeroArcadeGame = () => {
               <button
                 onTouchStart={() => { game.current.moveLeft = true; }}
                 onTouchEnd={() => { game.current.moveLeft = false; }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-xl bg-zinc-900/80 border border-orange-500/40 text-orange-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-orange-500/20 active:border-orange-400 transition-all duration-75"
               >
                 ◀
               </button>
@@ -981,13 +996,13 @@ export const AeroArcadeGame = () => {
               <button
                 onTouchStart={() => { game.current.moveRight = true; }}
                 onTouchEnd={() => { game.current.moveRight = false; }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-xl bg-slate-900/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-cyan-500/20 active:border-cyan-400 transition-all duration-75"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-xl bg-zinc-900/80 border border-orange-500/40 text-orange-400 flex items-center justify-center text-xl shadow-lg active:scale-95 active:bg-orange-500/20 active:border-orange-400 transition-all duration-75"
               >
                 ▶
               </button>
 
-              <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
               </div>
 
             </div>
