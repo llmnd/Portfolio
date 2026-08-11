@@ -3,8 +3,8 @@
 import { useState, useId } from 'react';
 
 interface TechStackVizProps {
-  readonly techs: readonly string[];
-  readonly onTechClick?: (tech: string) => void;
+  techs: string[];
+  onTechClick?: (tech: string) => void;
 }
 
 export default function TechStackViz({ techs, onTechClick }: TechStackVizProps) {
@@ -20,9 +20,9 @@ export default function TechStackViz({ techs, onTechClick }: TechStackVizProps) 
       {/* RÉSEAU VISUEL SVG */}
       <div className="flex justify-center items-center w-full h-full">
         <svg
-          viewBox="0 35 800 150"
-          preserveAspectRatio="xMidYMid slice"
-          className="w-full h-full min-h-[240px] sm:min-h-[200px]"
+          viewBox="0 25 800 170"
+          preserveAspectRatio="xMidYMid meet"
+          className="w-full h-full block"
           aria-hidden="true"
         >
           <defs>
