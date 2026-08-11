@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, ArrowUpRight, Download, Github, Layers,
   Linkedin, Mail, Menu, ServerCog, Smartphone,
@@ -133,61 +132,47 @@ export default function Home() {
     <main className="bg-[var(--bg)] text-[var(--ink)] min-h-screen font-sans selection:bg-[var(--accent)] selection:text-black overflow-x-hidden">
       
       {/* HEADER MINIMALISTE */}
-      <AnimatePresence>
-        {!navOpen && (
-          <motion.header 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/80 backdrop-blur-md"
-          >
-            <div className="container mx-auto flex h-16 items-center justify-between px-6">
-              <a href="#" className="flex items-center gap-2 font-mono text-sm tracking-tight font-medium">
-                <Terminal className="h-4 w-4 text-[var(--accent)]" />
-                <span>LAMINE<span className="text-[var(--accent)]">.SYS</span></span>
-              </a>
-              
-              <nav className="hidden items-center gap-8 md:flex font-mono text-xs uppercase tracking-widest text-[var(--mute)]">
-                <a href="#work" className="hover:text-[var(--accent)] transition-colors">Projets</a>
-                <a href="#services" className="hover:text-[var(--accent)] transition-colors">Services</a>
-                <a href="#about" className="hover:text-[var(--accent)] transition-colors">À Propos</a>
-                <a href="#contact" className="hover:text-[var(--accent)] transition-colors">Contact</a>
-              </nav>
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/80 backdrop-blur-md">
+        <div className="container mx-auto flex h-16 items-center justify-between px-6">
+          <a href="#" className="flex items-center gap-2 font-mono text-sm tracking-tight font-medium">
+            <Terminal className="h-4 w-4 text-[var(--accent)]" />
+            <span>LAMINE<span className="text-[var(--accent)]">.SYS</span></span>
+          </a>
+          
+          <nav className="hidden items-center gap-8 md:flex font-mono text-xs uppercase tracking-widest text-[var(--mute)]">
+            <a href="#work" className="hover:text-[var(--accent)] transition-colors">Projets</a>
+            <a href="#services" className="hover:text-[var(--accent)] transition-colors">Services</a>
+            <a href="#about" className="hover:text-[var(--accent)] transition-colors">À Propos</a>
+            <a href="#contact" className="hover:text-[var(--accent)] transition-colors">Contact</a>
+          </nav>
 
-              <div className="flex items-center gap-4">
-                <a 
-                  href="#contact" 
-                  className="hidden sm:inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-1.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all"
-                >
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Disponible</span>
-                </a>
+          <div className="flex items-center gap-4">
+            <a 
+              href="#contact" 
+              className="hidden sm:inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-1.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Disponible</span>
+            </a>
 
-                <button
-                  type="button"
-                  onClick={toggleNav}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink)] md:hidden hover:border-[var(--accent)] transition-colors"
-                  aria-label="Toggle Menu"
-                >
-                  <Menu className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </motion.header>
-        )}
-      </AnimatePresence>
+            <button
+              type="button"
+              onClick={toggleNav}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink)] md:hidden hover:border-[var(--accent)] transition-colors"
+              aria-label="Toggle Menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </header>
 
       {/* NAVIGATION MOBILE OVERLAY PLEIN ÉCRAN - OPAQUE BLANC/CLAIR AVEC LISIBILITÉ OPTIMISÉE */}
-      <AnimatePresence>
-        {navOpen && (
-          <motion.div
-            className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
+      {navOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-8 overflow-y-auto"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
             {/* EN-TÊTE DU MENU MOBILE */}
             <div className="flex justify-between items-center border-b border-zinc-200 pb-6">
               <div className="flex items-center gap-2 font-mono text-sm font-bold tracking-tight text-zinc-900">
@@ -253,9 +238,8 @@ export default function Home() {
                 <Mail className="h-5 w-5 text-orange-600" />
               </a>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* HERO SECTION */}
       <section className="relative overflow-hidden pt-0 pb-20 border-b border-[var(--line)] min-h-[70vh] md:min-h-[78vh] xl:min-h-[88vh]">
@@ -264,14 +248,12 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
               {/* BADGE HERO MIS À JOUR */}
-              <motion.div 
-                initial={{ opacity: 0, y: -19 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div 
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)]/60 px-3.5 py-1.5 font-mono text-xs text-[var(--accent)] backdrop-blur-md mt-8 mb-6"
               >
                 <Activity className="h-3.5 w-3.5 animate-pulse" />
                 <span>DAKAR, SN •</span>
-              </motion.div>
+              </div>
             </div>
 
             <div className="flex justify-center">

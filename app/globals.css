@@ -38,6 +38,20 @@ img, svg { display: block; }
 section { position: relative; }
 a { color: inherit; }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4rem;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
+}
+
 .container { width: min(1240px, calc(100% - 3rem)); margin: 0 auto; }
 
 .font-display { font-family: var(--font-sans); letter-spacing: -0.01em; }
