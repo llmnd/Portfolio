@@ -307,7 +307,7 @@ export default function Home() {
             {/* Visual Identity Card / Portrait */}
             <div className="lg:col-span-5 relative group overflow-hidden rounded-3xl min-h-[400px] md:min-h-[440px] border border-[var(--line)] flex flex-col justify-between p-6 sm:p-8 bg-zinc-900 transition-all duration-500 hover:border-[var(--accent)]/40">
               <img 
-                src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026382/vgmefgmct86zjvcy0yrm.jpg" 
+                src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026387/f3codb9okszfnxskuzvl.jpg" 
                 alt="Lamine Ndiaye Portrait" 
                 className="absolute inset-0 w-full h-full object-cover object-center opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out"
               />
