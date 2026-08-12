@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ArrowRight, ArrowUpRight, Download, Github, Layers,
+  ArrowUpRight, Download, Github, Layers,
   Linkedin, Mail, Menu, ServerCog, Smartphone,
-  Terminal, X, Activity, Globe, CheckCircle, Signal, LucideIcon
+  Terminal, X, Globe, CheckCircle, Signal,
+  GraduationCap, Award, Languages, LucideIcon
 } from 'lucide-react';
 
 import NeuralExhibit from './NeuralExhibit';
@@ -32,6 +33,19 @@ interface Service {
   icon: LucideIcon;
   gradient: string;
   features?: string[];
+}
+
+interface Certification {
+  title: string;
+  year: string;
+  issuer: string;
+}
+
+interface Education {
+  title: string;
+  institution: string;
+  period: string;
+  details?: string;
 }
 
 // ============================================
@@ -94,6 +108,31 @@ const SERVICES: Service[] = [
   },
 ];
 
+const CERTIFICATIONS: Certification[] = [
+  { title: 'Networking Basics', issuer: 'Cisco Networking Academy', year: '2023' },
+  { title: 'Introduction to Cybersecurity', issuer: 'Cisco Networking Academy', year: '2025' },
+  { title: 'English for IT 2', issuer: 'Cisco Networking Academy', year: '2025' },
+];
+
+const EDUCATION: Education[] = [
+  {
+    title: 'Diplôme de Technicien Supérieur en Informatique',
+    institution: 'ESP, Dakar',
+    period: '2023–2025'
+  },
+  {
+    title: 'Licence 1 Physique-Chimie',
+    institution: 'Université',
+    period: '2022–2023',
+    details: 'non achevée, réorientation vers l’informatique'
+  },
+  {
+    title: 'Baccalauréat Série S2',
+    institution: 'Cours Sacré-Cœur, Dakar',
+    period: '2022'
+  }
+];
+
 // ============================================
 // HOOKS
 // ============================================
@@ -124,6 +163,7 @@ const useScrollLock = (active: boolean) => {
 
 export default function Home() {
   const [navOpen, setNavOpen] = useState(false);
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   useScrollLock(navOpen);
 
   const toggleNav = useCallback(() => setNavOpen((prev) => !prev), []);
@@ -133,47 +173,42 @@ export default function Home() {
       
       {/* HEADER MINIMALISTE */}
       <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
+        <div className="container mx-auto flex h-16 items-center justify-between px-6 sm:px-10">
+          
           <a href="#" className="flex items-center gap-2 font-mono text-sm tracking-tight font-medium">
             <Terminal className="h-4 w-4 text-[var(--accent)]" />
             <span>LAMINE<span className="text-[var(--accent)]">.SYS</span></span>
           </a>
-          
-          <nav className="hidden items-center gap-8 md:flex font-mono text-xs uppercase tracking-widest text-[var(--mute)]">
-            <a href="#work" className="hover:text-[var(--accent)] transition-colors">Projets</a>
-            <a href="#services" className="hover:text-[var(--accent)] transition-colors">Services</a>
-            <a href="#about" className="hover:text-[var(--accent)] transition-colors">À Propos</a>
-            <a href="#contact" className="hover:text-[var(--accent)] transition-colors">Contact</a>
-          </nav>
 
           <div className="flex items-center gap-4">
             <a 
-              href="#contact" 
-              className="hidden sm:inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-1.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all"
+              href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786368720/r2ehute4a7dtnkipi9bf.pdf"
+              download="Lamine_NDIAYE_CV.pdf"
+              className="hidden md:inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-1.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all"
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Disponible</span>
+              <Download className="h-3 w-3 text-[var(--accent)]" />
+              <span>CV</span>
             </a>
 
             <button
               type="button"
               onClick={toggleNav}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink)] md:hidden hover:border-[var(--accent)] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center text-[var(--ink)] hover:text-[var(--accent)] transition-colors md:hidden"
               aria-label="Toggle Menu"
             >
-              <Menu className="h-4 w-4" />
+              <Menu className="h-6 w-6" />
             </button>
           </div>
+
         </div>
       </header>
 
-      {/* NAVIGATION MOBILE OVERLAY PLEIN ÉCRAN - OPAQUE BLANC/CLAIR AVEC LISIBILITÉ OPTIMISÉE */}
+      {/* NAVIGATION MOBILE OVERLAY PLEIN ÉCRAN */}
       {navOpen && (
         <div
-          className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-5 overflow-y-auto"
+          className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-6 overflow-y-auto"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-            {/* EN-TÊTE DU MENU MOBILE */}
             <div className="flex justify-between items-center border-b border-zinc-200 pb-6">
               <div className="flex items-center gap-2 font-mono text-sm font-bold tracking-tight text-zinc-900">
                 <Terminal className="h-4 w-4 text-orange-600" />
@@ -188,7 +223,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* LIENS DE NAVIGATION */}
             <nav className="flex flex-col space-y-4 font-mono text-base font-semibold uppercase tracking-wider py-6">
               <a 
                 href="#work" 
@@ -224,7 +258,6 @@ export default function Home() {
               </a>
             </nav>
 
-            {/* PIED DE MENU / RÉSEAUX */}
             <div className="pt-6 border-t border-zinc-200 flex justify-between items-center text-zinc-600">
               <div className="flex gap-6 font-mono text-xs font-medium">
                 <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="hover:text-orange-600 flex items-center gap-1">
@@ -241,43 +274,120 @@ export default function Home() {
         </div>
       )}
 
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-0 pb-12 md:pb-20 border-b border-[var(--line)] min-h-[60vh] md:min-h-[78vh] xl:min-h-[88vh]">
-        <HeroBackground3D />
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div>
-              {/* BADGE HERO MIS À JOUR */}
-              <div 
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)]/60 px-3.5 py-1.5 font-mono text-xs text-[var(--accent)] backdrop-blur-md mt-8 mb-6"
-              >
-                <Activity className="h-3.5 w-3.5 animate-pulse" />
-                <span>DAKAR, SN •</span>
+      {/* HERO SECTION STYLE EDITORIAL / SOFIA MILLER */}
+      <section className="relative py-12 md:py-20 border-b border-[var(--line)] bg-[var(--bg)]">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
+          
+          <div className="mb-10 text-center md:text-left">
+            <h1 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[9.5rem] font-light tracking-[-0.03em] leading-none uppercase text-[var(--ink)] select-none">
+              LAMINE NDIAYE
+            </h1>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            
+            {/* CARTE PORTRAIT */}
+            <div className="lg:col-span-5 relative group overflow-hidden rounded-3xl min-h-[360px] md:min-h-[440px] border border-[var(--line)] flex flex-col justify-between p-6 sm:p-8 bg-zinc-900">
+              <img 
+                src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026382/vgmefgmct86zjvcy0yrm.jpg" 
+                alt="Lamine Ndiaye Portrait" 
+                className="absolute inset-0 w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
+
+              <div className="relative z-10">
+                <span className="font-mono text-xs uppercase tracking-widest text-white/90 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                  A PROPOS
+                </span>
+              </div>
+
+              <div className="relative z-10">
+                <h3 className="font-display text-xl sm:text-2xl font-normal text-white uppercase tracking-tight">
+                  Full-Stack &amp; Creative Dev
+                </h3>
+                <p className="font-mono text-xs text-white/70 mt-1">
+                  Basé à Dakar, Sénégal •Génie logiciel
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-center">
-            </div>
-          </div>
-        </div>
-      </section>
+            {/* CARTE SLIDER VITRINE */}
+            <div className="lg:col-span-7 relative rounded-3xl bg-[var(--surface)] border border-[var(--line)] p-6 sm:p-10 flex flex-col justify-between min-h-[360px] md:min-h-[440px] text-[var(--ink)]">
+              
+              <div className="flex justify-between items-start">
+                <span className="font-mono text-xs uppercase tracking-widest text-[var(--accent)] bg-[var(--accent)]/10 px-3 py-1 rounded-full border border-[var(--accent)]/20">
+                  {activeHeroSlide === 0 ? 'EXPERTISE & CREATIVE DEV' : activeHeroSlide === 1 ? 'APPLICATION MOBILE' : 'E-COMMERCE HIGH SPEED'}
+                </span>
 
-      <section className="py-8 md:py-10">
-        <div className="container mx-auto px-6 flex flex-wrap justify-center gap-4">
-          <a
-            href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786368720/r2ehute4a7dtnkipi9bf.pdf"
-            download="Lamine_NDIAYE_CV.pdf"
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-colors"
-          >
-            <Download className="h-3.5 w-3.5 text-[var(--accent)]" />
-            <span>CV (PDF)</span>
-          </a>
+                <a 
+                  href="#work" 
+                  className="inline-flex items-center gap-1 font-mono text-xs uppercase text-[var(--mute)] hover:text-[var(--ink)] transition-colors"
+                >
+                  <span>Projets</span>
+                  <ArrowUpRight className="h-4 w-4" />
+                </a>
+              </div>
+
+              <div className="my-8">
+                {activeHeroSlide === 0 && (
+                  <div className="animate-fadeIn">
+                    <h2 className="font-display text-2xl sm:text-4xl font-light leading-tight uppercase">
+                      Conception d&apos;expériences web immersives &amp; WebGL
+                    </h2>
+                    <p className="mt-4 font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
+                      Allier la vitesse des frameworks modernes (Next.js, React) au design haute précision pour des produits digitaux marquants.
+                    </p>
+                  </div>
+                )}
+
+                {activeHeroSlide === 1 && (
+                  <div className="animate-fadeIn">
+                    <h2 className="font-display text-2xl sm:text-4xl font-light leading-tight uppercase">
+                      Mbaymi — Agritech Mobile Platform
+                    </h2>
+                    <p className="mt-4 font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
+                      Suivi en temps réel des cultures et cheptels via Flutter, Dart et Firebase avec mode hors-ligne.
+                    </p>
+                  </div>
+                )}
+
+                {activeHeroSlide === 2 && (
+                  <div className="animate-fadeIn">
+                    <h2 className="font-display text-2xl sm:text-4xl font-light leading-tight uppercase">
+                      Bitik Platform — Marketplace Distribuer
+                    </h2>
+                    <p className="mt-4 font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
+                      Architecture e-commerce haute vitesse avec catalogue synchrone et interfaces ultra-réactives.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 pt-4 border-t border-[var(--line)]">
+                {[0, 1, 2].map((slideIndex) => (
+                  <button
+                    key={slideIndex}
+                    onClick={() => setActiveHeroSlide(slideIndex)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                      activeHeroSlide === slideIndex 
+                        ? 'w-8 bg-[var(--accent)]' 
+                        : 'w-2.5 bg-[var(--line)] hover:bg-[var(--mute)]'
+                    }`}
+                    aria-label={`Slide ${slideIndex + 1}`}
+                  />
+                ))}
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
       </section>
 
       {/* TECH STACK 3D SHOWCASE */}
       <section className="py-16 md:py-20 border-b border-[var(--line)] bg-[var(--surface)]/20">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
               <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// STACK TECHNIQUE</span>
@@ -302,7 +412,7 @@ export default function Home() {
 
       {/* PROJETS SÉLECTIONNÉS */}
       <section id="work" className="py-16 md:py-24 border-b border-[var(--line)]">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
           <div className="mb-12">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PORTFOLIO</span>
             <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
@@ -347,9 +457,84 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SECTION A PROPOS : FORMATIONS, CERTIFICATIONS & LANGUES */}
+      <section id="about" className="py-16 md:py-24 border-b border-[var(--line)]">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
+          <div className="mb-12">
+            <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PARCOURS</span>
+            <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
+              À Propos &amp; Qualifications
+            </h2>
+          </div>
+
+          <div className="grid gap-10 md:grid-cols-3">
+            {/* FORMATION */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+                <GraduationCap className="h-5 w-5 text-[var(--accent)]" />
+                <h3 className="font-display text-lg font-semibold uppercase text-[var(--ink)]">Formation</h3>
+              </div>
+              <div className="space-y-6">
+                {EDUCATION.map((item, idx) => (
+                  <div key={idx} className="relative pl-4 border-l border-[var(--line)] hover:border-[var(--accent)] transition-colors">
+                    <span className="font-mono text-[0.65rem] text-[var(--accent)] uppercase">{item.period}</span>
+                    <h4 className="font-display text-sm font-medium text-[var(--ink)] mt-1">{item.title}</h4>
+                    <p className="font-mono text-xs text-[var(--mute)] mt-0.5">{item.institution}</p>
+                    {item.details && (
+                      <p className="font-mono text-[0.7rem] text-[var(--mute)]/80 italic mt-1">{item.details}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CERTIFICATIONS */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+                <Award className="h-5 w-5 text-[var(--accent)]" />
+                <h3 className="font-display text-lg font-semibold uppercase text-[var(--ink)]">Certifications</h3>
+              </div>
+              <div className="space-y-4">
+                {CERTIFICATIONS.map((cert, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)]/50 transition-all">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-display text-sm font-medium text-[var(--ink)]">{cert.title}</h4>
+                      <span className="font-mono text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded">{cert.year}</span>
+                    </div>
+                    <p className="font-mono text-xs text-[var(--mute)] mt-1">{cert.issuer}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* LANGUES */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+                <Languages className="h-5 w-5 text-[var(--accent)]" />
+                <h3 className="font-display text-lg font-semibold uppercase text-[var(--ink)]">Langues</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
+                  <div className="flex justify-between items-center">
+                    <span className="font-display text-sm font-medium text-[var(--ink)]">Français</span>
+                    <span className="font-mono text-xs text-[var(--accent)] font-semibold">Courant</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
+                  <div className="flex justify-between items-center">
+                    <span className="font-display text-sm font-medium text-[var(--ink)]">Anglais</span>
+                    <span className="font-mono text-xs text-[var(--accent)] font-semibold">Courant</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* SERVICES */}
       <section id="services" className="py-16 md:py-24 border-b border-[var(--line)] bg-[var(--surface)]/30">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
           <div className="mb-12 text-center max-w-xl mx-auto">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// EXPERTISE</span>
             <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
@@ -388,14 +573,14 @@ export default function Home() {
 
       {/* NEURAL EXHIBIT */}
       <section className="py-12 md:py-16 border-b border-[var(--line)]">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
           <NeuralExhibit />
         </div>
       </section>
 
       {/* CONTACT */}
       <section id="contact" className="py-16 md:py-24">
-        <div className="container mx-auto px-6 max-w-4xl">
+        <div className="container mx-auto px-6 sm:px-10 max-w-4xl">
           <div className="grid gap-12 md:grid-cols-2">
             <div>
               <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// CONTACT</span>
@@ -439,9 +624,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ARCADE 3D */}
+      <section className="py-16 md:py-24 border-t border-[var(--line)] bg-[var(--surface)]/10">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
+          <div className="mb-10 max-w-3xl">
+            <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// DIVERTISSEMENT</span>
+            <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-3">
+              Mini-jeu Arcade
+            </h2>
+            <p className="mt-4 font-mono text-sm leading-7 text-[var(--mute)]">
+              Un petit jeu WebGL interactif pour finir la page sur une note ludique.
+            </p>
+          </div>
+
+          <div className="rounded-[2rem] overflow-hidden border border-[var(--line)] bg-[#020617]">
+            <HeroBackground3D />
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="border-t border-[var(--line)] py-6 font-mono text-[0.65rem] text-[var(--mute)]">
-        <div className="container mx-auto px-6 flex justify-between items-center">
+        <div className="container mx-auto px-6 sm:px-10 max-w-7xl flex justify-between items-center">
           <p>© 2026 LAMINE NDIAYE</p>
           <div className="flex items-center gap-2 text-emerald-400">
             <Signal className="h-3 w-3" />
