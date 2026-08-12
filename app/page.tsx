@@ -279,8 +279,8 @@ export default function Home() {
         <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
           
           <div className="mb-10 text-center md:text-left">
-            <h1 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[9.5rem] font-light tracking-[-0.03em] leading-none uppercase text-[var(--ink)] select-none">
-              LAMINE NDIAYE
+            <h1 className="font-display text-5xl sm:text-2xl md:text-8xl lg:text-[4.5rem] font-light tracking-[-0.03em] leading-none uppercase text-[var(--ink)] select-none">
+              LAMINE
             </h1>
           </div>
 
@@ -343,7 +343,7 @@ export default function Home() {
                 {activeHeroSlide === 1 && (
                   <div className="animate-fadeIn">
                     <h2 className="font-display text-2xl sm:text-4xl font-light leading-tight uppercase">
-                      Mbaymi — Agritech Mobile Platform
+                      Mbaymi, Agritech Mobile Platform
                     </h2>
                     <p className="mt-4 font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
                       Suivi en temps réel des cultures et cheptels via Flutter, Dart et Firebase avec mode hors-ligne.
@@ -354,7 +354,7 @@ export default function Home() {
                 {activeHeroSlide === 2 && (
                   <div className="animate-fadeIn">
                     <h2 className="font-display text-2xl sm:text-4xl font-light leading-tight uppercase">
-                      Bitik Platform — Marketplace Distribuer
+                      Bitik Platform, Marketplace Distribuer
                     </h2>
                     <p className="mt-4 font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
                       Architecture e-commerce haute vitesse avec catalogue synchrone et interfaces ultra-réactives.
