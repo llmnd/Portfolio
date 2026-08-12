@@ -314,19 +314,13 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
               <div className="relative z-10 flex items-center justify-between">
-                <span className="font-mono text-[0.75rem] md:text-[0.65rem] uppercase tracking-widest text-white bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                  SYSTEM // 01
-                </span>
                 <span className="font-mono text-[0.75rem] md:text-[0.65rem] text-white/90 tracking-wider uppercase bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-md">
-                  ENG. DAKAR
+                  DAKAR
                 </span>
               </div>
 
               <div className="relative z-10 pt-12">
                 {/* Badge Genius Logiciel / Génie Logiciel avec Background visible */}
-                <span className="inline-block font-mono text-[0.75rem] md:text-[0.7rem] uppercase tracking-wider text-[var(--accent)] mb-2 font-bold bg-black/60 backdrop-blur-md px-3 py-1 rounded-md border border-[var(--accent)]/30">
-                  Génie Logiciel
-                </span>
                 <h3 className="font-display text-2xl sm:text-3xl font-light text-white uppercase tracking-tight drop-shadow-sm">
                   Full-Stack
                 </h3>
@@ -412,7 +406,7 @@ export default function Home() {
                     href="#contact" 
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 md:px-5 md:py-2.5 font-mono text-xs font-bold text-black hover:opacity-90 transition-all shadow-sm w-full sm:w-auto"
                   >
-                    <span>Me contacter</span>
+                    <span>Contact</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </a>
                   <a 
