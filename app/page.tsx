@@ -173,7 +173,7 @@ export default function Home() {
       
       {/* HEADER MINIMALISTE */}
       <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-6 sm:px-10">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 md:px-10">
           
           <a href="#" className="flex items-center gap-2 font-mono text-sm tracking-tight font-medium">
             <Terminal className="h-4 w-4 text-[var(--accent)]" />
@@ -193,7 +193,7 @@ export default function Home() {
             <button
               type="button"
               onClick={toggleNav}
-              className="inline-flex h-9 w-9 items-center justify-center text-[var(--ink)] hover:text-[var(--accent)] transition-colors md:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center text-[var(--ink)] hover:text-[var(--accent)] transition-colors md:hidden"
               aria-label="Toggle Menu"
             >
               <Menu className="h-6 w-6" />
@@ -274,24 +274,22 @@ export default function Home() {
         </div>
       )}
 
-      {/* HERO SECTION STYLE EDITORIAL & HIGH-PRECISION MINIMALIST */}
+      {/* HERO SECTION */}
       <section className="relative pt-6 pb-12 md:pt-8 md:pb-20 border-b border-[var(--line)] bg-[var(--bg)] overflow-hidden">
-        {/* Ambient Background Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none opacity-40">
           <div className="absolute top-4 left-10 w-72 h-72 bg-[var(--accent)]/10 rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-600/5 rounded-full blur-[120px]" />
         </div>
 
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl relative z-10">
           
-          {/* Header Row & Status Badge */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-[var(--line)]/60 pb-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/5 font-mono text-[0.7rem] tracking-wider uppercase text-[var(--accent)] mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/5 font-mono text-[0.75rem] md:text-[0.7rem] tracking-wider uppercase text-[var(--accent)] mb-3">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
                 <span>DAKAR, SN • FULL-STACK &amp; CREATIVE DEV</span>
               </div>
-              <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-[7rem] font-light tracking-tight leading-none uppercase text-[var(--ink)] select-none">
+              <h1 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] font-light tracking-tight leading-none uppercase text-[var(--ink)] select-none">
                 LAMINE<span className="text-[var(--accent)] font-normal">.</span>
               </h1>
             </div>
@@ -299,52 +297,52 @@ export default function Home() {
             <div className="flex items-center gap-6 font-mono text-xs text-[var(--mute)]">
               <div className="flex items-center gap-2">
                 <Signal className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
-                <span className="uppercase tracking-widest text-[0.65rem] text-[var(--ink)]">AVAILABLE FOR FREELANCE &amp; ROLES</span>
+                <span className="uppercase tracking-widest text-[0.7rem] md:text-[0.65rem] text-[var(--ink)]">AVAILABLE FOR FREELANCE &amp; ROLES</span>
               </div>
             </div>
           </div>
 
-          {/* Hero Bento Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             
             {/* Visual Identity Card / Portrait */}
-            <div className="lg:col-span-5 relative group overflow-hidden rounded-3xl min-h-[380px] md:min-h-[440px] border border-[var(--line)] flex flex-col justify-between p-6 sm:p-8 bg-zinc-900 transition-all duration-500 hover:border-[var(--accent)]/40">
+            <div className="lg:col-span-5 relative group overflow-hidden rounded-3xl min-h-[400px] md:min-h-[440px] border border-[var(--line)] flex flex-col justify-between p-6 sm:p-8 bg-zinc-900 transition-all duration-500 hover:border-[var(--accent)]/40">
               <img 
                 src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026382/vgmefgmct86zjvcy0yrm.jpg" 
                 alt="Lamine Ndiaye Portrait" 
                 className="absolute inset-0 w-full h-full object-cover object-center opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
               <div className="relative z-10 flex items-center justify-between">
-                <span className="font-mono text-[0.65rem] uppercase tracking-widest text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <span className="font-mono text-[0.75rem] md:text-[0.65rem] uppercase tracking-widest text-white bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                   SYSTEM // 01
                 </span>
-                <span className="font-mono text-[0.65rem] text-white/80 tracking-wider uppercase bg-black/30 backdrop-blur-md px-2.5 py-0.5 rounded-md">
+                <span className="font-mono text-[0.75rem] md:text-[0.65rem] text-white/90 tracking-wider uppercase bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-md">
                   ENG. DAKAR
                 </span>
               </div>
 
               <div className="relative z-10 pt-12">
-                <p className="font-mono text-[0.7rem] uppercase tracking-wider text-[var(--accent)] mb-1 font-semibold">
+                {/* Badge Genius Logiciel / Génie Logiciel avec Background visible */}
+                <span className="inline-block font-mono text-[0.75rem] md:text-[0.7rem] uppercase tracking-wider text-[var(--accent)] mb-2 font-bold bg-black/60 backdrop-blur-md px-3 py-1 rounded-md border border-[var(--accent)]/30">
                   Génie Logiciel
-                </p>
+                </span>
                 <h3 className="font-display text-2xl sm:text-3xl font-light text-white uppercase tracking-tight drop-shadow-sm">
-                  Full-Stack &amp; Creative Dev
+                  Full-Stack
                 </h3>
-                <p className="font-mono text-xs text-white/80 mt-2 leading-relaxed drop-shadow-sm">
+                <p className="font-mono text-xs sm:text-sm md:text-xs text-white/90 mt-2 leading-relaxed drop-shadow-sm">
                   Conception d&apos;architectures web modernes et d&apos;interfaces réactives haut de gamme.
                 </p>
               </div>
             </div>
 
             {/* Interactive Showcase / Slider Card */}
-            <div className="lg:col-span-7 relative rounded-3xl bg-[var(--surface)] border border-[var(--line)] p-8 sm:p-10 flex flex-col justify-between min-h-[380px] md:min-h-[440px] text-[var(--ink)] hover:border-[var(--line)]/80 transition-all">
+            <div className="lg:col-span-7 relative rounded-3xl bg-[var(--surface)] border border-[var(--line)] p-6 sm:p-8 md:p-10 flex flex-col justify-between min-h-[380px] md:min-h-[440px] text-[var(--ink)] hover:border-[var(--line)]/80 transition-all">
               
               <div className="flex justify-between items-center pb-6 border-b border-[var(--line)]">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                  <span className="font-mono text-[0.7rem] uppercase tracking-widest text-[var(--ink)] font-semibold">
+                  <span className="font-mono text-[0.75rem] md:text-[0.7rem] uppercase tracking-widest text-[var(--ink)] font-semibold">
                     {activeHeroSlide === 0 ? '01 / EXPERTISE & CREATIVE DEV' : activeHeroSlide === 1 ? '02 / APPLICATION MOBILE' : '03 / E-COMMERCE HIGH SPEED'}
                   </span>
                 </div>
@@ -364,7 +362,7 @@ export default function Home() {
                     <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
                       Expériences Web <span className="text-[var(--accent)]">Immersives</span> &amp; Precision UI
                     </h2>
-                    <p className="font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
+                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
                       Fusion entre rapidité (Next.js, React) et rigueur esthétique pour créer des produits digitaux épurés et hautement performants.
                     </p>
                   </div>
@@ -375,7 +373,7 @@ export default function Home() {
                     <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
                       Mbaymi, Agritech Mobile Platform
                     </h2>
-                    <p className="font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
+                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
                       Suivi en temps réel des cultures et cheptels développé avec Flutter, Dart et Firebase, incluant la synchronisation hors-ligne.
                     </p>
                   </div>
@@ -384,26 +382,25 @@ export default function Home() {
                 {activeHeroSlide === 2 && (
                   <div className="animate-fadeIn space-y-4">
                     <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
-                      Bitik Platform, Marketplace Distribuer
+                      Bitik Platform, Marketplace Distribuée
                     </h2>
-                    <p className="font-mono text-xs text-[var(--mute)] max-w-xl leading-relaxed">
+                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
                       E-commerce haute vitesse doté d&apos;un catalogue synchrone instantané et de micro-interactions fluides.
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Slide Controls & Action Footer */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pt-6 border-t border-[var(--line)]">
                 <div className="flex items-center gap-2">
                   {[0, 1, 2].map((slideIndex) => (
                     <button
                       key={slideIndex}
                       onClick={() => setActiveHeroSlide(slideIndex)}
-                      className={`h-1.5 rounded-full transition-all duration-500 ${
+                      className={`h-2 rounded-full transition-all duration-500 ${
                         activeHeroSlide === slideIndex 
                           ? 'w-10 bg-[var(--accent)]' 
-                          : 'w-3 bg-[var(--line)] hover:bg-[var(--mute)]'
+                          : 'w-4 bg-[var(--line)] hover:bg-[var(--mute)]'
                       }`}
                       aria-label={`Go to slide ${slideIndex + 1}`}
                     />
@@ -413,14 +410,14 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <a 
                     href="#contact" 
-                    className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 font-mono text-xs font-bold text-black hover:opacity-90 transition-all shadow-sm"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 md:px-5 md:py-2.5 font-mono text-xs font-bold text-black hover:opacity-90 transition-all shadow-sm w-full sm:w-auto"
                   >
                     <span>Me contacter</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </a>
                   <a 
                     href="#work" 
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--bg)] px-5 py-2.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--line)] bg-[var(--bg)] px-6 py-3 md:px-5 md:py-2.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all w-full sm:w-auto"
                   >
                     <span>Projets</span>
                   </a>
@@ -435,9 +432,9 @@ export default function Home() {
       </section>
 
       {/* TECH STACK 3D SHOWCASE */}
-      <section className="py-16 md:py-20 border-b border-[var(--line)] bg-[var(--surface)]/20">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+      <section className="py-12 md:py-20 border-b border-[var(--line)] bg-[var(--surface)]/20">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-10 gap-4">
             <div>
               <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// STACK TECHNIQUE</span>
               <h2 className="font-display text-2xl sm:text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
@@ -446,30 +443,30 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap gap-2">
               {STACK.map((tech) => (
-                <span key={tech} className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-1 font-mono text-xs text-[var(--mute)]">
+                <span key={tech} className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 font-mono text-xs text-[var(--mute)]">
                   {tech}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="h-[260px] md:h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[#030712]">
+          <div className="h-[280px] md:h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[#030712]">
             <ThreeExperience techs={STACK} />
           </div>
         </div>
       </section>
 
       {/* PROJETS SÉLECTIONNÉS */}
-      <section id="work" className="py-16 md:py-24 border-b border-[var(--line)]">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
-          <div className="mb-12">
+      <section id="work" className="py-12 md:py-24 border-b border-[var(--line)]">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
+          <div className="mb-8 md:mb-12">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PORTFOLIO</span>
             <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
               Projets Récents
             </h2>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {PROJECTS.map((project, index) => (
               <ProjectCard3D key={project.title} gradient={project.gradient} index={index}>
                 <a
@@ -484,17 +481,17 @@ export default function Home() {
                       <ArrowUpRight className="h-4 w-4 text-[var(--accent)] transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                     </div>
                     
-                    <h3 className="font-display mt-6 text-xl font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">
+                    <h3 className="font-display mt-4 md:mt-6 text-xl font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">
                       {project.title}
                     </h3>
-                    <p className="mt-2 font-mono text-xs leading-relaxed text-[var(--mute)]">
+                    <p className="mt-2 font-mono text-xs sm:text-sm md:text-xs leading-relaxed text-[var(--mute)]">
                       {project.description}
                     </p>
                   </div>
 
                   <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-[var(--line)]">
                     {project.tech.map((t) => (
-                      <span key={t} className="font-mono text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/5 px-2 py-0.5 rounded">
+                      <span key={t} className="font-mono text-[0.75rem] md:text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/10 px-2.5 py-1 md:px-2 md:py-0.5 rounded">
                         {t}
                       </span>
                     ))}
@@ -507,9 +504,9 @@ export default function Home() {
       </section>
 
       {/* SECTION A PROPOS : FORMATIONS, CERTIFICATIONS & LANGUES */}
-      <section id="about" className="py-16 md:py-24 border-b border-[var(--line)]">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
-          <div className="mb-12">
+      <section id="about" className="py-12 md:py-24 border-b border-[var(--line)]">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
+          <div className="mb-8 md:mb-12">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PARCOURS</span>
             <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
               À Propos &amp; Qualifications
@@ -526,11 +523,11 @@ export default function Home() {
               <div className="space-y-6">
                 {EDUCATION.map((item, idx) => (
                   <div key={idx} className="relative pl-4 border-l border-[var(--line)] hover:border-[var(--accent)] transition-colors">
-                    <span className="font-mono text-[0.65rem] text-[var(--accent)] uppercase">{item.period}</span>
-                    <h4 className="font-display text-sm font-medium text-[var(--ink)] mt-1">{item.title}</h4>
-                    <p className="font-mono text-xs text-[var(--mute)] mt-0.5">{item.institution}</p>
+                    <span className="font-mono text-[0.75rem] md:text-[0.65rem] text-[var(--accent)] uppercase font-semibold">{item.period}</span>
+                    <h4 className="font-display text-base md:text-sm font-medium text-[var(--ink)] mt-1">{item.title}</h4>
+                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] mt-0.5">{item.institution}</p>
                     {item.details && (
-                      <p className="font-mono text-[0.7rem] text-[var(--mute)]/80 italic mt-1">{item.details}</p>
+                      <p className="font-mono text-xs md:text-[0.7rem] text-[var(--mute)]/80 italic mt-1">{item.details}</p>
                     )}
                   </div>
                 ))}
@@ -547,10 +544,10 @@ export default function Home() {
                 {CERTIFICATIONS.map((cert, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)]/50 transition-all">
                     <div className="flex justify-between items-start">
-                      <h4 className="font-display text-sm font-medium text-[var(--ink)]">{cert.title}</h4>
-                      <span className="font-mono text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded">{cert.year}</span>
+                      <h4 className="font-display text-base md:text-sm font-medium text-[var(--ink)]">{cert.title}</h4>
+                      <span className="font-mono text-xs md:text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded">{cert.year}</span>
                     </div>
-                    <p className="font-mono text-xs text-[var(--mute)] mt-1">{cert.issuer}</p>
+                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] mt-1">{cert.issuer}</p>
                   </div>
                 ))}
               </div>
@@ -565,13 +562,13 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
                   <div className="flex justify-between items-center">
-                    <span className="font-display text-sm font-medium text-[var(--ink)]">Français</span>
+                    <span className="font-display text-base md:text-sm font-medium text-[var(--ink)]">Français</span>
                     <span className="font-mono text-xs text-[var(--accent)] font-semibold">Courant</span>
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
                   <div className="flex justify-between items-center">
-                    <span className="font-display text-sm font-medium text-[var(--ink)]">Anglais</span>
+                    <span className="font-display text-base md:text-sm font-medium text-[var(--ink)]">Anglais</span>
                     <span className="font-mono text-xs text-[var(--accent)] font-semibold">Courant</span>
                   </div>
                 </div>
@@ -582,9 +579,9 @@ export default function Home() {
       </section>
 
       {/* SERVICES */}
-      <section id="services" className="py-16 md:py-24 border-b border-[var(--line)] bg-[var(--surface)]/30">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
-          <div className="mb-12 text-center max-w-xl mx-auto">
+      <section id="services" className="py-12 md:py-24 border-b border-[var(--line)] bg-[var(--surface)]/30">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
+          <div className="mb-8 md:mb-12 text-center max-w-xl mx-auto">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// EXPERTISE</span>
             <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
               Services &amp; Solutions
@@ -601,13 +598,13 @@ export default function Home() {
                       <Icon className="h-5 w-5" />
                     </div>
                     <h3 className="font-display text-lg font-medium text-[var(--ink)]">{service.title}</h3>
-                    <p className="mt-2 font-mono text-xs text-[var(--mute)] leading-relaxed">{service.description}</p>
+                    <p className="mt-2 font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] leading-relaxed">{service.description}</p>
                   </div>
                   {service.features && (
-                    <div className="mt-6 space-y-2 pt-4 border-t border-[var(--line)] font-mono text-[0.65rem] text-[var(--mute)]">
+                    <div className="mt-6 space-y-2 pt-4 border-t border-[var(--line)] font-mono text-xs md:text-[0.65rem] text-[var(--mute)]">
                       {service.features.map((f) => (
                         <div key={f} className="flex items-center gap-2">
-                          <CheckCircle className="h-3 w-3 text-[var(--accent)]" />
+                          <CheckCircle className="h-3.5 w-3.5 text-[var(--accent)]" />
                           <span>{f}</span>
                         </div>
                       ))}
@@ -622,31 +619,31 @@ export default function Home() {
 
       {/* NEURAL EXHIBIT */}
       <section className="py-12 md:py-16 border-b border-[var(--line)]">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
           <NeuralExhibit />
         </div>
       </section>
 
       {/* CONTACT */}
-      <section id="contact" className="py-16 md:py-24">
-        <div className="container mx-auto px-6 sm:px-10 max-w-4xl">
-          <div className="grid gap-12 md:grid-cols-2">
+      <section id="contact" className="py-12 md:py-24">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-4xl">
+          <div className="grid gap-8 md:gap-12 md:grid-cols-2">
             <div>
               <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// CONTACT</span>
               <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
                 Démarrer un Projet
               </h2>
-              <p className="mt-4 font-mono text-xs leading-relaxed text-[var(--mute)]">
+              <p className="mt-4 font-mono text-xs sm:text-sm md:text-xs leading-relaxed text-[var(--mute)]">
                 Un projet en tête ? Contactez-moi directement pour discuter d&apos;une collaboration.
               </p>
 
-              <div className="mt-8 space-y-3 font-mono text-xs">
-                <a href="mailto:papendiaye511@gmail.com" className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] transition-all">
-                  <Mail className="h-4 w-4 text-[var(--accent)]" />
-                  <span>papendiaye511@gmail.com</span>
+              <div className="mt-8 space-y-3 font-mono text-xs sm:text-sm md:text-xs">
+                <a href="mailto:papendiaye511@gmail.com" className="flex items-center gap-3 p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] transition-all">
+                  <Mail className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                  <span className="truncate">papendiaye511@gmail.com</span>
                 </a>
-                <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] transition-all">
-                  <Github className="h-4 w-4 text-[var(--accent)]" />
+                <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] transition-all">
+                  <Github className="h-4 w-4 text-[var(--accent)] shrink-0" />
                   <span>GitHub / llmnd</span>
                 </a>
               </div>
@@ -654,18 +651,18 @@ export default function Home() {
 
             <form onSubmit={(e) => e.preventDefault()} className="space-y-4 p-6 bg-[var(--surface)] rounded-2xl border border-[var(--line)]">
               <div>
-                <label className="font-mono text-[0.65rem] uppercase text-[var(--mute)]">Nom</label>
-                <input type="text" required placeholder="Votre nom" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 font-mono text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none" />
+                <label className="font-mono text-xs md:text-[0.65rem] uppercase text-[var(--mute)]">Nom</label>
+                <input type="text" required placeholder="Votre nom" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3.5 py-2.5 font-mono text-xs sm:text-sm md:text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none" />
               </div>
               <div>
-                <label className="font-mono text-[0.65rem] uppercase text-[var(--mute)]">Email</label>
-                <input type="email" required placeholder="votre@email.com" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 font-mono text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none" />
+                <label className="font-mono text-xs md:text-[0.65rem] uppercase text-[var(--mute)]">Email</label>
+                <input type="email" required placeholder="votre@email.com" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3.5 py-2.5 font-mono text-xs sm:text-sm md:text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none" />
               </div>
               <div>
-                <label className="font-mono text-[0.65rem] uppercase text-[var(--mute)]">Message</label>
-                <textarea rows={3} required placeholder="Détails du projet..." className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 font-mono text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none resize-none" />
+                <label className="font-mono text-xs md:text-[0.65rem] uppercase text-[var(--mute)]">Message</label>
+                <textarea rows={3} required placeholder="Détails du projet..." className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3.5 py-2.5 font-mono text-xs sm:text-sm md:text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none resize-none" />
               </div>
-              <button type="submit" className="w-full rounded-lg bg-[var(--accent)] py-2.5 font-mono text-xs font-bold text-black hover:opacity-90 transition-opacity">
+              <button type="submit" className="w-full rounded-lg bg-[var(--accent)] py-3 font-mono text-xs font-bold text-black hover:opacity-90 transition-opacity">
                 Envoyer
               </button>
             </form>
@@ -674,14 +671,14 @@ export default function Home() {
       </section>
 
       {/* ARCADE 3D */}
-      <section className="py-16 md:py-24 border-t border-[var(--line)] bg-[var(--surface)]/10">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl">
-          <div className="mb-10 max-w-3xl">
+      <section className="py-12 md:py-24 border-t border-[var(--line)] bg-[var(--surface)]/10">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
+          <div className="mb-8 md:mb-10 max-w-3xl">
             <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// DIVERTISSEMENT</span>
             <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-3">
               Mini-jeu Arcade
             </h2>
-            <p className="mt-4 font-mono text-sm leading-7 text-[var(--mute)]">
+            <p className="mt-4 font-mono text-xs sm:text-sm leading-relaxed text-[var(--mute)]">
               Un petit jeu WebGL interactif pour finir la page sur une note ludique.
             </p>
           </div>
@@ -693,8 +690,8 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-[var(--line)] py-6 font-mono text-[0.65rem] text-[var(--mute)]">
-        <div className="container mx-auto px-6 sm:px-10 max-w-7xl flex justify-between items-center">
+      <footer className="border-t border-[var(--line)] py-6 font-mono text-xs md:text-[0.65rem] text-[var(--mute)]">
+        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl flex justify-between items-center">
           <p>© 2026 LAMINE NDIAYE</p>
           <div className="flex items-center gap-2 text-emerald-400">
             <Signal className="h-3 w-3" />
