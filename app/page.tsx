@@ -289,9 +289,6 @@ export default function Home() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
                 <span>DAKAR, SN</span>
               </div>
-              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[3rem] font-light tracking-tight leading-none uppercase text-[var(--ink)] select-none">
-                LAMINE
-              </h1>
             </div>
           </div>
 
