@@ -287,7 +287,7 @@ export default function Home() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/5 font-mono text-[0.75rem] md:text-[0.7rem] tracking-wider uppercase text-[var(--accent)] mb-3">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                <span>DAKAR, SN • FULL-STACK &amp; CREATIVE DEV</span>
+                <span>DAKAR, SN • FULL-STACK</span>
               </div>
               <h1 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] font-light tracking-tight leading-none uppercase text-[var(--ink)] select-none">
                 LAMINE<span className="text-[var(--accent)] font-normal">.</span>
@@ -337,7 +337,7 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
                   <span className="font-mono text-[0.75rem] md:text-[0.7rem] uppercase tracking-widest text-[var(--ink)] font-semibold">
-                    {activeHeroSlide === 0 ? '01 / EXPERTISE & CREATIVE DEV' : activeHeroSlide === 1 ? '02 / APPLICATION MOBILE' : '03 / E-COMMERCE HIGH SPEED'}
+                    {activeHeroSlide === 0 ? 'CREATIVE DEV' : activeHeroSlide === 1 ? '02 / APPLICATION MOBILE' : '03 / E-COMMERCE HIGH SPEED'}
                   </span>
                 </div>
 
@@ -354,7 +354,7 @@ export default function Home() {
                 {activeHeroSlide === 0 && (
                   <div className="animate-fadeIn space-y-4">
                     <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
-                      Expériences Web <span className="text-[var(--accent)]">Immersives</span> &amp; Precision UI
+                      Precision UI
                     </h2>
                     <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
                       Fusion entre rapidité (Next.js, React) et rigueur esthétique pour créer des produits digitaux épurés et hautement performants.
