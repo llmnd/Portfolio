@@ -287,18 +287,11 @@ export default function Home() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/5 font-mono text-[0.75rem] md:text-[0.7rem] tracking-wider uppercase text-[var(--accent)] mb-3">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                <span>DAKAR, SN • FULL-STACK</span>
+                <span>DAKAR, SN</span>
               </div>
-              <h1 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] font-light tracking-tight leading-none uppercase text-[var(--ink)] select-none">
-                LAMINE<span className="text-[var(--accent)] font-normal">.</span>
+              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[3rem] font-light tracking-tight leading-none uppercase text-[var(--ink)] select-none">
+                LAMINE
               </h1>
-            </div>
-
-            <div className="flex items-center gap-6 font-mono text-xs text-[var(--mute)]">
-              <div className="flex items-center gap-2">
-                <Signal className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
-                <span className="uppercase tracking-widest text-[0.7rem] md:text-[0.65rem] text-[var(--ink)]">AVAILABLE FOR FREELANCE &amp; ROLES</span>
-              </div>
             </div>
           </div>
 
