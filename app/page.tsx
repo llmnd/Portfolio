@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import {
   ArrowUpRight, Download, Github, Layers, Linkedin, Menu, X,
   ServerCog, Smartphone, CheckCircle, GraduationCap, Award, Languages, LucideIcon
@@ -57,6 +57,42 @@ const SectionHead = ({ n, label, children }: { n: string; label: string; childre
     <h2 className="font-display mt-5 text-5xl md:text-7xl">{children}</h2>
   </div>
 );
+
+const TECH_SLIDES = [
+  { Web: 'Next.js · React', Mobile: 'Flutter', Backend: 'FastAPI · Django' },
+  { Web: 'Angular · Tailwind', Mobile: 'Dart · Firebase', Backend: 'PHP · MySQL' },
+  { Web: 'TypeScript · SEO', Mobile: 'iOS & Android', Backend: 'Node.js · PostgreSQL' },
+  { Web: 'WordPress · CSS', Mobile: 'Flutter · Offline', Backend: 'Docker · API REST' },
+];
+
+/** Même grille Web / Mobile / Backend, les technos défilent toutes les 3 s */
+function TechCarousel() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setI((v) => (v + 1) % TECH_SLIDES.length), 3000);
+    return () => clearInterval(t);
+  }, []);
+  const slide = TECH_SLIDES[i];
+  return (
+    <div className="mt-14 max-w-lg">
+      <dl className="grid grid-cols-3 gap-6 text-sm">
+        {(Object.keys(slide) as (keyof typeof slide)[]).map((k) => (
+          <div key={k} className="min-h-[3.2rem]">
+            <dt className="eyebrow !tracking-widest before:hidden">{k}</dt>
+            <dd className="mt-1.5 font-medium">{slide[k]}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-4 flex gap-1.5">
+        {TECH_SLIDES.map((_, n) => (
+          <button key={n} onClick={() => setI(n)} aria-label={`Technologies ${n + 1}`}
+            className={`h-1.5 rounded-full ${n === i ? 'w-6 bg-[var(--accent)]' : 'w-1.5 bg-black/15'}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 type Proj = (typeof PROJECTS)[number];
 
@@ -119,7 +155,7 @@ export default function Home() {
       )}
 
       {/* Hero */}
-      <section id="top" className="py-16 md:py-28">
+      <section id="top" className="pb-16 pt-4 md:pb-28 md:pt-8">
         <div className="container grid items-center gap-12 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <span className="chip"><span className="dot-live" /> Disponible · Dakar, SN</span>
@@ -133,11 +169,7 @@ export default function Home() {
               <a href="#work" className="btn-solid">Voir mes projets</a>
               <a href="#contact" className="btn">Me contacter <ArrowUpRight className="h-4 w-4" /></a>
             </div>
-            <dl className="mt-14 grid max-w-lg grid-cols-3 gap-6 text-sm">
-              {[['Web', 'Next.js · React'], ['Mobile', 'Flutter'], ['Backend', 'FastAPI · Django']].map(([k, v]) => (
-                <div key={k}><dt className="eyebrow !tracking-widest before:hidden">{k}</dt><dd className="mt-1.5 font-medium">{v}</dd></div>
-              ))}
-            </dl>
+            <TechCarousel />
           </div>
           <div className="lg:col-span-5">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-[var(--soft)] shadow-[var(--shadow)]">
