@@ -18,3 +18,5 @@ pnpm-debug.log*
 # Misc
 .DS_Store
 coverage/
+.vercel
+.env*
