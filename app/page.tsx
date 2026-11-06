@@ -1,685 +1,332 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 import {
-  ArrowUpRight, Download, Github, Layers,
-  Linkedin, Mail, Menu, ServerCog, Smartphone,
-  Terminal, X, Globe, CheckCircle, Signal,
-  GraduationCap, Award, Languages, LucideIcon
+  ArrowUpRight, Download, Github, Layers, Linkedin, Mail, Menu, X,
+  ServerCog, Smartphone, Globe, CheckCircle, GraduationCap, Award, Languages, LucideIcon
 } from 'lucide-react';
-
-import NeuralExhibit from './NeuralExhibit';
-import ThreeExperience from './ThreeExperience';
-import HeroBackground3D from './components/HeroBackground3D';
-import { ProjectCard3D } from './components/ProjectCard3D';
+import APIIntegrationSection from './components/APIIntegrationSection';
 
 // ============================================
-// TYPES & INTERFACES
-// ============================================
-
-interface Project {
-  index: string;
-  title: string;
-  description: string;
-  tech: string[];
-  demo: string;
-  icon: LucideIcon;
-  gradient: string;
-}
-
-interface Service {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  gradient: string;
-  features?: string[];
-}
-
-interface Certification {
-  title: string;
-  year: string;
-  issuer: string;
-}
-
-interface Education {
-  title: string;
-  institution: string;
-  period: string;
-  details?: string;
-}
-
-// ============================================
-// DATA CONFIGURATION
+// DATA
 // ============================================
 
 const STACK = ['React', 'Next.js', 'Angular', 'Django', 'PostgreSQL', 'Docker', 'Tailwind CSS', 'Flutter', 'Git'];
 
-const PROJECTS: Project[] = [
-  {
-    index: '01',
-    title: 'Mbaymi',
-    description: "Plateforme agritech mobile pour le suivi en temps réel des cultures et cheptels.",
-    tech: ['Flutter', 'Dart', 'Firebase'],
-    demo: 'https://mbaymi.vercel.app',
-    icon: Smartphone,
-    gradient: 'from-emerald-500/20 to-teal-500/0',
-  },
-  {
-    index: '02',
-    title: 'Bitik Platform',
-    description: "Marketplace e-commerce distribuée avec catalogue synchrone haute vitesse.",
-    tech: ['Next.js', 'Tailwind', 'REST API'],
-    demo: 'https://bitik.vercel.app',
-    icon: Layers,
-    gradient: 'from-amber-500/20 to-orange-500/0',
-  },
-  {
-    index: '03',
-    title: 'Fisafi Groupe',
-    description: "Vitrine institutionnelle réactive, optimisée SEO avec un score Lighthouse 95+.",
-    tech: ['Next.js', 'SEO', 'Tailwind'],
-    demo: 'https://fisafigroupe.com',
-    icon: Globe,
-    gradient: 'from-orange-500/20 to-red-500/0',
-  },
+const CHAPTERS = [
+  { id: 'top', label: 'Bonjour' },
+  { id: 'story', label: 'Histoire' },
+  { id: 'work', label: 'Projets' },
+  { id: 'api-integration', label: 'API & Paiement' },
+  { id: 'skills', label: 'Savoir-faire' },
+  { id: 'contact', label: 'Contact' },
 ];
 
-const SERVICES: Service[] = [
-  { 
-    title: 'Interfaces Modernes', 
-    description: 'Design épuré, performances WebGL/React et fluidité maximale sur tous les écrans.',
-    icon: Layers,
-    gradient: 'from-amber-500/10 to-orange-500/0',
-    features: ['UI/UX Responsive', 'Animations Smooth', 'Lighthouse 95+']
-  },
-  { 
-    title: 'Applications Mobiles', 
-    description: 'Développement multiplateforme avec Flutter pour des performances proches du natif.',
-    icon: Smartphone,
-    gradient: 'from-emerald-500/10 to-teal-500/0',
-    features: ['Flutter', 'iOS & Android', 'Mode Offline']
-  },
-  { 
-    title: 'Architecture Backend', 
-    description: 'APIs REST scalables, modélisation de bases de données et conteneurisation.',
-    icon: ServerCog,
-    gradient: 'from-blue-500/10 to-indigo-500/0',
-    features: ['Django / Node', 'PostgreSQL', 'Docker']
-  },
+const PROJECTS: { index: string; title: string; description: string; tech: string[]; demo: string; icon: LucideIcon; tint: string; note?: string }[] = [
+  { index: '01', title: 'Fisafi Groupe', description: 'Vitrine institutionnelle réactive, optimisée SEO avec un score Lighthouse 95+.', tech: ['Next.js', 'SEO', 'Tailwind'], demo: 'https://fisafigroupe.com', icon: Globe, tint: 'from-orange-200/60' },
+  { index: '02', title: 'SEAT Opus Global', description: 'Site de SEAT Opus Global (solaire, Tchad) : produits, réalisations et navigation mobile soignée.', tech: ['PHP', 'CSS', 'Responsive'], demo: 'https://seatopusglobal.com/index.html', icon: Globe, tint: 'from-yellow-200/60', note: 'Mission consultant · FISAFI Groupe' },
+  { index: '03', title: 'Mamari', description: 'Plateforme MAMARI dédiée à l’agriculture, à l’élevage et à leurs services.', tech: ['WordPress', 'PHP', 'CSS'], demo: 'https://mamari.fisafigroupe.com', icon: Layers, tint: 'from-emerald-200/50', note: 'Mission consultant · FISAFI Groupe' },
+  { index: '04', title: 'Mbaymi', description: 'Plateforme agritech mobile pour le suivi en temps réel des cultures et cheptels.', tech: ['Flutter', 'Dart', 'Firebase'], demo: 'https://mbaymi.vercel.app', icon: Smartphone, tint: 'from-teal-200/50' },
+  { index: '05', title: 'Bitik Platform', description: 'Marketplace e-commerce distribuée avec catalogue synchrone haute vitesse.', tech: ['Next.js', 'Tailwind', 'REST API'], demo: 'https://bitik.vercel.app', icon: Layers, tint: 'from-amber-200/60' },
 ];
 
-const CERTIFICATIONS: Certification[] = [
+const SERVICES: { title: string; description: string; icon: LucideIcon; features: string[] }[] = [
+  { title: 'Interfaces', description: 'Design épuré, fluidité maximale sur tous les écrans.', icon: Layers, features: ['UI/UX responsive', 'Animations fluides', 'Lighthouse 95+'] },
+  { title: 'Mobile', description: 'Flutter, des performances proches du natif.', icon: Smartphone, features: ['iOS & Android', 'Mode offline'] },
+  { title: 'Backend', description: 'APIs REST scalables et bases de données.', icon: ServerCog, features: ['Django / Node', 'PostgreSQL', 'Docker'] },
+];
+
+const CERTIFICATIONS = [
   { title: 'Networking Basics', issuer: 'Cisco Networking Academy', year: '2023' },
   { title: 'Introduction to Cybersecurity', issuer: 'Cisco Networking Academy', year: '2025' },
   { title: 'English for IT 2', issuer: 'Cisco Networking Academy', year: '2025' },
 ];
 
-const EDUCATION: Education[] = [
-  {
-    title: 'Diplôme de Technicien Supérieur en Informatique',
-    institution: 'ESP, Dakar',
-    period: '2023–2025'
-  },
-  {
-    title: 'Licence 1 Physique-Chimie',
-    institution: 'Université',
-    period: '2022–2023',
-    details: 'non achevée, réorientation vers l’informatique'
-  },
-  {
-    title: 'Baccalauréat Série S2',
-    institution: 'Cours Sacré-Cœur, Dakar',
-    period: '2022'
-  }
+const EDUCATION = [
+  { title: 'DTS en Informatique', institution: 'ESP, Dakar', period: '2023–2025' },
+  { title: 'Licence 1 Physique-Chimie', institution: 'Université', period: '2022–2023', details: 'Réorientation vers l’informatique' },
+  { title: 'Baccalauréat S2', institution: 'Cours Sacré-Cœur, Dakar', period: '2022' },
 ];
 
 // ============================================
-// HOOKS
+// STORY HELPERS
 // ============================================
 
-const useScrollLock = (active: boolean) => {
+/** Apparition douce au scroll */
+function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (active) {
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      
-      return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
-      };
-    }
-  }, [active]);
-};
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add('in'); io.disconnect(); } }, { threshold: 0.12 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return <div ref={ref} className={`reveal ${className}`} style={{ transitionDelay: `${delay}ms` }}>{children}</div>;
+}
+
+/** Mot qui change dans le titre */
+function RotatingWord({ words }: { words: string[] }) {
+  const [i, setI] = useState(0);
+  const [out, setOut] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setOut(true);
+      setTimeout(() => { setI((v) => (v + 1) % words.length); setOut(false); }, 450);
+    }, 2600);
+    return () => clearInterval(t);
+  }, [words.length]);
+  return <em className={`swap ${out ? 'out' : ''}`}>{words[i]}.</em>;
+}
+
+/** Texte qui s'allume mot par mot pendant le scroll */
+function ScrollText({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const f = () => {
+      const r = ref.current!.getBoundingClientRect(), v = window.innerHeight;
+      setP(Math.min(1, Math.max(0, (v * 0.8 - r.top) / (r.height + v * 0.2))));
+    };
+    f();
+    window.addEventListener('scroll', f, { passive: true });
+    return () => window.removeEventListener('scroll', f);
+  }, []);
+  const words = text.split(' ');
+  return (
+    <p ref={ref} className="font-display text-[clamp(2rem,5.2vw,4.6rem)] leading-[1.1]">
+      {words.map((w, i) => (
+        <span key={i} className="word" style={{ opacity: Math.min(1, Math.max(0.14, p * words.length * 1.15 - i)) }}>{w} </span>
+      ))}
+    </p>
+  );
+}
+
+const Label = ({ children }: { children: ReactNode }) => <span className="eyebrow">{children}</span>;
 
 // ============================================
-// MAIN COMPONENT
+// PAGE
 // ============================================
 
 export default function Home() {
-  const [navOpen, setNavOpen] = useState(false);
-  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
-  useScrollLock(navOpen);
+  const [menu, setMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState(0);
+  const bar = useRef<HTMLDivElement>(null);
 
-  const toggleNav = useCallback(() => setNavOpen((prev) => !prev), []);
+  // barre de progression + header
+  useEffect(() => {
+    const f = () => {
+      const h = document.documentElement;
+      bar.current && (bar.current.style.transform = `scaleX(${h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)})`);
+      setScrolled(h.scrollTop > 24);
+    };
+    f();
+    window.addEventListener('scroll', f, { passive: true });
+    return () => window.removeEventListener('scroll', f);
+  }, []);
+
+  // chapitre actif
+  useEffect(() => {
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) setActive(CHAPTERS.findIndex((c) => c.id === e.target.id));
+    }), { rootMargin: '-45% 0px -50% 0px' });
+    CHAPTERS.forEach((c) => { const el = document.getElementById(c.id); el && io.observe(el); });
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => { document.body.style.overflow = menu ? 'hidden' : ''; }, [menu]);
 
   return (
-    <main className="bg-[var(--bg)] text-[var(--ink)] min-h-screen font-sans selection:bg-[var(--accent)] selection:text-black overflow-x-hidden">
-      
-      {/* HEADER MINIMALISTE */}
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 md:px-10">
-          
-          <a href="#" className="flex items-center gap-2 font-mono text-sm tracking-tight font-medium">
-            <Terminal className="h-4 w-4 text-[var(--accent)]" />
-            <span>LAMINE<span className="text-[var(--accent)]">.SYS</span></span>
-          </a>
+    <main className="overflow-x-hidden bg-[#f6f5f2] text-[#121212]">
+      <div ref={bar} className="progress" />
 
-          <div className="flex items-center gap-4">
-            <a 
-              href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786368720/r2ehute4a7dtnkipi9bf.pdf"
-              download="Lamine_NDIAYE_CV.pdf"
-              className="hidden md:inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-1.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all"
-            >
-              <Download className="h-3 w-3 text-[var(--accent)]" />
-              <span>CV</span>
+      {/* Chapitre actif (desktop) */}
+      <div className="fixed bottom-6 left-6 z-30 hidden items-center gap-3 text-xs text-[var(--mute)] lg:flex">
+        <span className="font-mono text-[var(--accent)]">0{active + 1}</span>
+        <span className="h-px w-8 bg-[var(--mute)]/40" />
+        <span>{CHAPTERS[active]?.label}</span>
+      </div>
+
+      {/* Header */}
+      <header className="fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-4">
+        <div className={`flex w-full max-w-5xl items-center justify-between rounded-full px-5 py-2.5 transition-all duration-500 ${scrolled ? 'bg-white/75 shadow-[0_8px_30px_-12px_rgba(0,0,0,.15)] backdrop-blur-xl' : ''}`}>
+          <a href="#top" className="font-display text-2xl">Lamine<span className="serif-i">.</span></a>
+          <nav className="hidden items-center gap-7 md:flex">
+            {CHAPTERS.slice(2).map((c) => <a key={c.id} href={`#${c.id}`} className="nav-link">{c.label}</a>)}
+          </nav>
+          <div className="flex items-center gap-2">
+            <a href="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1793956108/tppuuxcgfdzjqsmtfphy.pdf" download="Lamine_NDIAYE_CV.pdf" className="btn-solid hidden !px-4 !py-2 md:inline-flex">
+              <Download className="h-3.5 w-3.5" /> CV
             </a>
-
-            <button
-              type="button"
-              onClick={toggleNav}
-              className="inline-flex h-10 w-10 items-center justify-center text-[var(--ink)] hover:text-[var(--accent)] transition-colors md:hidden"
-              aria-label="Toggle Menu"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+            <button onClick={() => setMenu(true)} aria-label="Menu" className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--soft)] md:hidden"><Menu className="h-5 w-5" /></button>
           </div>
-
         </div>
       </header>
 
-      {/* NAVIGATION MOBILE OVERLAY PLEIN ÉCRAN */}
-      {navOpen && (
-        <div
-          className="fixed inset-0 z-[9999] bg-white text-zinc-950 md:hidden flex flex-col justify-between p-6 overflow-y-auto"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-            <div className="flex justify-between items-center border-b border-zinc-200 pb-6">
-              <div className="flex items-center gap-2 font-mono text-sm font-bold tracking-tight text-zinc-900">
-                <Terminal className="h-4 w-4 text-orange-600" />
-                <span>LAMINE<span className="text-orange-600">.SYS</span></span>
-              </div>
-              <button 
-                onClick={() => setNavOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-300 text-zinc-900 hover:bg-zinc-100 transition-colors"
-                aria-label="Fermer le menu"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <nav className="flex flex-col space-y-4 font-mono text-base font-semibold uppercase tracking-wider py-6">
-              <a 
-                href="#work" 
-                onClick={() => setNavOpen(false)} 
-                className="flex items-center justify-between text-zinc-900 hover:text-orange-600 transition-colors"
-              >
-                <span>01. Projets</span>
-                <ArrowUpRight className="h-5 w-5 text-orange-600" />
+      {menu && (
+        <div className="fixed inset-0 z-[9999] flex flex-col justify-between bg-[var(--bg)] p-6 md:hidden">
+          <button onClick={() => setMenu(false)} aria-label="Fermer" className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--soft)]"><X className="h-5 w-5" /></button>
+          <nav>
+            {CHAPTERS.slice(1).map((c, i) => (
+              <a key={c.id} href={`#${c.id}`} onClick={() => setMenu(false)} className="font-display flex items-baseline gap-4 py-2.5 text-5xl">
+                <span className="font-mono text-xs text-[var(--accent)]">0{i + 1}</span>{c.label}
               </a>
-              <a 
-                href="#services" 
-                onClick={() => setNavOpen(false)} 
-                className="flex items-center justify-between text-zinc-900 hover:text-orange-600 transition-colors"
-              >
-                <span>02. Services</span>
-                <ArrowUpRight className="h-5 w-5 text-orange-600" />
-              </a>
-              <a 
-                href="#about" 
-                onClick={() => setNavOpen(false)} 
-                className="flex items-center justify-between text-zinc-900 hover:text-orange-600 transition-colors"
-              >
-                <span>03. À propos</span>
-                <ArrowUpRight className="h-5 w-5 text-orange-600" />
-              </a>
-              <a 
-                href="#contact" 
-                onClick={() => setNavOpen(false)} 
-                className="flex items-center justify-between text-zinc-900 hover:text-orange-600 transition-colors"
-              >
-                <span>04. Contact</span>
-                <ArrowUpRight className="h-5 w-5 text-orange-600" />
-              </a>
-            </nav>
-
-            <div className="pt-6 border-t border-zinc-200 flex justify-between items-center text-zinc-600">
-              <div className="flex gap-6 font-mono text-xs font-medium">
-                <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="hover:text-orange-600 flex items-center gap-1">
-                  <Github className="h-4 w-4" /> GitHub
-                </a>
-                <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-orange-600 flex items-center gap-1">
-                  <Linkedin className="h-4 w-4" /> LinkedIn
-                </a>
-              </div>
-              <a href="mailto:papendiaye511@gmail.com" className="hover:text-orange-600">
-                <Mail className="h-5 w-5 text-orange-600" />
-              </a>
-            </div>
+            ))}
+          </nav>
+          <div className="flex gap-6 text-sm text-[var(--mute)]">
+            <a href="https://github.com/llmnd" className="flex items-center gap-1.5"><Github className="h-4 w-4" /> GitHub</a>
+            <a href="https://linkedin.com" className="flex items-center gap-1.5"><Linkedin className="h-4 w-4" /> LinkedIn</a>
+          </div>
         </div>
       )}
 
-      {/* HERO SECTION */}
-      <section className="relative pt-6 pb-12 md:pt-8 md:pb-20 border-b border-[var(--line)] bg-[var(--bg)] overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none opacity-40">
-          <div className="absolute top-4 left-10 w-72 h-72 bg-[var(--accent)]/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-600/5 rounded-full blur-[120px]" />
+      {/* 00 — HERO */}
+      <section id="top" className="flex min-h-screen flex-col justify-center">
+        <div className="container pt-24">
+          <Reveal><span className="chip"><span className="dot-live" /> Disponible · Dakar, SN</span></Reveal>
+          <Reveal delay={120}>
+            <h1 className="font-display mt-8 text-[clamp(3.4rem,10vw,9.5rem)]">
+              Je crée des produits digitaux<br /><RotatingWord words={['élégants', 'rapides', 'connectés', 'utiles']} />
+            </h1>
+          </Reveal>
+          <Reveal delay={260} className="mt-10 flex flex-wrap items-center gap-3">
+            <a href="#work" className="btn-solid">Découvrir mon travail</a>
+            <a href="#contact" className="btn">Me contacter <ArrowUpRight className="h-4 w-4" /></a>
+          </Reveal>
         </div>
+        <div className="mx-auto mt-16 flex flex-col items-center gap-3 pb-10 text-xs text-[var(--mute)]">
+          <span>Défiler</span><span className="cue" />
+        </div>
+      </section>
 
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl relative z-10">
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-[var(--line)]/60 pb-6">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/5 font-mono text-[0.75rem] md:text-[0.7rem] tracking-wider uppercase text-[var(--accent)] mb-3">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                <span>DAKAR, SN</span>
-              </div>
-            </div>
-          </div>
+      {/* 01 — HISTOIRE */}
+      <section id="story" className="py-32 md:py-48">
+        <div className="container max-w-5xl">
+          <Reveal className="mb-10"><Label>Chapitre 01 · L’histoire</Label></Reveal>
+          <ScrollText text="Basé à Dakar, j’ai troqué la physique-chimie pour l’informatique. Aujourd’hui, je construis des interfaces épurées, des applications mobiles et des systèmes qui se parlent entre eux." />
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            
-            {/* Visual Identity Card / Portrait */}
-            <div className="lg:col-span-5 relative group overflow-hidden rounded-3xl min-h-[400px] md:min-h-[440px] border border-[var(--line)] flex flex-col justify-between p-6 sm:p-8 bg-zinc-900 transition-all duration-500 hover:border-[var(--accent)]/40">
-              <img 
-                src="https://res.cloudinary.com/dcs9vkwe0/image/upload/v1786026387/f3codb9okszfnxskuzvl.jpg" 
-                alt="Lamine Ndiaye Portrait" 
-                className="absolute inset-0 w-full h-full object-cover object-center opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-              <div className="relative z-10 flex items-center justify-between">
-                <span className="font-mono text-[0.75rem] md:text-[0.65rem] text-white/90 tracking-wider uppercase bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-md">
-                  DAKAR
+      {/* 02 — PROJETS : galerie horizontale */}
+      <section id="work" className="py-24 md:py-32">
+        <div className="container mb-10 flex items-end justify-between">
+          <Reveal>
+            <Label>Chapitre 02 · Projets</Label>
+            <h2 className="font-display mt-5 text-5xl md:text-7xl">Ce que j’ai <em>construit</em></h2>
+          </Reveal>
+          <span className="hidden text-sm text-[var(--mute)] md:block">Glisser →</span>
+        </div>
+        <div className="snap-x">
+          {PROJECTS.map((p) => (
+            <a key={p.title} href={p.demo} target="_blank" rel="noreferrer" className="soft lift group relative flex min-h-[460px] flex-col justify-between overflow-hidden p-9">
+              <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${p.tint} to-transparent`} />
+              <div className="relative flex items-start justify-between">
+                <span className="font-display text-7xl text-[var(--accent)]/70">{p.index}</span>
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow transition-all duration-500 group-hover:bg-[var(--ink)] group-hover:text-white">
+                  <ArrowUpRight className="h-4 w-4 transition-transform duration-500 group-hover:rotate-45" />
                 </span>
               </div>
-
-              <div className="relative z-10 pt-12">
-                {/* Badge Genius Logiciel / Génie Logiciel avec Background visible */}
-                <h3 className="font-display text-2xl sm:text-3xl font-light text-white uppercase tracking-tight drop-shadow-sm">
-                  Full-Stack
-                </h3>
-                <p className="font-mono text-xs sm:text-sm md:text-xs text-white/90 mt-2 leading-relaxed drop-shadow-sm">
-                  Conception d&apos;architectures web modernes et d&apos;interfaces réactives haut de gamme.
-                </p>
+              <div className="relative">
+                {p.note && <span className="chip mb-4 !bg-white/80 !text-[var(--accent)]">{p.note}</span>}
+                <h3 className="font-display text-5xl">{p.title}</h3>
+                <p className="mt-3 max-w-sm text-[var(--mute)]">{p.description}</p>
+                <div className="mt-6 flex flex-wrap gap-2">{p.tech.map((t) => <span key={t} className="chip !bg-white/80">{t}</span>)}</div>
               </div>
-            </div>
-
-            {/* Interactive Showcase / Slider Card */}
-            <div className="lg:col-span-7 relative rounded-3xl bg-[var(--surface)] border border-[var(--line)] p-6 sm:p-8 md:p-10 flex flex-col justify-between min-h-[380px] md:min-h-[440px] text-[var(--ink)] hover:border-[var(--line)]/80 transition-all">
-              
-              <div className="flex justify-between items-center pb-6 border-b border-[var(--line)]">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                  <span className="font-mono text-[0.75rem] md:text-[0.7rem] uppercase tracking-widest text-[var(--ink)] font-semibold">
-                    {activeHeroSlide === 0 ? 'CREATIVE DEV' : activeHeroSlide === 1 ? '02 / APPLICATION MOBILE' : '03 / E-COMMERCE HIGH SPEED'}
-                  </span>
-                </div>
-
-                <a 
-                  href="#work" 
-                  className="inline-flex items-center gap-1.5 font-mono text-xs uppercase text-[var(--mute)] hover:text-[var(--accent)] transition-colors group"
-                >
-                  <span>Explorer</span>
-                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 text-[var(--accent)]" />
-                </a>
-              </div>
-
-              <div className="my-auto py-6">
-                {activeHeroSlide === 0 && (
-                  <div className="animate-fadeIn space-y-4">
-                    <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
-                      Precision UI
-                    </h2>
-                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
-                      Fusion entre rapidité (Next.js, React) et rigueur esthétique pour créer des produits digitaux épurés et hautement performants.
-                    </p>
-                  </div>
-                )}
-
-                {activeHeroSlide === 1 && (
-                  <div className="animate-fadeIn space-y-4">
-                    <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
-                      Mbaymi, Agritech Mobile Platform
-                    </h2>
-                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
-                      Suivi en temps réel des cultures et cheptels développé avec Flutter, Dart et Firebase, incluant la synchronisation hors-ligne.
-                    </p>
-                  </div>
-                )}
-
-                {activeHeroSlide === 2 && (
-                  <div className="animate-fadeIn space-y-4">
-                    <h2 className="font-display text-3xl sm:text-5xl font-light leading-[1.1] uppercase tracking-tight">
-                      Bitik Platform, Marketplace Distribuée
-                    </h2>
-                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] max-w-xl leading-relaxed">
-                      E-commerce haute vitesse doté d&apos;un catalogue synchrone instantané et de micro-interactions fluides.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pt-6 border-t border-[var(--line)]">
-                <div className="flex items-center gap-2">
-                  {[0, 1, 2].map((slideIndex) => (
-                    <button
-                      key={slideIndex}
-                      onClick={() => setActiveHeroSlide(slideIndex)}
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        activeHeroSlide === slideIndex 
-                          ? 'w-10 bg-[var(--accent)]' 
-                          : 'w-4 bg-[var(--line)] hover:bg-[var(--mute)]'
-                      }`}
-                      aria-label={`Go to slide ${slideIndex + 1}`}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <a 
-                    href="#contact" 
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 md:px-5 md:py-2.5 font-mono text-xs font-bold text-black hover:opacity-90 transition-all shadow-sm w-full sm:w-auto"
-                  >
-                    <span>Contact</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </a>
-                  <a 
-                    href="#work" 
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--line)] bg-[var(--bg)] px-6 py-3 md:px-5 md:py-2.5 font-mono text-xs text-[var(--ink)] hover:border-[var(--accent)] transition-all w-full sm:w-auto"
-                  >
-                    <span>Projets</span>
-                  </a>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
+            </a>
+          ))}
         </div>
       </section>
 
-      {/* TECH STACK 3D SHOWCASE */}
-      <section className="py-12 md:py-20 border-b border-[var(--line)] bg-[var(--surface)]/20">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-10 gap-4">
-            <div>
-              <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// STACK TECHNIQUE</span>
-              <h2 className="font-display text-2xl sm:text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
-                Technologies Clés
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {STACK.map((tech) => (
-                <span key={tech} className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 font-mono text-xs text-[var(--mute)]">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          </div>
+      {/* 03 — API & PAIEMENT */}
+      <APIIntegrationSection />
 
-          <div className="h-[280px] md:h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[#030712]">
-            <ThreeExperience techs={STACK} />
-          </div>
-        </div>
-      </section>
+      {/* 04 — SAVOIR-FAIRE : bento */}
+      <section id="skills" className="py-24 md:py-40">
+        <div className="container">
+          <Reveal className="mb-12">
+            <Label>Chapitre 04 · Savoir-faire</Label>
+            <h2 className="font-display mt-5 text-5xl md:text-7xl">Tout, <em>en un coup d’œil</em></h2>
+          </Reveal>
 
-      {/* PROJETS SÉLECTIONNÉS */}
-      <section id="work" className="py-12 md:py-24 border-b border-[var(--line)]">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
-          <div className="mb-8 md:mb-12">
-            <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PORTFOLIO</span>
-            <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
-              Projets Récents
-            </h2>
-          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Reveal className="soft p-8 md:col-span-2 md:row-span-2">
+              <Label>Stack</Label>
+              <p className="font-display mt-4 text-4xl md:text-5xl">Les outils que je maîtrise.</p>
+              <div className="mt-8 flex flex-wrap gap-2">{STACK.map((t) => <span key={t} className="chip">{t}</span>)}</div>
+            </Reveal>
 
-          <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {PROJECTS.map((project, index) => (
-              <ProjectCard3D key={project.title} gradient={project.gradient} index={index}>
-                <a
-                  href={project.demo}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex flex-col justify-between p-6 bg-[var(--surface)] border border-[var(--line)] rounded-2xl h-full hover:border-[var(--accent)]/50 transition-all"
-                >
-                  <div>
-                    <div className="flex items-center justify-between font-mono text-xs text-[var(--mute)]">
-                      <span className="text-[var(--accent)] font-bold">{project.index}</span>
-                      <ArrowUpRight className="h-4 w-4 text-[var(--accent)] transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                    </div>
-                    
-                    <h3 className="font-display mt-4 md:mt-6 text-xl font-medium text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">
-                      {project.title}
-                    </h3>
-                    <p className="mt-2 font-mono text-xs sm:text-sm md:text-xs leading-relaxed text-[var(--mute)]">
-                      {project.description}
-                    </p>
-                  </div>
+            {SERVICES.map((s, i) => { const Icon = s.icon; return (
+              <Reveal key={s.title} delay={80 * (i + 1)} className={`soft p-7 ${i === 2 ? 'md:col-span-2' : ''}`}>
+                <Icon className="h-5 w-5 text-[var(--accent)]" />
+                <h3 className="font-display mt-5 text-3xl">{s.title}</h3>
+                <p className="mt-2 text-sm text-[var(--mute)]">{s.description}</p>
+                <ul className="mt-4 space-y-1.5 text-sm">{s.features.map((f) => <li key={f} className="flex items-center gap-2"><CheckCircle className="h-3.5 w-3.5 text-[var(--accent)]" />{f}</li>)}</ul>
+              </Reveal>
+            ); })}
 
-                  <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-[var(--line)]">
-                    {project.tech.map((t) => (
-                      <span key={t} className="font-mono text-[0.75rem] md:text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/10 px-2.5 py-1 md:px-2 md:py-0.5 rounded">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </a>
-              </ProjectCard3D>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION A PROPOS : FORMATIONS, CERTIFICATIONS & LANGUES */}
-      <section id="about" className="py-12 md:py-24 border-b border-[var(--line)]">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
-          <div className="mb-8 md:mb-12">
-            <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// PARCOURS</span>
-            <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
-              À Propos &amp; Qualifications
-            </h2>
-          </div>
-
-          <div className="grid gap-10 md:grid-cols-3">
-            {/* FORMATION */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
-                <GraduationCap className="h-5 w-5 text-[var(--accent)]" />
-                <h3 className="font-display text-lg font-semibold uppercase text-[var(--ink)]">Formation</h3>
-              </div>
-              <div className="space-y-6">
-                {EDUCATION.map((item, idx) => (
-                  <div key={idx} className="relative pl-4 border-l border-[var(--line)] hover:border-[var(--accent)] transition-colors">
-                    <span className="font-mono text-[0.75rem] md:text-[0.65rem] text-[var(--accent)] uppercase font-semibold">{item.period}</span>
-                    <h4 className="font-display text-base md:text-sm font-medium text-[var(--ink)] mt-1">{item.title}</h4>
-                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] mt-0.5">{item.institution}</p>
-                    {item.details && (
-                      <p className="font-mono text-xs md:text-[0.7rem] text-[var(--mute)]/80 italic mt-1">{item.details}</p>
-                    )}
+            <Reveal className="soft-flat p-7 md:col-span-2">
+              <div className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-[var(--accent)]" /><Label>Formation</Label></div>
+              <div className="mt-5 space-y-4">
+                {EDUCATION.map((e) => (
+                  <div key={e.title} className="flex gap-4">
+                    <span className="w-20 shrink-0 font-mono text-xs text-[var(--accent)]">{e.period}</span>
+                    <div><p className="font-medium leading-snug">{e.title}</p><p className="text-sm text-[var(--mute)]">{e.institution}{e.details ? ` · ${e.details}` : ''}</p></div>
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
 
-            {/* CERTIFICATIONS */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
-                <Award className="h-5 w-5 text-[var(--accent)]" />
-                <h3 className="font-display text-lg font-semibold uppercase text-[var(--ink)]">Certifications</h3>
-              </div>
-              <div className="space-y-4">
-                {CERTIFICATIONS.map((cert, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)]/50 transition-all">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-display text-base md:text-sm font-medium text-[var(--ink)]">{cert.title}</h4>
-                      <span className="font-mono text-xs md:text-[0.65rem] text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded">{cert.year}</span>
-                    </div>
-                    <p className="font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] mt-1">{cert.issuer}</p>
+            <Reveal className="soft-flat p-7 md:col-span-2">
+              <div className="flex items-center gap-2"><Award className="h-4 w-4 text-[var(--accent)]" /><Label>Certifications</Label></div>
+              <div className="mt-5 space-y-4">
+                {CERTIFICATIONS.map((c) => (
+                  <div key={c.title} className="flex items-baseline justify-between gap-3">
+                    <div><p className="font-medium leading-snug">{c.title}</p><p className="text-sm text-[var(--mute)]">{c.issuer}</p></div>
+                    <span className="font-mono text-xs text-[var(--accent)]">{c.year}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
 
-            {/* LANGUES */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 border-b border-[var(--line)] pb-3">
-                <Languages className="h-5 w-5 text-[var(--accent)]" />
-                <h3 className="font-display text-lg font-semibold uppercase text-[var(--ink)]">Langues</h3>
+            <Reveal className="soft p-7 md:col-span-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2"><Languages className="h-4 w-4 text-[var(--accent)]" /><Label>Langues</Label></div>
+                <div className="flex gap-3"><span className="chip">Français · Courant</span><span className="chip">Anglais · Courant</span></div>
               </div>
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
-                  <div className="flex justify-between items-center">
-                    <span className="font-display text-base md:text-sm font-medium text-[var(--ink)]">Français</span>
-                    <span className="font-mono text-xs text-[var(--accent)] font-semibold">Courant</span>
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
-                  <div className="flex justify-between items-center">
-                    <span className="font-display text-base md:text-sm font-medium text-[var(--ink)]">Anglais</span>
-                    <span className="font-mono text-xs text-[var(--accent)] font-semibold">Courant</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* SERVICES */}
-      <section id="services" className="py-12 md:py-24 border-b border-[var(--line)] bg-[var(--surface)]/30">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
-          <div className="mb-8 md:mb-12 text-center max-w-xl mx-auto">
-            <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// EXPERTISE</span>
-            <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
-              Services &amp; Solutions
-            </h2>
-          </div>
+      {/* 05 — CONTACT */}
+      <section id="contact" className="py-24 md:py-44">
+        <div className="container max-w-5xl">
+          <Reveal><Label>Chapitre 05 · La suite</Label></Reveal>
+          <Reveal delay={100}>
+            <h2 className="font-display mt-6 text-[clamp(4rem,13vw,11rem)]">Parlons<em>.</em></h2>
+          </Reveal>
+          <Reveal delay={200}>
+            <a href="mailto:papendiaye511@gmail.com" className="hover-line font-display mt-6 inline-block break-all text-3xl md:text-5xl">papendiaye511@gmail.com</a>
+          </Reveal>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {SERVICES.map((service) => {
-              const Icon = service.icon;
-              return (
-                <div key={service.title} className="p-6 rounded-2xl bg-[var(--surface)] border border-[var(--line)] flex flex-col justify-between">
-                  <div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] mb-4">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="font-display text-lg font-medium text-[var(--ink)]">{service.title}</h3>
-                    <p className="mt-2 font-mono text-xs sm:text-sm md:text-xs text-[var(--mute)] leading-relaxed">{service.description}</p>
-                  </div>
-                  {service.features && (
-                    <div className="mt-6 space-y-2 pt-4 border-t border-[var(--line)] font-mono text-xs md:text-[0.65rem] text-[var(--mute)]">
-                      {service.features.map((f) => (
-                        <div key={f} className="flex items-center gap-2">
-                          <CheckCircle className="h-3.5 w-3.5 text-[var(--accent)]" />
-                          <span>{f}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* NEURAL EXHIBIT */}
-      <section className="py-12 md:py-16 border-b border-[var(--line)]">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
-          <NeuralExhibit />
-        </div>
-      </section>
-
-      {/* CONTACT */}
-      <section id="contact" className="py-12 md:py-24">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-4xl">
-          <div className="grid gap-8 md:gap-12 md:grid-cols-2">
-            <div>
-              <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// CONTACT</span>
-              <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-1">
-                Démarrer un Projet
-              </h2>
-              <p className="mt-4 font-mono text-xs sm:text-sm md:text-xs leading-relaxed text-[var(--mute)]">
-                Un projet en tête ? Contactez-moi directement pour discuter d&apos;une collaboration.
-              </p>
-
-              <div className="mt-8 space-y-3 font-mono text-xs sm:text-sm md:text-xs">
-                <a href="mailto:papendiaye511@gmail.com" className="flex items-center gap-3 p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] transition-all">
-                  <Mail className="h-4 w-4 text-[var(--accent)] shrink-0" />
-                  <span className="truncate">papendiaye511@gmail.com</span>
-                </a>
-                <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] transition-all">
-                  <Github className="h-4 w-4 text-[var(--accent)] shrink-0" />
-                  <span>GitHub / llmnd</span>
-                </a>
-              </div>
-            </div>
-
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-4 p-6 bg-[var(--surface)] rounded-2xl border border-[var(--line)]">
-              <div>
-                <label className="font-mono text-xs md:text-[0.65rem] uppercase text-[var(--mute)]">Nom</label>
-                <input type="text" required placeholder="Votre nom" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3.5 py-2.5 font-mono text-xs sm:text-sm md:text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none" />
-              </div>
-              <div>
-                <label className="font-mono text-xs md:text-[0.65rem] uppercase text-[var(--mute)]">Email</label>
-                <input type="email" required placeholder="votre@email.com" className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3.5 py-2.5 font-mono text-xs sm:text-sm md:text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none" />
-              </div>
-              <div>
-                <label className="font-mono text-xs md:text-[0.65rem] uppercase text-[var(--mute)]">Message</label>
-                <textarea rows={3} required placeholder="Détails du projet..." className="mt-1 w-full rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3.5 py-2.5 font-mono text-xs sm:text-sm md:text-xs text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none resize-none" />
-              </div>
-              <button type="submit" className="w-full rounded-lg bg-[var(--accent)] py-3 font-mono text-xs font-bold text-black hover:opacity-90 transition-opacity">
-                Envoyer
-              </button>
+          <Reveal delay={300}>
+            <form onSubmit={(e) => e.preventDefault()} className="mt-20 grid gap-8 md:grid-cols-2">
+              <input type="text" required placeholder="Nom" className="field" />
+              <input type="email" required placeholder="Email" className="field" />
+              <textarea rows={2} required placeholder="Parlez-moi de votre projet…" className="field resize-none md:col-span-2" />
+              <button type="submit" className="btn-solid md:col-span-2 md:w-fit">Envoyer <ArrowUpRight className="h-4 w-4" /></button>
             </form>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ARCADE 3D */}
-      <section className="py-12 md:py-24 border-t border-[var(--line)] bg-[var(--surface)]/10">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl">
-          <div className="mb-8 md:mb-10 max-w-3xl">
-            <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">// DIVERTISSEMENT</span>
-            <h2 className="font-display text-3xl font-semibold uppercase text-[var(--ink)] mt-3">
-              Mini-jeu Arcade
-            </h2>
-            <p className="mt-4 font-mono text-xs sm:text-sm leading-relaxed text-[var(--mute)]">
-              Un petit jeu WebGL interactif pour finir la page sur une note ludique.
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] overflow-hidden border border-[var(--line)] bg-[#020617]">
-            <HeroBackground3D />
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-[var(--line)] py-6 font-mono text-xs md:text-[0.65rem] text-[var(--mute)]">
-        <div className="container mx-auto px-4 sm:px-6 md:px-10 max-w-7xl flex justify-between items-center">
-          <p>© 2026 LAMINE NDIAYE</p>
-          <div className="flex items-center gap-2 text-emerald-400">
-            <Signal className="h-3 w-3" />
-            <span>ALL SYSTEMS READY</span>
+      <footer className="pb-10 pt-6 text-sm text-[var(--mute)]">
+        <div className="container flex items-center justify-between">
+          <p>© 2026 Lamine Ndiaye</p>
+          <div className="flex gap-5">
+            <a href="https://github.com/llmnd" target="_blank" rel="noreferrer" className="nav-link">GitHub</a>
+            <a href="#top" className="nav-link">Haut ↑</a>
           </div>
         </div>
       </footer>
